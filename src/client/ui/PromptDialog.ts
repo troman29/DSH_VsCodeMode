@@ -6,6 +6,7 @@
  * 重命名时默认选中主名（不含扩展名），与 VS Code 行为一致。
  * 作者 ddj 2026年09月22号
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { ModalShell } from './ModalShell.js'
@@ -23,7 +24,7 @@ function PromptCard({ title, initial, done }) {
   const submit = () => done(String(inputRef.current?.value ?? '').trim())
   return React.createElement(React.Fragment, null,
     React.createElement('h3', null, title),
-    React.createElement('label', null, '名称',
+    React.createElement('label', null, uiText('名称', "Name", "Имя"),
       React.createElement('input', {
         ref: inputRef,
         defaultValue: initial,
@@ -34,8 +35,8 @@ function PromptCard({ title, initial, done }) {
         },
       })),
     React.createElement('div', { className: 'vsm-mcp-dialog-actions' },
-      React.createElement('button', { onClick: () => done(null) }, '取消'),
-      React.createElement('button', { className: 'vsm-primary', onClick: submit }, '确定')))
+      React.createElement('button', { onClick: () => done(null) }, uiText('取消', "Cancel", "Отмена")),
+      React.createElement('button', { className: 'vsm-primary', onClick: submit }, uiText('确定', "OK", "ОК"))))
 }
 
 /**

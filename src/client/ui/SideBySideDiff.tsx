@@ -15,6 +15,7 @@
  *
  * 作者 ddj 2026年09月16号
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { langOf } from '../monaco/loader.js'
 import { themeNameOf } from '../monaco/theme.js'
@@ -199,9 +200,9 @@ export function navTargetOf(change, inline) {
 function navClusterEl(nav, onStep) {
   const total = nav.list.length
   return React.createElement('span', { className: 'edrv-svndiff-nav' },
-    React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', title: '上一个差异', disabled: !total, onClick: () => onStep(-1) }, '↑'),
-    React.createElement('span', { className: 'edrv-svndiff-nav-count', title: '差异位置' }, total ? (nav.idx + 1) + '/' + total : '0/0'),
-    React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', title: '下一个差异', disabled: !total, onClick: () => onStep(1) }, '↓'))
+    React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', title: uiText('上一个差异', "Previous diff", "Предыдущее различие"), disabled: !total, onClick: () => onStep(-1) }, '↑'),
+    React.createElement('span', { className: 'edrv-svndiff-nav-count', title: uiText('差异位置', "Diff position", "Позиция различия") }, total ? (nav.idx + 1) + '/' + total : '0/0'),
+    React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', title: uiText('下一个差异', "Next diff", "Следующее различие"), disabled: !total, onClick: () => onStep(1) }, '↓'))
 }
 
 /**
@@ -233,7 +234,7 @@ function statsEl(stats) {
   if (!stats.added && !stats.deleted) return null
   return React.createElement('span', {
     className: 'edrv-svndiff-stat',
-    title: '差异行数：+新增/修改行 −删除/修改行（git diff --stat 口径）',
+    title: uiText('差异行数：+新增/修改行 −删除/修改行（git diff --stat 口径）', "Changed lines: +added/modified −deleted/modified (git diff --stat)", "Изменённые строки: +добавленные/изменённые −удалённые/изменённые (git diff --stat)"),
   },
     React.createElement('span', { className: 'edrv-svndiff-stat-add' }, '+' + stats.added),
     React.createElement('span', { className: 'edrv-svndiff-stat-del' }, '-' + stats.deleted))
@@ -306,19 +307,19 @@ export function SideBySideDiff(props) {
 
   return React.createElement('div', { className: 'edrv-svndiff' },
     React.createElement('div', { className: 'edrv-svndiff-bar' },
-      (onBack ? React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', title: '返回 SVN 日志', onClick: onBack }, '← 返回日志') : null),
+      (onBack ? React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', title: uiText('返回 SVN 日志', "Back to SVN log", "Вернуться к журналу SVN"), onClick: onBack }, uiText('← 返回日志', "← Back to log", "← К журналу")) : null),
       navClusterEl(nav, stepDiff),
       statsEl(diffStatsOf(nav.list)),
       React.createElement('span', { className: 'edrv-svndiff-title', title: title ?? path }, String(title ?? path ?? '')),
-      React.createElement('span', { className: 'edrv-svndiff-tag' }, (leftLabel || '左') + ' ↔ ' + (rightLabel || '右')),
+      React.createElement('span', { className: 'edrv-svndiff-tag' }, (leftLabel || uiText('左', "Left", "Слева")) + ' ↔ ' + (rightLabel || uiText('右', "Right", "Справа"))),
       (message ? React.createElement('span', { className: 'edrv-svndiff-tag' }, String(message)) : null),
       React.createElement('span', { style: { flex: 1 } }),
       React.createElement('div', { className: 'edrv-svndiff-opts' },
-        optCheckEl('trimWhitespace', '行尾空白', '忽略行尾空白差异（对齐 svn diff -x --ignore-space-at-eol；Monaco 默认开启）', viewOpts, toggleOpt),
-        optCheckEl('hideUnchanged', '折叠未变更', '折叠未变更区域，仅显示差异及其上下文', viewOpts, toggleOpt),
-        optCheckEl('eolNormalize', 'EOL 规范化', '比较前把 CRLF/CR 规范化为 LF（仅影响展示；混合换行文件整行标差时勾选）', viewOpts, toggleOpt)),
-      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', title: '关闭差异视图', onClick: onClose }, '✕ 关闭')),
+        optCheckEl('trimWhitespace', uiText('行尾空白', "Trailing whitespace", "Пробелы в конце строк"), uiText('忽略行尾空白差异（对齐 svn diff -x --ignore-space-at-eol；Monaco 默认开启）', "Ignore trailing whitespace differences (svn diff -x --ignore-space-at-eol; enabled by default in Monaco)", "Игнорировать пробелы в конце строк (svn diff -x --ignore-space-at-eol; включено по умолчанию в Monaco)"), viewOpts, toggleOpt),
+        optCheckEl('hideUnchanged', uiText('折叠未变更', "Collapse unchanged", "Свернуть неизменённое"), uiText('折叠未变更区域，仅显示差异及其上下文', "Collapse unchanged regions; show differences and context only", "Свернуть неизменённые области; показать только различия и контекст"), viewOpts, toggleOpt),
+        optCheckEl('eolNormalize', uiText('EOL 规范化', "Normalize EOL", "Нормализация EOL"), uiText('比较前把 CRLF/CR 规范化为 LF（仅影响展示；混合换行文件整行标差时勾选）', "Normalize CRLF/CR to LF before comparing (display only; useful for mixed line endings)", "Преобразовать CRLF/CR в LF перед сравнением (только отображение; полезно при смешанных окончаниях строк)"), viewOpts, toggleOpt)),
+      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', title: uiText('关闭差异视图', "Close diff view", "Закрыть сравнение"), onClick: onClose }, uiText('✕ 关闭', "✕ Close", "✕ Закрыть"))),
     ((noLeft && noRight) || !monaco
-      ? React.createElement('div', { className: 'edrv-svndiff-empty' }, emptyNote || '无可比较内容')
+      ? React.createElement('div', { className: 'edrv-svndiff-empty' }, emptyNote || uiText('无可比较内容', "Nothing to compare", "Нет содержимого для сравнения"))
       : React.createElement('div', { ref: hostRef, className: 'edrv-svndiff-host' })))
 }

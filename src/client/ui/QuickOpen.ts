@@ -7,6 +7,7 @@
  * 迁移自原 src/client/index.ts 的 QuickOpen，语义不改。
  * 作者 ddj 2026-08-20 / 2026-08-26 / 2026年09月11号
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { rpc } from '../rpc.js'
 import { bindPanelCommand } from '../panelCommands.js'
@@ -129,13 +130,13 @@ export function QuickOpen(props) {
         React.createElement('span', { className: 'd' }, dirText(p))))
       pop = React.createElement('div', { ref: popRef, id: listId + '-list', className: 'edrv-search-pop', role: 'listbox' }, ...items)
     } else {
-      pop = React.createElement('div', { ref: popRef, className: 'edrv-search-pop' }, React.createElement('div', { className: 'edrv-search-empty' }, '无匹配文件'))
+      pop = React.createElement('div', { ref: popRef, className: 'edrv-search-pop' }, React.createElement('div', { className: 'edrv-search-empty' }, uiText('无匹配文件', "No matching files", "Нет подходящих файлов")))
     }
   }
 
   return React.createElement('div', { className: 'edrv-search-wrap' },
     React.createElement('input', {
-      ref: inputRef, className: 'edrv-search', placeholder: '搜索文件' + (chordOf('edrv.quickOpen') ? ' (' + chordOf('edrv.quickOpen') + ')' : ''),
+      ref: inputRef, className: 'edrv-search', placeholder: uiText('搜索文件', "Search files", "Поиск файлов") + (chordOf('edrv.quickOpen') ? ' (' + chordOf('edrv.quickOpen') + ')' : ''),
       'aria-keyshortcuts': ariaOf('edrv.quickOpen'),
       value: q,
       role: 'combobox',

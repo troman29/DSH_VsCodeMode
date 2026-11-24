@@ -4,6 +4,7 @@
  * 迁移自原 src/client/index.ts 的 btn/badgeOf/MONO，语义不改。
  * 作者 ddj 2026-08-20
  */
+import { uiText } from '../uiLocale.js'
 import { ST } from '../state/records.js'
 
 /** 次级按钮内联样式（accept=true 绿色 / false 红色）。 */
@@ -21,7 +22,7 @@ export function btn(accept) {
 
 /** 状态中文文案。 */
 export function badgeOf(status) {
-  return status === ST.ACCEPTED ? '已采纳' : status === ST.REJECTED ? '已拒绝' : '待处理'
+  return status === ST.ACCEPTED ? uiText('已采纳', "Accepted", "Принято") : status === ST.REJECTED ? uiText('已拒绝', "Rejected", "Отклонено") : uiText('待处理', "Pending", "Ожидает")
 }
 
 /** 等宽字体常量（差异行渲染用）。 */

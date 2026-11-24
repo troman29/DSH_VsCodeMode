@@ -4,6 +4,8 @@
  * 否则拒绝写盘——解码文本写回会把坏字节永久覆盖。
  * 作者 ddj 2026-11-21
  */
+import { sharedDisplay } from '../sharedDisplay.js'
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { langOf, loadMonaco } from '../monaco/loader.js'
 import type { EncodingVerdict } from '../../textEncoding.js'
@@ -31,7 +33,7 @@ export interface CompatTextViewProps {
 export function CompatTextView(props: CompatTextViewProps) {
   const hostRef = React.useRef(null)
   const modelRef = React.useRef<{ getValue: () => string } | null>(null)
-  const [notice, setNotice] = React.useState('按 ' + kindLabelOf(props.verdict.kind) + ' 解码中…')
+  const [notice, setNotice] = React.useState(uiText('按 ', "Using ", "Кодировка ") + sharedDisplay(kindLabelOf(props.verdict.kind)) + uiText(' 解码中…', " · Decoding…", " · Декодирование…"))
   const [dirty, setDirty] = React.useState(false)
   const [lossy, setLossy] = React.useState(0)
   const [saving, setSaving] = React.useState(false)
@@ -43,7 +45,7 @@ export function CompatTextView(props: CompatTextViewProps) {
     let model: { getValue: () => string; dispose: () => void } | null = null
     previewText(props.sessionId, props.path).then(async (result) => {
       if (disposed) return
-      if (!result.ok) { setNotice('解码失败：' + result.error); return }
+      if (!result.ok) { setNotice(uiText('解码失败：', "Decoding failed: ", "Ошибка декодирования: ") + result.error); return }
       const monaco = await loadMonaco(() => {})
       if (disposed || !hostRef.current || !monaco) return
       const createdModel = monaco.editor.createModel(result.text, langOf(props.path))
@@ -60,8 +62,8 @@ export function CompatTextView(props: CompatTextViewProps) {
         setDirty(true)
         setLossy(lossyCountOf(createdModel.getValue()))
       })
-      setNotice('按 ' + kindLabelOf(props.verdict.kind) + ' 解码 · 可编辑；保存时才写盘')
-    }).catch((failure) => { if (!disposed) setNotice('解码失败：' + String(failure)) })
+      setNotice(uiText('按 ', "Using ", "Кодировка ") + sharedDisplay(kindLabelOf(props.verdict.kind)) + uiText(' 解码 · 可编辑；保存时才写盘', " · Decoded and editable; written to disk only when saved", " · Текст декодирован и доступен для правки; запись на диск только при сохранении"))
+    }).catch((failure) => { if (!disposed) setNotice(uiText('解码失败：', "Decoding failed: ", "Ошибка декодирования: ") + String(failure)) })
 
     return () => { disposed = true; modelRef.current = null; if (view) view.dispose(); if (model) model.dispose() }
   }, [props.sessionId, props.path])
@@ -82,17 +84,17 @@ export function CompatTextView(props: CompatTextViewProps) {
   const blocked = lossy > 0
   return React.createElement('div', { className: 'edrv-compat-view' },
     React.createElement('div', { className: 'edrv-compat-bar' },
-      React.createElement('span', null, error === null ? notice : '保存失败：' + error),
-      blocked ? React.createElement('span', { style: { color: '#dc2626' } }, '还有 ' + lossy + ' 处乱码占位未处理') : null,
+      React.createElement('span', null, error === null ? notice : uiText('保存失败：', "Save failed: ", "Ошибка сохранения: ") + error),
+      blocked ? React.createElement('span', { style: { color: '#dc2626' } }, uiText('还有 ', "Remaining: ", "Осталось: ") + lossy + uiText(' 处乱码占位未处理', " unresolved replacement characters", " необработанных символов замены")) : null,
       React.createElement('span', { className: 'edrv-compat-bar-grow' }),
       React.createElement('button', {
         className: 'edrv-pill edrv-pill-keep',
         disabled: saving || !dirty || blocked,
         onClick: save,
-      }, '保存为 UTF-8'),
+      }, uiText('保存为 UTF-8', "Save as UTF-8", "Сохранить в UTF-8")),
       props.canRepair
-        ? React.createElement('button', { className: 'edrv-pill', onClick: props.onRepair }, '按推荐方式修复')
+        ? React.createElement('button', { className: 'edrv-pill', onClick: props.onRepair }, uiText('按推荐方式修复', "Apply recommended repair", "Применить рекомендуемое исправление"))
         : null,
-      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: props.onBack }, '返回诊断')),
+      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: props.onBack }, uiText('返回诊断', "Back to diagnostics", "К диагностике"))),
     React.createElement('div', { ref: hostRef, className: 'edrv-compat-stage' }))
 }

@@ -11,6 +11,7 @@
  * 行格式（host debugLog 落盘）：`<ISO时间> [level] 文本`；旧格式无级别标记时 level 为空。
  * 作者 ddj 2026年09月17号
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { ModalShell } from './ModalShell.js'
 import { isDebug, rpc, setDebugEnabled } from '../rpc.js'
@@ -22,7 +23,7 @@ const AUTO_REFRESH_MS = 2000
 /** 级别过滤档位（全部 + 四级别，与 LoggerLevel 对齐）。 */
 const LEVEL_OPTIONS = ['all', 'debug', 'info', 'warn', 'error']
 /** 级别 → 展示名（筛选下拉与行标签共用）。 */
-const LEVEL_LABEL = { all: '全部', debug: '调试', info: '信息', warn: '警告', error: '错误' }
+const LEVEL_LABEL = { get all() { return uiText('全部', "All", "Все") }, get debug() { return uiText('调试', "Debug", "Отладка") }, get info() { return uiText('信息', "Info", "Информация") }, get warn() { return uiText('警告', "Warning", "Предупреждение") }, get error() { return uiText('错误', "Error", "Ошибка") } }
 
 /**
  * 解析一行日志：`<ISO> [level] text`（旧格式无级别段 → level 为空串）。
@@ -198,10 +199,10 @@ function LogBody(props) {
   const { rows, busy, keyword, bodyRef } = props
   let inner
   if (rows === null) {
-    inner = React.createElement('div', { className: 'edrv-tree-loading' }, busy ? '读取日志中…' : '尚未加载')
+    inner = React.createElement('div', { className: 'edrv-tree-loading' }, busy ? uiText('读取日志中…', "Reading log…", "Чтение журнала…") : uiText('尚未加载', "Not loaded yet", "Ещё не загружено"))
   } else if (!rows.length) {
     inner = React.createElement('div', { className: 'edrv-tree-loading' },
-      keyword ? '无匹配行' : '暂无日志：开启下方「启用诊断日志」并触发一次差异渲染等操作后生成')
+      keyword ? uiText('无匹配行', "No matching lines", "Нет подходящих строк") : uiText('暂无日志：开启下方「启用诊断日志」并触发一次差异渲染等操作后生成', "No logs yet. Enable diagnostic logging below, then perform an action such as rendering a diff.", "Журнал пуст. Включите диагностический журнал ниже, затем выполните действие, например показ различий."))
   } else {
     inner = rows.map((row, idx) => React.createElement(LogRow, { key: idx, row }))
   }
@@ -218,28 +219,28 @@ function LogHead(props) {
   const { files, picked, current, level, query, busy, auto, onPick, onLevel, onQuery, onAuto, onRefresh, onCopy, onClear, onReveal, onClose } = props
   const options = (files || []).map((f) => React.createElement('option', {
     key: f.name, value: f.name,
-  }, f.name + (f.name === current ? '（本工作区）' : '') + ' · ' + formatBytes(f.bytes)))
+  }, f.name + (f.name === current ? uiText('（本工作区）', " (this workspace)", " (эта рабочая область)") : '') + ' · ' + formatBytes(f.bytes)))
   return React.createElement('div', { className: 'edrv-dlog-head' },
-    React.createElement('h3', { className: 'edrv-dlog-title' }, '诊断日志'),
+    React.createElement('h3', { className: 'edrv-dlog-title' }, uiText('诊断日志', "Diagnostic log", "Диагностический журнал")),
     React.createElement('select', {
       className: 'edrv-dlog-file', value: picked ?? '', disabled: !(files && files.length),
       onChange: (event) => onPick(event.target.value),
-    }, options.length ? options : React.createElement('option', { value: '' }, '（无日志文件）')),
+    }, options.length ? options : React.createElement('option', { value: '' }, uiText('（无日志文件）', "(No log files)", "(Нет файлов журнала)"))),
     React.createElement('select', {
       className: 'edrv-dlog-level', value: level, onChange: (event) => onLevel(event.target.value),
     }, LEVEL_OPTIONS.map((lv) => React.createElement('option', { key: lv, value: lv }, LEVEL_LABEL[lv]))),
     React.createElement('input', {
-      className: 'edrv-dlog-search', placeholder: '搜索日志文本', value: query,
+      className: 'edrv-dlog-search', placeholder: uiText('搜索日志文本', "Search log text", "Поиск по журналу"), value: query,
       onChange: (event) => onQuery(event.target.value),
     }),
-    React.createElement('label', { className: 'edrv-dlog-auto', title: '每 2 秒静默拉取一次尾部日志' },
+    React.createElement('label', { className: 'edrv-dlog-auto', title: uiText('每 2 秒静默拉取一次尾部日志', "Fetch the log tail silently every 2 seconds", "Тихо читать конец журнала каждые 2 секунды") },
       React.createElement('input', { type: 'checkbox', checked: auto, onChange: (event) => onAuto(event.target.checked) }),
-      '自动刷新'),
-    React.createElement('button', { className: 'edrv-svn-act', disabled: busy, title: '重新读取清单与日志', onClick: onRefresh }, busy ? '…' : '⟳'),
-    React.createElement('button', { className: 'edrv-svn-act', title: '复制当前过滤后的日志内容', onClick: onCopy }, '复制'),
-    React.createElement('button', { className: 'edrv-svn-act edrv-svn-act-danger', title: '清空当前日志文件', onClick: onClear }, '清空'),
-    React.createElement('button', { className: 'edrv-svn-act', title: '在文件管理器中打开日志目录', onClick: onReveal }, '目录'),
-    React.createElement('button', { className: 'edrv-svn-act', title: '关闭', onClick: onClose }, '✕'))
+      uiText('自动刷新', "Auto-refresh", "Автообновление")),
+    React.createElement('button', { className: 'edrv-svn-act', disabled: busy, title: uiText('重新读取清单与日志', "Reload file list and log", "Перечитать список файлов и журнал"), onClick: onRefresh }, busy ? '…' : '⟳'),
+    React.createElement('button', { className: 'edrv-svn-act', title: uiText('复制当前过滤后的日志内容', "Copy filtered log contents", "Копировать отфильтрованный журнал"), onClick: onCopy }, uiText('复制', "Copy", "Копировать")),
+    React.createElement('button', { className: 'edrv-svn-act edrv-svn-act-danger', title: uiText('清空当前日志文件', "Clear current log file", "Очистить текущий файл журнала"), onClick: onClear }, uiText('清空', "Clear", "Очистить")),
+    React.createElement('button', { className: 'edrv-svn-act', title: uiText('在文件管理器中打开日志目录', "Open log directory in file manager", "Открыть папку журнала в файловом менеджере"), onClick: onReveal }, uiText('目录', "Directory", "Папка")),
+    React.createElement('button', { className: 'edrv-svn-act', title: uiText('关闭', "Close", "Закрыть"), onClick: onClose }, '✕'))
 }
 
 /**
@@ -256,15 +257,15 @@ function LogHead(props) {
 function LogFoot(props) {
   const { read, total, shown, enabled, copied, onToggle } = props
   const stat = read
-    ? '共 ' + total + ' 行' + (shown !== total ? '（过滤后 ' + shown + ' 行）' : '') + ' · ' + formatBytes(read.size) + (read.truncated ? ' · 已截头（仅保留尾部）' : '')
-    : '未加载'
+    ? uiText('共 ', "Total: ", "Всего: ") + total + uiText(' 行', " lines", " строк") + (shown !== total ? uiText('（过滤后 ', " (filtered: ", " (после фильтра: ") + shown + uiText(' 行）', " lines)", " строк)") : '') + ' · ' + formatBytes(read.size) + (read.truncated ? uiText(' · 已截头（仅保留尾部）', " · Beginning truncated (tail only)", " · Начало обрезано (только конец)") : '')
+    : uiText('未加载', "Not loaded", "Не загружено")
   return React.createElement('div', { className: 'edrv-dlog-foot' },
     React.createElement('span', { className: 'edrv-dlog-path', title: read?.path || '' }, read?.path || '—'),
-    React.createElement('span', { className: 'edrv-dlog-stat' }, stat + (copied ? ' · 已复制到剪贴板' : '')),
+    React.createElement('span', { className: 'edrv-dlog-stat' }, stat + (copied ? uiText(' · 已复制到剪贴板', " · Copied to clipboard", " · Скопировано в буфер обмена") : '')),
     React.createElement('span', { style: { flex: 1 } }),
-    React.createElement('label', { className: 'edrv-dlog-switch', title: '开启后 client 诊断日志上报 host 落盘（立即生效，免刷新）' },
+    React.createElement('label', { className: 'edrv-dlog-switch', title: uiText('开启后 client 诊断日志上报 host 落盘（立即生效，免刷新）', "Send client diagnostics to the host log (takes effect immediately, no refresh)", "Отправлять диагностику клиента в журнал хоста (сразу, без обновления страницы)") },
       React.createElement('input', { type: 'checkbox', checked: enabled, onChange: (event) => onToggle(event.target.checked) }),
-      '启用诊断日志'))
+      uiText('启用诊断日志', "Enable diagnostic logging", "Включить диагностический журнал")))
 }
 
 /**

@@ -1,3 +1,4 @@
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import * as Primitives from '@deepseek-ai/dsh-client-ui-primitives'
 import { createTextPager } from '../textPages.js'
@@ -77,18 +78,18 @@ export function LargeTextView(props: LargeTextViewProps): React.ReactElement {
   }
 
   const state = identity === currentIdentity ? snapshot : null
-  let status = '正在加载只读文本…'
+  let status = uiText('正在加载只读文本…', "Loading read-only text…", "Загрузка текста для чтения…")
   if (state?.error) status = state.error
-  else if (state?.capped) status = '已达预览上限（8 MiB / 50,000 行），请使用外部编辑器查看完整文件'
-  else if (state?.eof) status = '文件末尾 · 只读'
-  else if (state) status = `已读取 ${state.offset.toLocaleString()} / ${state.size.toLocaleString()} 字节 · 只读`
-  if (state?.partialLine) status += ' · 末行尚未完整'
+  else if (state?.capped) status = uiText('已达预览上限（8 MiB / 50,000 行），请使用外部编辑器查看完整文件', "Preview limit reached (8 MiB / 50,000 lines). Use an external editor for the complete file.", "Достигнут предел предпросмотра (8 MiB / 50 000 строк). Откройте полный файл во внешнем редакторе.")
+  else if (state?.eof) status = uiText('文件末尾 · 只读', "End of file · Read-only", "Конец файла · Только чтение")
+  else if (state) status = uiText(`已读取 ${state.offset.toLocaleString()} / ${state.size.toLocaleString()} 字节 · 只读`, `Read ${state.offset.toLocaleString()} / ${state.size.toLocaleString()} bytes · Read-only`, `Прочитано ${state.offset.toLocaleString()} / ${state.size.toLocaleString()} байт · Только чтение`)
+  if (state?.partialLine) status += uiText(' · 末行尚未完整', " · Last line incomplete", " · Последняя строка неполная")
 
-  return React.createElement('section', { className: 'edrv-large-text', 'aria-label': '大文件只读预览' },
+  return React.createElement('section', { className: 'edrv-large-text', 'aria-label': uiText('大文件只读预览', "Large file read-only preview", "Предпросмотр большого файла только для чтения") },
     React.createElement('div', { className: 'edrv-large-text-toolbar' },
       React.createElement('span', { role: 'status' }, status),
       React.createElement(Button, { onClick: loadNext,
         disabled: !state || state.loading || state.eof || state.capped },
-      state?.loading ? '加载中…' : (state?.error ? '重试本段' : '加载下一段'))),
+      state?.loading ? uiText('加载中…', "Loading…", "Загрузка…") : (state?.error ? uiText('重试本段', "Retry this section", "Повторить этот фрагмент") : uiText('加载下一段', "Load next section", "Загрузить следующий фрагмент")))),
     React.createElement('pre', { className: 'edrv-large-text-content', tabIndex: 0 }, state?.text ?? ''))
 }

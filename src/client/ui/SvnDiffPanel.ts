@@ -6,6 +6,7 @@
  * （BASE 侧缺失时的文案、左侧标签）映射到通用组件上，避免 Monaco 逻辑出现两份。
  * 作者 ddj 2026年09月16号
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { SideBySideDiff } from './SideBySideDiff.js'
 
@@ -37,14 +38,14 @@ export function SvnDiffPanel(props) {
   // 编码提示照常渲染（U+FFFD 提示乱码风险，是否继续看由用户决定）
   const blocked = binary === true
   const guardNote = blocked
-    ? '二进制文件（嗅探到 NUL 字节），无法做文本并排对比'
-    : (encodingHint ? '内容可能非 UTF-8 编码，文本显示可能乱码' : '')
+    ? uiText('二进制文件（嗅探到 NUL 字节），无法做文本并排对比', "Binary file (NUL bytes detected); side-by-side text comparison unavailable", "Двоичный файл (обнаружены байты NUL); текстовое сравнение недоступно")
+    : (encodingHint ? uiText('内容可能非 UTF-8 编码，文本显示可能乱码', "Content may not be UTF-8; text may be garbled", "Содержимое может быть не в UTF-8; текст может отображаться неверно") : '')
   const note = blocked
     ? guardNote
     : (noBase
-      ? (reason === 'no-pristine' ? NO_PRESTINE_NOTE : (reason === 'not-exist' ? '该版本尚无此文件，无可比较内容' : '读取基线失败'))
+      ? (reason === 'no-pristine' ? uiText(NO_PRESTINE_NOTE, 'This file has no baseline (new uncommitted file); comparison unavailable', 'У файла нет базовой версии (новый файл без коммита); сравнение недоступно') : (reason === 'not-exist' ? uiText('该版本尚无此文件，无可比较内容', "This revision has no such file; nothing to compare", "В этой ревизии файла ещё нет; сравнивать нечего") : uiText('读取基线失败', "Failed to read baseline", "Не удалось прочитать базовую версию")))
       : '')
-  const shownMessage = blocked ? '' : (encodingHint ? '内容可能非 UTF-8，显示可能乱码' + (message ? '；' + message : '') : message)
+  const shownMessage = blocked ? '' : (encodingHint ? uiText('内容可能非 UTF-8，显示可能乱码', "Content may not be UTF-8 and may display incorrectly", "Содержимое может быть не в UTF-8 и отображаться неверно") + (message ? '；' + message : '') : message)
   return React.createElement(SideBySideDiff, {
     monaco,
     path,
@@ -53,7 +54,7 @@ export function SvnDiffPanel(props) {
     right: blocked ? '' : working,
     title: path,
     leftLabel: leftLabel || 'BASE',
-    rightLabel: rightLabel || '工作区',
+    rightLabel: rightLabel || uiText('工作区', "Workspace", "Рабочая область"),
     emptyNote: note,
     message: shownMessage,
     scheme: props.scheme || 'edrv-svn-base',

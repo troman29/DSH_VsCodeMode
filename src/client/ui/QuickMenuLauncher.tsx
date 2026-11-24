@@ -8,6 +8,7 @@
  * - 行悬停浮出「⋯」：编辑（弹窗内可删）/ 复制 / 删除；root 列底部固定「菜单设置」。
  * 作者 ddj 2026年10月30号
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { createPortal } from 'react-dom'
 import { watchQuickSize } from './quickMeasure.js'
@@ -428,16 +429,16 @@ export function QuickMenuLauncher(props: { host: QuickMenuHost }): React.ReactEl
     }
     const composed = composePrompt(item, { ...ctx, inlineContents, selection: selectionText(), date: todayText() })
     if (composed.text.trim() === '') {
-      host.notify('「' + item.name + '」没有可发送的内容')
+      host.notify('「' + item.name + uiText('」没有可发送的内容', "” has no content to send", "» не содержит текста для отправки"))
       return
     }
     if (composed.warnings.length > 0) {
-      host.notify('已跳过 ' + composed.warnings.length + ' 项失效绑定：' + composed.warnings[0])
+      host.notify(uiText('已跳过 ', "Skipped ", "Пропущено ") + composed.warnings.length + uiText(' 项失效绑定：', " invalid bindings: ", " неверных привязок: ") + composed.warnings[0])
     }
     const action = item.clickAction ?? doc.clickAction
     closeMenu()
     const result = action === 'fill' ? await host.fill(composed.text) : await host.send(composed.text)
-    if (!result.ok) host.notify(result.message ?? '操作失败')
+    if (!result.ok) host.notify(result.message ?? uiText('操作失败', "Operation failed", "Ошибка операции"))
   }
 
   /**
@@ -450,7 +451,7 @@ export function QuickMenuLauncher(props: { host: QuickMenuHost }): React.ReactEl
       ? { ...item, id: store.nextId('group'), name: item.name + ' 副本', order: item.order + 1 }
       : { ...item, id: store.nextId('button'), name: item.name + ' 副本', order: item.order + 1 }
     const result = await store.createItem(copy)
-    if (!result.ok) host.notify(result.error ?? '复制失败')
+    if (!result.ok) host.notify(result.error ?? uiText('复制失败', "Copy failed", "Не удалось скопировать"))
     setRowMenu(null)
   }
 
@@ -461,10 +462,10 @@ export function QuickMenuLauncher(props: { host: QuickMenuHost }): React.ReactEl
    */
   async function removeItem(item: QuickMenuItem): Promise<void> {
     setRowMenu(null)
-    const suffix = item.type === 'group' ? '及其全部子项' : ''
-    if (!window.confirm('确认删除「' + item.name + '」' + suffix + '？')) return
+    const suffix = item.type === 'group' ? uiText('及其全部子项', " and all its children", " и все вложенные элементы") : ''
+    if (!window.confirm(uiText('确认删除「', "Delete “", "Удалить «") + item.name + '」' + suffix + '？')) return
     const result = await store.removeItem(item.id)
-    if (!result.ok) host.notify(result.error ?? '删除失败')
+    if (!result.ok) host.notify(result.error ?? uiText('删除失败', "Delete failed", "Не удалось удалить"))
     setOpenPath([])
   }
 
@@ -472,10 +473,10 @@ export function QuickMenuLauncher(props: { host: QuickMenuHost }): React.ReactEl
     <div
       className={'edrv-qm-launcher' + (dragging ? ' edrv-qm-launcher--drag' : '') + (open ? ' edrv-qm-launcher--open' : '')}
       style={{ left: launcherPos.left, top: launcherPos.top }}
-      title="快捷菜单（拖动可移动，右键更多）"
+      title={uiText("快捷菜单（拖动可移动，右键更多）", "Quick menu (drag to move, right-click for more)", "Быстрое меню (перетащите для перемещения, правая кнопка — другие действия)")}
       role="button"
       tabIndex={0}
-      aria-label="快捷菜单"
+      aria-label={uiText("快捷菜单", "Quick menu", "Быстрое меню")}
       aria-expanded={open}
       onPointerDown={beginDrag}
       onKeyDown={(event) => {
@@ -502,10 +503,10 @@ export function QuickMenuLauncher(props: { host: QuickMenuHost }): React.ReactEl
     <div
       className="edrv-qm-launcher edrv-qm-launcher--mini"
       style={{ left: launcherPos.left, top: launcherPos.top }}
-      title="快捷菜单已隐藏，点击展开（右键打开设置）"
+      title={uiText("快捷菜单已隐藏，点击展开（右键打开设置）", "Quick menu hidden; click to expand (right-click for settings)", "Быстрое меню скрыто; нажмите для открытия (правая кнопка — настройки)")}
       role="button"
       tabIndex={0}
-      aria-label="快捷菜单（已隐藏）"
+      aria-label={uiText("快捷菜单（已隐藏）", "Quick menu (hidden)", "Быстрое меню (скрыто)")}
       onPointerDown={beginDrag}
       onKeyDown={(event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return
@@ -543,8 +544,8 @@ export function QuickMenuLauncher(props: { host: QuickMenuHost }): React.ReactEl
         onSettings={depth === 0 ? () => { setOpen(false); setDialog({ kind: 'global' }) } : undefined}
         onRetry={() => { void store.load(true) }}
         onEmptyHint={depth === 0
-          ? '把常做的提问连同技能、规则存成一个按钮，点一下就发出去。'
-          : '组里还没有内容，新建一个按钮或子组。'}
+          ? uiText('把常做的提问连同技能、规则存成一个按钮，点一下就发出去。', "Save frequent questions with skills and rules as a button, then send with one click.", "Сохраните частые запросы вместе с навыками и правилами в кнопку, чтобы отправлять одним нажатием.")
+          : uiText('组里还没有内容，新建一个按钮或子组。', "This group is empty. Create a button or subgroup.", "Эта группа пуста. Создайте кнопку или вложенную группу.")}
       />
     )
   }) : null
@@ -643,22 +644,22 @@ function QuickColumn(props: QuickColumnProps): React.ReactElement {
         ref={scrollRef}
         onScroll={(event) => props.onScroll(event.currentTarget.scrollTop)}
       >
-        {props.status === 'loading' && props.items.length === 0 ? <div className="edrv-qm-empty">正在读取菜单…</div> : null}
+        {props.status === 'loading' && props.items.length === 0 ? <div className="edrv-qm-empty">{uiText("正在读取菜单…", "Reading menu…", "Чтение меню…")}</div> : null}
         {props.status === 'error' && props.items.length === 0 ? (
           <div className="edrv-qm-empty">
-            <div className="edrv-qm-empty-title">菜单没读出来</div>
-            <div>{props.error ?? '读取失败'}</div>
-            <button type="button" className="edrv-qm-btn" onClick={props.onRetry}>重试</button>
+            <div className="edrv-qm-empty-title">{uiText("菜单没读出来", "Could not load menu", "Не удалось загрузить меню")}</div>
+            <div>{props.error ?? uiText('读取失败', "Read failed", "Ошибка чтения")}</div>
+            <button type="button" className="edrv-qm-btn" onClick={props.onRetry}>{uiText("重试", "Retry", "Повторить")}</button>
           </div>
         ) : null}
         {/* 空态是邀请：给一句说明 + 一个动作，列表里就不再重复「＋ 新建」行 */}
         {isEmpty ? (
           <div className="edrv-qm-empty">
-            <div className="edrv-qm-empty-title">{props.depth === 0 ? '还没有快捷项' : '这一组是空的'}</div>
+            <div className="edrv-qm-empty-title">{props.depth === 0 ? uiText('还没有快捷项', "No quick items yet", "Быстрых элементов ещё нет") : uiText('这一组是空的', "This group is empty", "Эта группа пуста")}</div>
             <div>{props.onEmptyHint}</div>
             {props.canAdd ? (
               <button type="button" className="edrv-qm-btn edrv-qm-btn--primary" onClick={props.onAdd}>
-                {props.depth === 0 ? '新建第一个' : '新建一项'}
+                {props.depth === 0 ? uiText('新建第一个', "Create the first item", "Создать первый элемент") : uiText('新建一项', "Create an item", "Создать элемент")}
               </button>
             ) : null}
           </div>
@@ -679,7 +680,7 @@ function QuickColumn(props: QuickColumnProps): React.ReactElement {
                 data-qm-row="1"
                 role="menuitem"
                 tabIndex={-1}
-                aria-label={item.type === 'group' ? item.name + '（组）' : item.name}
+                aria-label={item.type === 'group' ? item.name + uiText('（组）', " (group)", " (группа)") : item.name}
                 onPointerEnter={() => props.onHover(index, item)}
                 onClick={() => props.onActivate(item)}
               >
@@ -695,8 +696,8 @@ function QuickColumn(props: QuickColumnProps): React.ReactElement {
                 <button
                   type="button"
                   className="edrv-qm-row-more"
-                  title="编辑 / 复制 / 删除"
-                  aria-label={'「' + item.name + '」的更多操作'}
+                  title={uiText("编辑 / 复制 / 删除", "Edit / Copy / Delete", "Изменить / Копировать / Удалить")}
+                  aria-label={'「' + item.name + uiText('」的更多操作', "”: more actions", "»: другие действия")}
                   onClick={(event) => {
                     event.stopPropagation()
                     const rowRect: QuickRect = {
@@ -717,9 +718,9 @@ function QuickColumn(props: QuickColumnProps): React.ReactElement {
               className="edrv-qm-row edrv-qm-row--add"
               data-qm-row="1"
               role="menuitem"
-              aria-label="新建"
+              aria-label={uiText("新建", "New", "Создать")}
               onClick={props.onAdd}
-            >＋ 新建</div>
+            >{uiText("＋ 新建", "＋ New", "＋ Создать")}</div>
           ) : null}
         </div>
       </div>
@@ -727,7 +728,7 @@ function QuickColumn(props: QuickColumnProps): React.ReactElement {
         <div
           className="edrv-qm-foot"
           onClick={props.onSettings}
-          title="显示、点击动作、最大嵌套层数、导入导出"
+          title={uiText("显示、点击动作、最大嵌套层数、导入导出", "Display, click actions, nesting limit, import/export", "Отображение, действия нажатия, глубина вложенности, импорт/экспорт")}
           role="button"
           tabIndex={0}
           onKeyDown={(event) => {
@@ -742,7 +743,7 @@ function QuickColumn(props: QuickColumnProps): React.ReactElement {
               <path d="M8 1.9v1.7M8 12.4v1.7M1.9 8h1.7M12.4 8h1.7M3.7 3.7l1.2 1.2M11.1 11.1l1.2 1.2M12.3 3.7l-1.2 1.2M4.9 11.1l-1.2 1.2" />
             </svg>
           </span>
-          <span>菜单设置</span>
+          <span>{uiText("菜单设置", "Menu settings", "Настройки меню")}</span>
         </div>
       ) : null}
     </div>
@@ -771,10 +772,10 @@ function RowMenu(props: RowMenuProps): React.ReactElement {
       data-qm-root="1"
       role="menu"
     >
-      <div className="edrv-qm-context-item" role="menuitem" onClick={props.onEdit}>编辑</div>
-      <div className="edrv-qm-context-item" role="menuitem" onClick={props.onDuplicate}>复制</div>
+      <div className="edrv-qm-context-item" role="menuitem" onClick={props.onEdit}>{uiText("编辑", "Edit", "Изменить")}</div>
+      <div className="edrv-qm-context-item" role="menuitem" onClick={props.onDuplicate}>{uiText("复制", "Copy", "Копировать")}</div>
       <div className="edrv-qm-context-sep" />
-      <div className="edrv-qm-context-item edrv-qm-context-item--danger" role="menuitem" onClick={props.onDelete}>删除</div>
+      <div className="edrv-qm-context-item edrv-qm-context-item--danger" role="menuitem" onClick={props.onDelete}>{uiText("删除", "Delete", "Удалить")}</div>
     </div>
   )
 }

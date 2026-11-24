@@ -1,3 +1,4 @@
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 
@@ -39,11 +40,11 @@ export function ReviewAllRow(props: ReviewAllRowProps): React.ReactElement {
   const current = total && props.current > 0 ? props.current : 0
   const disabled = props.busy || !!props.unavailable || !props.pending
 
-  return <div className="edrv-review-global" role="group" aria-label="全部待审文件">
-    <Button size="sm" variant="ghost" className="edrv-review-total" onClick={props.onOpen} title="打开当前工作区全部待审差异文件">差异文件 <strong>{known ? `${current} / ${total}` : '—'}</strong></Button>
+  return <div className="edrv-review-global" role="group" aria-label={uiText("全部待审文件", "All pending files", "Все ожидающие файлы")}>
+    <Button size="sm" variant="ghost" className="edrv-review-total" onClick={props.onOpen} title={uiText("打开当前工作区全部待审差异文件", "Open all pending changed files in the current workspace", "Открыть все ожидающие изменённые файлы рабочей области")}>{uiText('差异文件 ', 'Changed files ', 'Изменённые файлы ')}<strong>{known ? `${current} / ${total}` : '—'}</strong></Button>
     <span className="edrv-review-all-actions">
-      <Button size="sm" variant="ghost" onClick={props.onKeepAll} disabled={disabled || !props.onKeepAll} title={props.unavailable || props.keepTitle || 'Keep 当前工作区全部待审文件'}>Keep All</Button>
-      <Button size="sm" variant="ghost" className="edrv-review-undo" onClick={props.onUndoAll} disabled={disabled || !props.onUndoAll} title={props.unavailable || props.undoTitle || 'Undo 当前工作区全部待审文件'}>Undo All</Button>
+      <Button size="sm" variant="ghost" onClick={props.onKeepAll} disabled={disabled || !props.onKeepAll} title={props.unavailable || props.keepTitle || uiText('Keep 当前工作区全部待审文件', "Keep all pending files in this workspace", "Keep для всех ожидающих файлов рабочей области")}>Keep All</Button>
+      <Button size="sm" variant="ghost" className="edrv-review-undo" onClick={props.onUndoAll} disabled={disabled || !props.onUndoAll} title={props.unavailable || props.undoTitle || uiText('Undo 当前工作区全部待审文件', "Undo all pending files in this workspace", "Undo для всех ожидающих файлов рабочей области")}>Undo All</Button>
     </span>
   </div>
 }

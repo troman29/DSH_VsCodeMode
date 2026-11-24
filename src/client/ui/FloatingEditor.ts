@@ -1,4 +1,5 @@
 /** In-page editor window; closing returns tabs, never closes documents. @author ddj 2026年10月14号 */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import type { FloatRect } from '../state/editorLayout.js'
 import { FloatingWindow } from './FloatingWindow.js'
@@ -24,10 +25,10 @@ export function FloatingEditor(props: FloatingProps): React.ReactElement {
   /** @private @author ddj 2026年10月14号 Bring the group to the foreground. */
   function focus(): void { props.onFocus(props.group) }
   const actions = React.createElement(React.Fragment, null,
-    React.createElement('button', { type: 'button', title: '将全部文件移回主编辑区', onClick: returnTabs }, '移回主编辑区'),
-    React.createElement('button', { type: 'button', title: '关闭浮窗并将文件移回主编辑区', 'aria-label': '关闭浮窗并移回文件', onClick: returnTabs }, '×'))
+    React.createElement('button', { type: 'button', title: uiText('将全部文件移回主编辑区', "Move all files back to the main editor", "Вернуть все файлы в основной редактор"), onClick: returnTabs }, uiText('移回主编辑区', "Return to main editor", "Вернуть в основной редактор")),
+    React.createElement('button', { type: 'button', title: uiText('关闭浮窗并将文件移回主编辑区', "Close floating window and return files to the main editor", "Закрыть плавающее окно и вернуть файлы в основной редактор"), 'aria-label': uiText('关闭浮窗并移回文件', "Close floating window and return files", "Закрыть плавающее окно и вернуть файлы"), onClick: returnTabs }, '×'))
   return React.createElement(FloatingWindow, {
-    title: '浮动编辑组', owner: props.owner, group: props.group, rect: props.rect,
+    title: uiText('浮动编辑组', "Floating editor group", "Плавающая группа редактора"), owner: props.owner, group: props.group, rect: props.rect,
     closeOnEsc: false, onBounds: bounds, onFocus: focus, actions,
   }, props.children)
 }

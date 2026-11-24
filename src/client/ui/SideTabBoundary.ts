@@ -8,6 +8,7 @@
  * 只收渲染/生命周期（含 useEffect）异常；事件回调与异步回调里的异常不在其职责内。
  * 作者 ddj 2026年11月23号
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 
 /** 错误边界输入（无自有属性，纯隔离层）。 */
@@ -51,9 +52,9 @@ export class SideTabBoundary extends React.Component<SideTabBoundaryProps, SideT
   render(): React.ReactNode {
     if (!this.state.error) return this.props.children ?? null
     return React.createElement('div', { className: 'edrv-empty', role: 'alert' },
-      React.createElement('div', null, '文件编辑器渲染失败：' + String(this.state.error.message)),
+      React.createElement('div', null, uiText('文件编辑器渲染失败：', "File editor rendering failed: ", "Ошибка отображения файлового редактора: ") + String(this.state.error.message)),
       React.createElement('div', { style: { fontSize: 12, opacity: 0.75, maxWidth: 420, lineHeight: 1.6 } },
-        '右侧面板已被就地隔离，对话与审批不受影响。点「重试」可重建编辑器。'),
-      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: this.retry }, '重试'))
+        uiText('右侧面板已被就地隔离，对话与审批不受影响。点「重试」可重建编辑器。', "The right panel is isolated; conversation and approvals are unaffected. Click Retry to rebuild the editor.", "Правая панель изолирована; диалог и подтверждения не затронуты. Нажмите «Повторить» для восстановления редактора.")),
+      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: this.retry }, uiText('重试', "Retry", "Повторить")))
   }
 }

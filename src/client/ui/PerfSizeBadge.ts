@@ -6,6 +6,7 @@
  * 引导"一次任务一个短会话"：会话过大时建议 /compact 或新开会话。
  * 作者 ddj 2026-09-02
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { rpc } from '../rpc.js'
 import { subscribeTick } from '../state/recordsFeed.js'
@@ -49,9 +50,9 @@ export function PerfSizeBadge(props) {
   if (!size || size < SHOW_MIN) return null
   const label = size >= 1024 * 1024 ? (size / (1024 * 1024)).toFixed(1) + 'MB' : Math.round(size / 1024) + 'KB'
   const color = size >= HARD ? '#dc2626' : size >= SOFT ? '#d97706' : 'var(--dsw-text-3,#6b7280)'
-  const tip = '当前会话已持久化 ' + label + '（启动回放约放大 10×，占内存）。过大建议 /compact 或新开会话。'
+  const tip = uiText('当前会话已持久化 ', "Current session persisted size: ", "Размер сохранённой сессии: ") + label + uiText('（启动回放约放大 10×，占内存）。过大建议 /compact 或新开会话。', " (startup replay uses roughly 10× this in memory). For large sessions, use /compact or start a new session.", " (при восстановлении занимает примерно в 10 раз больше памяти). Для большой сессии используйте /compact или создайте новую.")
   return React.createElement('span', {
     style: { display: 'inline-flex', alignItems: 'center', height: 30, padding: '0 8px', fontSize: 11, color, borderRadius: 6, cursor: 'default', whiteSpace: 'nowrap', gap: 4, lineHeight: '30px' },
     title: tip,
-  }, '会话 ' + label)
+  }, uiText('会话 ', "Session ", "Сессия ") + label)
 }

@@ -6,6 +6,7 @@
  * 宿主单实例由 store 的 claimPaletteHost 保证（另一个宿主自动返回 null）。
  * 作者 ddj 2026年09月10号
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { createPortal } from 'react-dom'
 import { REGISTRY_GLOBAL } from '../commandGlobals.js'
@@ -135,7 +136,7 @@ export function CommandPalette(): React.ReactElement | null {
   const execute = (row: PaletteRow | undefined): void => {
     if (!row) return
     closeCommandPalette()
-    if (!runPaletteCommand(row.command.id)) setNotice('命令未执行：' + row.command.label)
+    if (!runPaletteCommand(row.command.id)) setNotice(uiText('命令未执行：', "Command not executed: ", "Команда не выполнена: ") + row.command.label)
   }
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
@@ -169,14 +170,14 @@ export function CommandPalette(): React.ReactElement | null {
         React.createElement('span', { className: 'edrv-palette-label' }, row.command.label),
         React.createElement('span', { className: 'edrv-palette-cat' }, row.command.category),
         row.chord ? React.createElement('kbd', { className: 'edrv-palette-key' }, row.chord) : null))
-    : React.createElement('div', { className: 'edrv-palette-empty' }, '无匹配命令')
+    : React.createElement('div', { className: 'edrv-palette-empty' }, uiText('无匹配命令', "No matching commands", "Нет подходящих команд"))
 
   const panel = React.createElement('div', { className: 'edrv-palette', 'data-edrv-palette': '1', onKeyDown },
     React.createElement('input', {
       ref: inputRef,
       className: 'edrv-palette-input',
       value: query,
-      placeholder: '输入命令名称…（↑↓ 选择 · Enter 执行 · Esc 关闭）',
+      placeholder: uiText('输入命令名称…（↑↓ 选择 · Enter 执行 · Esc 关闭）', "Enter command name… (↑↓ select · Enter run · Esc close)", "Введите имя команды… (↑↓ выбор · Enter запуск · Esc закрытие)"),
       spellCheck: false,
       onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
         setQuery(event.target.value)

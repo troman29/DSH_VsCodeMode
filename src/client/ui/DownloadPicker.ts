@@ -10,6 +10,7 @@
  * 因此自动满足 tests/overlayScope.test.ts 的 data-edrv-view 契约。
  * 作者 ddj 2026年11月03号
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { rpc } from '../rpc.js'
@@ -112,9 +113,9 @@ export function DownloadPicker(props: DownloadPickerProps): React.ReactElement {
     width: 'min(640px, calc(100vw - 40px))',
     onClose,
   },
-    React.createElement('h3', null, '下载到本机'),
-    React.createElement('div', { className: 'edrv-dl-sub' }, root ? '/' + root : '工作区根目录'),
-    React.createElement('div', { className: 'edrv-dl-hint' }, '点下载后会先选择保存文件夹，文件按相对路径写入'),
+    React.createElement('h3', null, uiText('下载到本机', "Download to this device", "Скачать на это устройство")),
+    React.createElement('div', { className: 'edrv-dl-sub' }, root ? '/' + root : uiText('工作区根目录', "Workspace root directory", "Корневая папка рабочей области")),
+    React.createElement('div', { className: 'edrv-dl-hint' }, uiText('点下载后会先选择保存文件夹，文件按相对路径写入', "Choose a destination folder when downloading; files retain their relative paths", "При скачивании выберите целевую папку; файлы сохранят относительные пути")),
     renderTree({ state, root, rows, empty, loadDir, renderRow, onToggleDir, onToggleFile }),
     renderFoot({
       picked,
@@ -149,9 +150,9 @@ function renderTree(opts: TreeOpts): React.ReactElement {
   const { state, root, rows, empty, loadDir, renderRow } = opts
   return React.createElement('div', { className: 'edrv-dl-tree' },
     rows.length ? rows.map(renderRow) : null,
-    state.loading.has(root) ? React.createElement('div', { className: 'edrv-dl-hint' }, '加载中…') : null,
+    state.loading.has(root) ? React.createElement('div', { className: 'edrv-dl-hint' }, uiText('加载中…', "Loading…", "Загрузка…")) : null,
     state.errors.has(root) ? renderRetry(root, state.errors.get(root) || '', loadDir) : null,
-    empty ? React.createElement('div', { className: 'edrv-dl-hint' }, '此文件夹内没有可下载的文件') : null,
+    empty ? React.createElement('div', { className: 'edrv-dl-hint' }, uiText('此文件夹内没有可下载的文件', "No downloadable files in this folder", "В этой папке нет файлов для скачивания")) : null,
   )
 }
 
@@ -174,16 +175,16 @@ interface FootOpts {
 function renderFoot(opts: FootOpts): React.ReactElement {
   const { picked, rows, onSelectAll, onClear, onClose, onConfirm } = opts
   return React.createElement('div', { className: 'edrv-dl-foot' },
-    React.createElement('span', { className: 'edrv-dl-count' }, '已选 ' + picked.length + ' 个文件'),
-    React.createElement('button', { type: 'button', disabled: !rows.length, onClick: onSelectAll }, '全选已展开'),
-    React.createElement('button', { type: 'button', disabled: !picked.length, onClick: onClear }, '清空'),
-    React.createElement('button', { type: 'button', onClick: onClose }, '取消'),
+    React.createElement('span', { className: 'edrv-dl-count' }, uiText('已选 ', "Selected ", "Выбрано ") + picked.length + uiText(' 个文件', " files", " файлов")),
+    React.createElement('button', { type: 'button', disabled: !rows.length, onClick: onSelectAll }, uiText('全选已展开', "Select all expanded", "Выбрать всё раскрытое")),
+    React.createElement('button', { type: 'button', disabled: !picked.length, onClick: onClear }, uiText('清空', "Clear", "Очистить")),
+    React.createElement('button', { type: 'button', onClick: onClose }, uiText('取消', "Cancel", "Отмена")),
     React.createElement('button', {
       type: 'button',
       className: 'edrv-dl-go',
       disabled: !picked.length,
       onClick: () => onConfirm(picked),
-    }, '选择位置并下载 ' + picked.length + ' 个文件'),
+    }, uiText('选择位置并下载 ', "Choose destination and download ", "Выбрать папку и скачать ") + picked.length + uiText(' 个文件', " files", " файлов")),
   )
 }
 
@@ -211,7 +212,7 @@ function renderDirRow(
   },
     React.createElement('span', { className: 'edrv-dl-twist' }, row.expanded ? '▾' : '▸'),
     React.createElement('span', { className: 'edrv-dl-name edrv-dl-dir' }, row.name),
-    row.loading ? React.createElement('span', { className: 'edrv-dl-hint' }, '加载中…') : null,
+    row.loading ? React.createElement('span', { className: 'edrv-dl-hint' }, uiText('加载中…', "Loading…", "Загрузка…")) : null,
     row.error ? renderRetry(row.path, row.error, retry) : null,
   )
 }
@@ -239,7 +240,7 @@ function renderFileRow(
     }),
     React.createElement('span', { className: 'edrv-dl-name', onClick: () => onToggle(row.path) }, row.name),
     oversized
-      ? React.createElement('span', { className: 'edrv-dl-size is-large' }, '超过 32MB')
+      ? React.createElement('span', { className: 'edrv-dl-size is-large' }, uiText('超过 32MB', "Over 32MB", "Больше 32MB"))
       : (typeof row.size === 'number' ? React.createElement('span', { className: 'edrv-dl-size' }, formatSize(row.size)) : null),
   )
 }
@@ -262,7 +263,7 @@ function renderRetry(path: string, message: string, retry: (path: string) => Pro
         event.stopPropagation()
         void retry(path)
       },
-    }, '重试'),
+    }, uiText('重试', "Retry", "Повторить")),
   )
 }
 

@@ -6,6 +6,8 @@
  * 组件仍用 React.createElement（项目内无 JSX），样式落在 quickmenu.css 的 edrv-qm-pick* 类上。
  * 作者 ddj 2026年10月30号
  */
+import { sharedDisplay } from '../sharedDisplay.js'
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { selectionLabel, toggleWorkspace, workspaceLabel } from '../../shared/quickPick.js'
 
@@ -305,7 +307,7 @@ function PickOptionRow(props: OptionProps) {
       role: 'option',
       className: classes('edrv-qm-pick-option', props.picked && 'edrv-qm-pick-option--on'),
       'aria-selected': props.picked,
-      title: option.reason ?? option.hint,
+      title: option.reason ? sharedDisplay(option.reason) : option.hint,
       onClick: () => props.onToggle(option.key),
     },
     React.createElement(
@@ -437,7 +439,7 @@ export function PickWorkspace(props: PickWorkspaceProps) {
   const quick = [
     React.createElement(PickOptionRow, {
       key: '__all__',
-      option: { key: '__all__', label: '全部工作区', hint: '菜单在所有工作区可见' },
+      option: { key: '__all__', label: uiText('全部工作区', "All workspaces", "Все рабочие области"), hint: uiText('菜单在所有工作区可见', "Menu visible in all workspaces", "Меню видно во всех рабочих областях") },
       picked: isAll,
       onToggle: onPickAll,
     }),
@@ -445,8 +447,8 @@ export function PickWorkspace(props: PickWorkspaceProps) {
       key: '__current__',
       option: {
         key: '__current__',
-        label: '当前工作区',
-        hint: currentPath || '当前没有活跃工作区',
+        label: uiText('当前工作区', "Current workspace", "Текущая рабочая область"),
+        hint: currentPath || uiText('当前没有活跃工作区', "No active workspace", "Нет активной рабочей области"),
       },
       picked: isCurrent,
       onToggle: onPickCurrent,
@@ -470,7 +472,7 @@ export function PickWorkspace(props: PickWorkspaceProps) {
       'aria-expanded': more,
       onClick: () => setMore(!more),
     },
-    more ? '收起工作区列表' : '更多工作区（' + String(props.workspaces.length) + '）',
+    more ? uiText('收起工作区列表', "Collapse workspace list", "Свернуть список рабочих областей") : uiText('更多工作区（', "More workspaces (", "Другие рабочие области (") + String(props.workspaces.length) + '）',
   )
 
   return React.createElement(
@@ -482,7 +484,7 @@ export function PickWorkspace(props: PickWorkspaceProps) {
       summary: summary.label,
       open: anchor.open,
       disabled,
-      hint: disabled ? props.inheritedHint : '点开选择生效范围',
+      hint: disabled ? props.inheritedHint : uiText('点开选择生效范围', "Click to select scope", "Нажмите для выбора области действия"),
       onClick: anchor.toggle,
     }),
     anchor.open

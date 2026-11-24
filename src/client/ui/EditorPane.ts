@@ -1,4 +1,5 @@
 /** Independent group views; workbench owns documents, saves and commands. @author ddj 2026年10月14号 */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { createViewKeeper, type ViewEditor } from '../state/editorViewState.js'
 import type { Group } from '../state/editorLayout.js'
@@ -84,11 +85,11 @@ export function EditorPane(props: PaneProps): React.ReactElement {
     return React.createElement('div', {
       key: tab.path, 'data-edrv-tab-path': tab.path, role: 'tab', tabIndex: 0, 'aria-selected': selected,
       className: 'edrv-tab' + (selected ? ' edrv-tab-active' : '') + (tab.pinned ? ' edrv-tab-pinned' : ''),
-      title: tab.path + (tab.pinned ? '（已固定）' : ''), onPointerDown: press, onClick: select, onContextMenu: menu, onKeyDown: key,
+      title: tab.path + (tab.pinned ? uiText('（已固定）', " (pinned)", " (закреплено)") : ''), onPointerDown: press, onClick: select, onContextMenu: menu, onKeyDown: key,
     }, tab.pinned ? React.createElement('span', { className: 'edrv-tab-pin' }, '📌') : null,
     React.createElement('span', { className: 'edrv-group-tab-name' }, tab.path.split(/[\\/]/).pop()),
-    props.dirty[tab.path] ? React.createElement('span', { className: 'edrv-tab-star', title: '未保存修改' }, '*') : null,
-    tab.pinned ? null : React.createElement('button', { className: 'edrv-tab-x', type: 'button', 'aria-label': '关闭 ' + tab.path, title: '关闭', onPointerDown: stop, onClick: close }, '×'))
+    props.dirty[tab.path] ? React.createElement('span', { className: 'edrv-tab-star', title: uiText('未保存修改', "Unsaved changes", "Несохранённые изменения") }, '*') : null,
+    tab.pinned ? null : React.createElement('button', { className: 'edrv-tab-x', type: 'button', 'aria-label': uiText('关闭 ', "Close ", "Закрыть ") + tab.path, title: uiText('关闭', "Close", "Закрыть"), onPointerDown: stop, onClick: close }, '×'))
   }
   /** @private @author ddj 2026年10月14号 @param event Group background press. Allow an empty main group to receive new files. */
   function focusEmpty(event: React.PointerEvent): void {
@@ -122,10 +123,10 @@ export interface PassiveProps {
  * @returns 恒定 26px 高的路径条元素。
  */
 export function GroupPathbar(props: { path: string | null; onFocus?(): void }): React.ReactElement {
-  const name = props.path ? props.path.split(/[\\/]/).pop() : '未打开文件'
+  const name = props.path ? props.path.split(/[\\/]/).pop() : uiText('未打开文件', "No file open", "Файл не открыт")
   return React.createElement('div', {
     className: 'edrv-pathbar', 'data-edrv-pb-static': '1',
-    title: props.path || '此分页未打开文件', onClick: props.onFocus,
+    title: props.path || uiText('此分页未打开文件', "No file open in this pane", "В этой панели файл не открыт"), onClick: props.onFocus,
   },
   React.createElement('span', { className: 'edrv-pb-name' }, name),
   React.createElement('span', { className: 'edrv-pb-full' }, props.path || ''))

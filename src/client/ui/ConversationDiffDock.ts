@@ -5,6 +5,7 @@
  * 轮询已收敛到 state/recordsFeed.ts 的会话级共享订阅，本组件不再自建定时器。
  * 作者 ddj 2026-08-26
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { openDiffView } from '../events.js'
 import { recoverComposer, watchComposer } from '../composerState.js'
@@ -67,12 +68,12 @@ export function ConversationDiffDock(props) {
   const crashHint = composerBroken
     ? renderDock(React.createElement('div', { className: 'edrv-composer-crash' },
       React.createElement('span', { className: 'edrv-composer-crash-text' },
-        '对话输入框渲染失败（官方槽抛错后不会自愈），点右侧按钮恢复'),
+        uiText('对话输入框渲染失败（官方槽抛错后不会自愈），点右侧按钮恢复', "Conversation input failed to render (the built-in slot cannot recover itself). Click the button on the right to restore it.", "Не удалось отобразить поле ввода диалога (встроенный слот не восстанавливается сам). Нажмите кнопку справа для восстановления.")),
       React.createElement('button', {
         type: 'button',
         className: 'edrv-composer-crash-fix',
         onClick: recoverComposer,
-      }, '恢复输入框')), 'edrv-composer-crash')
+      }, uiText('恢复输入框', "Restore input", "Восстановить поле ввода"))), 'edrv-composer-crash')
     : null
   if (editorSnapshot) {
     if (!dockInLayout(editorSnapshot, 'tab')) return React.createElement(React.Fragment, null, crashHint, palette)

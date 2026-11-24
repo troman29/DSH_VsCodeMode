@@ -9,6 +9,7 @@
  * Esc 交由底层日志弹窗处理（嵌套 ModalShell 同键会连关两层，故统计窗只走 ✕/遮罩关闭）。
  * 作者 ddj 2026年09月17号
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { FloatingWindow } from './FloatingWindow.js'
 
@@ -60,7 +61,7 @@ export function svnLogStatsOf(entries, opts = {}) {
     days.set(day, d)
   }
   const authorList = [...authors.entries()]
-    .map(([key, a]) => ({ key, name: a.name, count: a.count }))
+    .map(([key, a]) => ({ key, get name() { return a.name === '（无作者）' ? uiText('（无作者）', '(No author)', '(Нет автора)') : a.name }, count: a.count }))
     .sort((x, y) => y.count - x.count || x.key.localeCompare(y.key))
   const dayList = [...days.entries()]
     .map(([day, d]) => ({ day, count: d.count, byKey: d.byKey }))
@@ -96,9 +97,9 @@ function StatsHead(props) {
   const { stats } = props
   const period = stats.minDate ? stats.minDate + ' ~ ' + stats.maxDate : '—'
   return React.createElement('div', { className: 'edrv-svnlog-stat-line' },
-    React.createElement('span', null, '修订总数：' + stats.total),
-    React.createElement('span', null, '期间：' + period),
-    React.createElement('span', null, '作者数：' + stats.authors.length))
+    React.createElement('span', null, uiText('修订总数：', "Total revisions: ", "Всего ревизий: ") + stats.total),
+    React.createElement('span', null, uiText('期间：', "Period: ", "Период: ") + period),
+    React.createElement('span', null, uiText('作者数：', "Authors: ", "Авторов: ") + stats.authors.length))
 }
 
 /**
@@ -120,7 +121,7 @@ function AuthorBars(props) {
       })),
     React.createElement('span', { className: 'edrv-svnlog-stat-count' }, String(a.count)))
   const rows = main.map((a, i) => row(a, TONES[i % TONES.length], a.name))
-  if (otherCount > 0) rows.push(row({ key: '__others__', count: otherCount }, '#888a85', '其他'))
+  if (otherCount > 0) rows.push(row({ key: '__others__', count: otherCount }, '#888a85', uiText('其他', "Others", "Прочие")))
   return React.createElement('div', { className: 'edrv-svnlog-stat-hist' }, rows)
 }
 
@@ -148,7 +149,7 @@ function AuthorPie(props) {
   return React.createElement('div', {
     className: 'edrv-svnlog-stat-pie',
     style: { background: 'conic-gradient(' + stops.join(',') + ')' },
-    title: main.map((a) => a.name + ' ' + a.count).join('，') + (otherCount ? '，其他 ' + otherCount : ''),
+    title: main.map((a) => a.name + ' ' + a.count).join('，') + (otherCount ? uiText('，其他 ', ", others ", ", прочие ") + otherCount : ''),
   })
 }
 
@@ -182,7 +183,7 @@ function DayBars(props) {
     }
     return React.createElement('div', {
       key: d.day, className: 'edrv-svnlog-stat-day',
-      title: d.day + '：' + d.count + ' 条',
+      title: d.day + '：' + d.count + uiText(' 条', " entries", " записей"),
     },
       segs.map((s) => React.createElement('span', {
         key: s.key, className: 'edrv-svnlog-stat-seg',
@@ -206,37 +207,37 @@ export function SvnLogStats(props) {
   const [stacked, setStacked] = React.useState(false)
   const stats = React.useMemo(() => svnLogStatsOf(entries, { caseInsensitive: ci }), [entries, ci])
   return React.createElement(FloatingWindow, {
-    title: 'SVN 日志统计', height: 600,
+    title: uiText('SVN 日志统计', "SVN log statistics", "Статистика журнала SVN"), height: 600,
     dialogClass: 'edrv-svnlog-stats',
     width: 680,
     onClose,
   },
     React.createElement('div', { className: 'edrv-svnlog-stats-head' },
-      React.createElement('h3', { className: 'edrv-svnlog-title' }, 'Statistics'),
+      React.createElement('h3', { className: 'edrv-svnlog-title' }, uiText('Statistics', "Statistics", "Статистика")),
       React.createElement('span', { style: { flex: 1 } }),
-      React.createElement('button', { className: 'edrv-svn-act', title: '关闭', onClick: onClose }, '✕')),
+      React.createElement('button', { className: 'edrv-svn-act', title: uiText('关闭', "Close", "Закрыть"), onClick: onClose }, '✕')),
     (stats.total === 0
       ? React.createElement('div', { className: 'edrv-svnlog-stats-body' },
-          React.createElement('div', { className: 'edrv-tree-loading' }, '暂无可统计的条目'))
+          React.createElement('div', { className: 'edrv-tree-loading' }, uiText('暂无可统计的条目', 'No entries to summarize', 'Нет записей для статистики')))
       : React.createElement('div', { className: 'edrv-svnlog-stats-body' },
           React.createElement(StatsHead, { stats }),
           React.createElement('div', { className: 'edrv-svnlog-stat-block' },
             React.createElement('div', { className: 'edrv-svnlog-stat-label' },
-              'Commits by author',
-              React.createElement('label', { className: 'edrv-svnlog-check', title: '作者名不区分大小写归并统计' },
+              uiText('Commits by author', "Commits by author", "Коммиты по авторам"),
+              React.createElement('label', { className: 'edrv-svnlog-check', title: uiText('作者名不区分大小写归并统计', "Merge author names case-insensitively", "Объединять имена авторов без учёта регистра") },
                 React.createElement('input', { type: 'checkbox', checked: ci, onChange: (e) => setCi(e.target.checked) }),
-                'Authors case insensitive'),
-              React.createElement('label', { className: 'edrv-svnlog-check', title: '占比低于阈值的作者并入「其他」' },
-                '其他阈值 ' + othersPct + '%',
+                uiText('Authors case insensitive', "Authors case insensitive", "Без учёта регистра авторов")),
+              React.createElement('label', { className: 'edrv-svnlog-check', title: uiText('占比低于阈值的作者并入「其他」', "Group authors below the threshold into Others", "Объединять авторов ниже порога в «Прочие»") },
+                uiText('其他阈值 ', "Others threshold ", "Порог «Прочие» ") + othersPct + '%',
                 React.createElement('input', { type: 'range', min: 0, max: 50, step: 5, value: othersPct, onChange: (e) => setOthersPct(Number(e.target.value)) }))),
             React.createElement('div', { className: 'edrv-svnlog-stat-duo' },
               React.createElement(AuthorBars, { stats, othersPct }),
               React.createElement(AuthorPie, { stats, othersPct }))),
           React.createElement('div', { className: 'edrv-svnlog-stat-block' },
             React.createElement('div', { className: 'edrv-svnlog-stat-label' },
-              'Commits by date',
-              React.createElement('label', { className: 'edrv-svnlog-check', title: '按作者分段堆叠（前 ' + STACK_TOP + ' 位作者，其余并入「其他」）' },
+              uiText('Commits by date', "Commits by date", "Коммиты по датам"),
+              React.createElement('label', { className: 'edrv-svnlog-check', title: uiText('按作者分段堆叠（前 ', "Stack by author (top ", "Группировать по авторам (первые ") + STACK_TOP + uiText(' 位作者，其余并入「其他」）', " authors; rest grouped into Others)", " авторов; остальные в «Прочие»)") },
                 React.createElement('input', { type: 'checkbox', checked: stacked, onChange: (e) => setStacked(e.target.checked) }),
-                'stacked')),
+                uiText('stacked', "Stacked", "С группировкой"))),
             React.createElement(DayBars, { stats, stacked })))))
 }

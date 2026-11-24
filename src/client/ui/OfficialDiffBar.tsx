@@ -1,3 +1,4 @@
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { Button, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ReviewDetail, ReviewItem, ReviewPage } from '../../shared/review.js'
@@ -63,14 +64,14 @@ export function barIcon(mark: Mark): React.ReactElement {
  */
 function keepTitle(hint: string, live: boolean): string {
   if (live) return hint
-  return `${hint}（会话在另一端激活：Keep 写入共享审查库，仍可执行）`
+  return uiText(`${hint}（会话在另一端激活：Keep 写入共享审查库，仍可执行）`, `${hint} (session active on another client: Keep writes to the shared review store and remains available)`, `${hint} (сессия активна в другом клиенте: Keep записывает в общее хранилище проверки и остаётся доступным)`)
 }
 
 /** @public @author ddj 2026年10月27号 @param props Existing review callbacks and immutable record metadata. @returns Responsive review toolbar; no disk or decision side effects until an explicit action. */
 export function OfficialDiffBar(props: OfficialBarProps): React.ReactElement {
   const { official, pendingRegions = [], staleRegions = [], diffIdx = 0 } = props
   const [menu, setMenu] = React.useState<'more' | null>(null)
-  const name = String(props.activePath || '').split(/[\\/]/).pop() || '当前文件'
+  const name = String(props.activePath || '').split(/[\\/]/).pop() || uiText('当前文件', "Current file", "Текущий файл")
   const detail = official.detail
   const count = pendingRegions.length
   const view = reviewBarView({ jumps: count, stale: staleRegions.length, index: diffIdx, ready: props.contentReady === true,
@@ -86,9 +87,9 @@ export function OfficialDiffBar(props: OfficialBarProps): React.ReactElement {
     return <Button size="sm" variant="ghost" className="edrv-review-icon" aria-label={label} title={title || label} disabled={disabled} onClick={action}>{barIcon(mark)}</Button>
   }
 
-  const moreTrigger = <Button size="sm" variant="ghost" className="edrv-review-icon" aria-label="更多审查操作" title="更多审查操作" aria-haspopup="menu" aria-expanded={menu === 'more'} onClick={() => setMenu(menu === 'more' ? null : 'more')}>{barIcon('more')}</Button>
+  const moreTrigger = <Button size="sm" variant="ghost" className="edrv-review-icon" aria-label={uiText("更多审查操作", "More review actions", "Другие действия проверки")} title={uiText("更多审查操作", "More review actions", "Другие действия проверки")} aria-haspopup="menu" aria-expanded={menu === 'more'} onClick={() => setMenu(menu === 'more' ? null : 'more')}>{barIcon('more')}</Button>
 
-  return <div className="edrv-diffbar edrv-diffbar-dock edrv-reviewbar" data-edrv-diffbox="1" data-edrv-diff-source="official" role="region" aria-label="文件差异审查">
+  return <div className="edrv-diffbar edrv-diffbar-dock edrv-reviewbar" data-edrv-diffbox="1" data-edrv-diff-source="official" role="region" aria-label={uiText("文件差异审查", "File diff review", "Проверка различий файла")}>
     <ReviewAllRow
       total={props.fileTotal ?? null}
       current={(props.fileTotal ?? 0) && (props.fileIdx ?? -1) >= 0 ? (props.fileIdx ?? 0) + 1 : 0}
@@ -98,29 +99,29 @@ export function OfficialDiffBar(props: OfficialBarProps): React.ReactElement {
       onOpen={() => props.onOpenLauncher('pending')}
       onKeepAll={props.onAcceptAllFiles}
       onUndoAll={props.onUndoAllFiles}
-      keepTitle="Keep 当前工作区全部待审文件（含其他轮次），不改写磁盘"
-      undoTitle="检查全部待审记录后逐项 Undo；缺少证据或遇到冲突停止，不强制覆盖"
+      keepTitle={uiText("Keep 当前工作区全部待审文件（含其他轮次），不改写磁盘", "Keep all pending workspace files (including other turns) without rewriting disk", "Keep для всех ожидающих файлов рабочей области (включая другие ходы), без перезаписи диска")}
+      undoTitle={uiText("检查全部待审记录后逐项 Undo；缺少证据或遇到冲突停止，不强制覆盖", "Check all pending records, then Undo individually; stop on missing evidence or conflicts, never force overwrite", "Проверить все ожидающие записи и выполнять Undo по одной; остановиться при нехватке данных или конфликте, без принудительной перезаписи")}
     />
-    {props.reviewBatchBusy ? <div className="edrv-review-notice" role="status">正在处理全部待审记录…</div> : null}
+    {props.reviewBatchBusy ? <div className="edrv-review-notice" role="status">{uiText("正在处理全部待审记录…", "Processing all pending records…", "Обработка всех ожидающих записей…")}</div> : null}
     <div className="edrv-review-heading">
       <span className="edrv-review-filemark">{barIcon('file')}</span>
       <span className="edrv-review-filename" title={props.activePath}>{name}</span>
-      <span className="edrv-review-pending" title={view.pendingTitle}>待审 <strong>{official.pending}</strong></span>
+      <span className="edrv-review-pending" title={view.pendingTitle}>{uiText("待审 ", "Pending ", "Ожидают проверки ")}<strong>{official.pending}</strong></span>
     </div>
     <div className="edrv-review-tools">
-      <div className="edrv-review-nav" role="group" aria-label="文件导航">
-        {navButton('left', '上一个差异文件', props.onPrevFile, !props.fileTotal)}
-        {navButton('right', '下一个差异文件', props.onNextFile, !props.fileTotal)}
+      <div className="edrv-review-nav" role="group" aria-label={uiText("文件导航", "File navigation", "Навигация по файлам")}>
+        {navButton('left', uiText('上一个差异文件', "Previous changed file", "Предыдущий изменённый файл"), props.onPrevFile, !props.fileTotal)}
+        {navButton('right', uiText('下一个差异文件', "Next changed file", "Следующий изменённый файл"), props.onNextFile, !props.fileTotal)}
       </div>
-      <div className="edrv-review-nav edrv-review-blocknav" role="group" aria-label="差异导航">
-        {navButton('up', '上一个差异', props.onPrevDiff, !count, view.navPrevTitle)}
+      <div className="edrv-review-nav edrv-review-blocknav" role="group" aria-label={uiText("差异导航", "Diff navigation", "Навигация по различиям")}>
+        {navButton('up', uiText('上一个差异', "Previous diff", "Предыдущее различие"), props.onPrevDiff, !count, view.navPrevTitle)}
         <span className="edrv-review-position" aria-live="polite">{view.position}</span>
-        {navButton('down', '下一个差异', props.onNextDiff, !count, view.navNextTitle)}
+        {navButton('down', uiText('下一个差异', "Next diff", "Следующее различие"), props.onNextDiff, !count, view.navNextTitle)}
       </div>
       <div className="edrv-review-actions">
         <Button size="sm" variant="ghost" className="edrv-review-undo" icon={barIcon('undo')} onClick={props.onUndoFile} disabled={props.reviewBatchBusy || !detail?.capability.undo} title={detail?.capability.reason}>Undo</Button>
         <Button size="sm" variant="primary" className="edrv-review-keep" icon={barIcon('check')} onClick={props.onAcceptFile} disabled={props.reviewBatchBusy || !detail?.capability.keep} title={detail?.capability.keep ? keepTitle(view.keepHint, detail.capability.live !== false) : detail?.capability.reason}>Keep</Button>
-        <Menu open={menu === 'more'} anchor={moreTrigger} items={[{ id: 'pending', label: '差异总览' }, { id: 'archive', label: '归档 / 历史' }]} onSelect={openOverview} onClose={closeMenu} side="top" align="end" portal compact autoFocus />
+        <Menu open={menu === 'more'} anchor={moreTrigger} items={[{ id: 'pending', label: uiText('差异总览', "Diff overview", "Обзор различий") }, { id: 'archive', label: uiText('归档 / 历史', "Archive / History", "Архив / История") }]} onSelect={openOverview} onClose={closeMenu} side="top" align="end" portal compact autoFocus />
       </div>
     </div>
     {detail && view.notice ? <div className={view.noticeTone === 'warn' ? 'edrv-review-notice edrv-review-notice-warn' : 'edrv-review-notice'} role="status">{view.notice}</div> : null}

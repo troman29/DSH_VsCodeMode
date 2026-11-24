@@ -1,7 +1,8 @@
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { Button, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import { callIdAttr } from '../state/records.js'
-import { SIDECAR_KEEP_TITLE, SIDECAR_LABEL, SIDECAR_LABEL_TITLE, SIDECAR_UNDO_TITLE, reviewBarView } from '../reviewBar.js'
+import { sidecarKeepTitle, sidecarLabel, sidecarLabelTitle, sidecarUndoTitle, reviewBarView } from '../reviewBar.js'
 import type { OfficialDownView } from '../reviewBar.js'
 import { barIcon } from './OfficialDiffBar.js'
 import { ReviewAllRow } from './reviewAllRow.js'
@@ -64,7 +65,7 @@ export function SidecarDiffBar(props: SidecarBarProps): React.ReactElement {
   const pendingRegions = props.pendingRegions ?? []
   const staleRegions = props.staleRegions ?? []
   const [menu, setMenu] = React.useState<'more' | null>(null)
-  const name = String(props.activePath || '').split(/[\\/]/).pop() || '当前文件'
+  const name = String(props.activePath || '').split(/[\\/]/).pop() || uiText('当前文件', "Current file", "Текущий файл")
   const count = pendingRegions.length
   const total = count + staleRegions.length
   const busy = props.reviewBatchBusy === true
@@ -83,9 +84,9 @@ export function SidecarDiffBar(props: SidecarBarProps): React.ReactElement {
     return <Button size="sm" variant="ghost" className="edrv-review-icon" aria-label={label} title={title || label} disabled={disabled} onClick={action}>{barIcon(mark)}</Button>
   }
 
-  const moreTrigger = <Button size="sm" variant="ghost" className="edrv-review-icon" aria-label="更多审查操作" title="更多审查操作" aria-haspopup="menu" aria-expanded={menu === 'more'} onClick={() => setMenu(menu === 'more' ? null : 'more')}>{barIcon('more')}</Button>
+  const moreTrigger = <Button size="sm" variant="ghost" className="edrv-review-icon" aria-label={uiText("更多审查操作", "More review actions", "Другие действия проверки")} title={uiText("更多审查操作", "More review actions", "Другие действия проверки")} aria-haspopup="menu" aria-expanded={menu === 'more'} onClick={() => setMenu(menu === 'more' ? null : 'more')}>{barIcon('more')}</Button>
 
-  return <div className="edrv-diffbar edrv-diffbar-dock edrv-reviewbar" data-edrv-diffbox="1" data-edrv-diff-source="sidecar" role="region" aria-label="文件差异审查">
+  return <div className="edrv-diffbar edrv-diffbar-dock edrv-reviewbar" data-edrv-diffbox="1" data-edrv-diff-source="sidecar" role="region" aria-label={uiText("文件差异审查", "File diff review", "Проверка различий файла")}>
     <ReviewAllRow
       total={props.fileTotal ?? null}
       current={(props.fileTotal ?? 0) && (props.fileIdx ?? -1) >= 0 ? (props.fileIdx ?? 0) + 1 : 0}
@@ -94,35 +95,35 @@ export function SidecarDiffBar(props: SidecarBarProps): React.ReactElement {
       onOpen={() => props.onOpenLauncher('pending')}
       onKeepAll={props.onAcceptAllFiles}
       onUndoAll={props.onUndoAllFiles}
-      keepTitle="把这批历史改动全部标记为已看过（只改记录，不动磁盘文件）"
-      undoTitle="逐项撤销这些历史改动；缺少证据或遇到冲突即停止"
+      keepTitle={uiText("把这批历史改动全部标记为已看过（只改记录，不动磁盘文件）", "Mark all these historical changes reviewed (records only; disk files unchanged)", "Отметить все исторические изменения проверенными (только записи; файлы на диске не меняются)")}
+      undoTitle={uiText("逐项撤销这些历史改动；缺少证据或遇到冲突即停止", "Undo these historical changes individually; stop on missing evidence or conflict", "Отменять исторические изменения по одному; остановиться при нехватке данных или конфликте")}
     />
-    {props.missingDeletion ? <div className="edrv-review-notice" role="status">文件已删除 · 展示最后记录快照。Keep 保留删除；Undo 恢复展示的完整快照。</div> : null}
-    {busy ? <div className="edrv-review-notice" role="status">正在处理历史改动…</div> : null}
+    {props.missingDeletion ? <div className="edrv-review-notice" role="status">{uiText("文件已删除 · 展示最后记录快照。Keep 保留删除；Undo 恢复展示的完整快照。", "File deleted · Showing the last recorded snapshot. Keep preserves deletion; Undo restores the complete shown snapshot.", "Файл удалён · Показан последний записанный снимок. Keep сохраняет удаление; Undo восстанавливает показанный полный снимок.")}</div> : null}
+    {busy ? <div className="edrv-review-notice" role="status">{uiText("正在处理历史改动…", "Processing historical changes…", "Обработка исторических изменений…")}</div> : null}
     {down ? <div className="edrv-review-notice edrv-review-notice-warn edrv-sidecar-down" role="status">
       <span className="edrv-sidecar-down-text">{down.text}</span>
-      {props.onRetryOfficial ? <Button size="sm" variant="ghost" onClick={props.onRetryOfficial} title="重新读取官方待审记录">{down.retryLabel || '重试'}</Button> : null}
+      {props.onRetryOfficial ? <Button size="sm" variant="ghost" onClick={props.onRetryOfficial} title={uiText("重新读取官方待审记录", "Reload built-in pending records", "Перечитать встроенные ожидающие записи")}>{down.retryLabel || uiText('重试', "Retry", "Повторить")}</Button> : null}
     </div> : null}
     <div className="edrv-review-heading">
       <span className="edrv-review-filemark">{barIcon('file')}</span>
       <span className="edrv-review-filename" title={props.activePath}>{name}</span>
-      <span className="edrv-review-source" title={SIDECAR_LABEL_TITLE}>{SIDECAR_LABEL}</span>
-      <span className="edrv-review-pending" title={view.pendingTitle}>待审 <strong>{total}</strong></span>
+      <span className="edrv-review-source" title={sidecarLabelTitle()}>{sidecarLabel()}</span>
+      <span className="edrv-review-pending" title={view.pendingTitle}>{uiText("待审 ", "Pending ", "Ожидают проверки ")}<strong>{total}</strong></span>
     </div>
     <div className="edrv-review-tools">
-      <div className="edrv-review-nav" role="group" aria-label="文件导航">
-        {navButton('left', '上一个差异文件', props.onPrevFile, !props.fileTotal)}
-        {navButton('right', '下一个差异文件', props.onNextFile, !props.fileTotal)}
+      <div className="edrv-review-nav" role="group" aria-label={uiText("文件导航", "File navigation", "Навигация по файлам")}>
+        {navButton('left', uiText('上一个差异文件', "Previous changed file", "Предыдущий изменённый файл"), props.onPrevFile, !props.fileTotal)}
+        {navButton('right', uiText('下一个差异文件', "Next changed file", "Следующий изменённый файл"), props.onNextFile, !props.fileTotal)}
       </div>
-      <div className="edrv-review-nav edrv-review-blocknav" role="group" aria-label="差异导航">
-        {navButton('up', '上一个差异', props.onPrevDiff, !count, view.navPrevTitle)}
+      <div className="edrv-review-nav edrv-review-blocknav" role="group" aria-label={uiText("差异导航", "Diff navigation", "Навигация по различиям")}>
+        {navButton('up', uiText('上一个差异', "Previous diff", "Предыдущее различие"), props.onPrevDiff, !count, view.navPrevTitle)}
         <span className="edrv-review-position" aria-live="polite">{view.position}</span>
-        {navButton('down', '下一个差异', props.onNextDiff, !count, view.navNextTitle)}
+        {navButton('down', uiText('下一个差异', "Next diff", "Следующее различие"), props.onNextDiff, !count, view.navNextTitle)}
       </div>
       <div className="edrv-review-actions">
-        <Button size="sm" variant="ghost" className="edrv-review-undo" icon={barIcon('undo')} onClick={props.onUndoFile} disabled={!canDecide} title={props.missingDeletion ? '恢复展示的完整历史快照（不会覆盖重新出现的文件）' : SIDECAR_UNDO_TITLE}>Undo</Button>
-        <Button size="sm" variant="primary" className="edrv-review-keep" icon={barIcon('check')} onClick={props.onAcceptFile} disabled={!canDecide} title={props.missingDeletion ? '保持文件删除并结清覆盖的待审历史记录，不写文件' : SIDECAR_KEEP_TITLE}>Keep</Button>
-        <Menu open={menu === 'more'} anchor={moreTrigger} items={[{ id: 'pending', label: '差异总览' }, { id: 'archive', label: '归档 / 历史' }, { id: 'rollback', label: '回滚当前文件' }, { id: 'refresh', label: '刷新' }]} onSelect={(id: string) => {
+        <Button size="sm" variant="ghost" className="edrv-review-undo" icon={barIcon('undo')} onClick={props.onUndoFile} disabled={!canDecide} title={props.missingDeletion ? uiText('恢复展示的完整历史快照（不会覆盖重新出现的文件）', "Restore the complete displayed historical snapshot (does not overwrite a reappeared file)", "Восстановить показанный полный исторический снимок (не перезаписывает вновь появившийся файл)") : sidecarUndoTitle()}>Undo</Button>
+        <Button size="sm" variant="primary" className="edrv-review-keep" icon={barIcon('check')} onClick={props.onAcceptFile} disabled={!canDecide} title={props.missingDeletion ? uiText('保持文件删除并结清覆盖的待审历史记录，不写文件', "Keep deletion and resolve covered pending history without writing files", "Сохранить удаление и завершить охваченные ожидающие записи без записи файлов") : sidecarKeepTitle()}>Keep</Button>
+        <Menu open={menu === 'more'} anchor={moreTrigger} items={[{ id: 'pending', label: uiText('差异总览', "Diff overview", "Обзор различий") }, { id: 'archive', label: uiText('归档 / 历史', "Archive / History", "Архив / История") }, { id: 'rollback', label: uiText('回滚当前文件', "Revert current file", "Восстановить текущий файл") }, { id: 'refresh', label: uiText('刷新', "Refresh", "Обновить") }]} onSelect={(id: string) => {
           if (id === 'rollback') { setMenu(null); props.onRollback?.(); return }
           if (id === 'refresh') { setMenu(null); props.onRefresh?.(); return }
           openOverview(id)

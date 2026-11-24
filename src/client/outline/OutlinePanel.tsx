@@ -6,6 +6,7 @@
  * 交互：点击符号跳转编辑器、▸/▾ 折叠、光标所在符号高亮、空/加载/错误态。
  * 作者 ddj 2026-08-27
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { resolveOutline } from './sources.js'
 import type { SidebarCtx } from '../sidebar/types.js'
@@ -175,7 +176,7 @@ export function OutlinePanel(props) {
       if (kids && !isCollapsed) rows.push(...renderTree(kids, depth + 1, key))
     }
     if (list.length > RENDER_CAP) {
-      rows.push(React.createElement('div', { key: 'cap', className: 'edrv-tree-loading' }, '符号过多，仅显示前 ' + RENDER_CAP + ' 个'))
+      rows.push(React.createElement('div', { key: 'cap', className: 'edrv-tree-loading' }, uiText('符号过多，仅显示前 ', "Too many symbols; showing the first ", "Слишком много символов; показаны первые ") + RENDER_CAP + uiText(' 个', " items", " элементов")))
     }
     return rows
   }
@@ -187,27 +188,27 @@ export function OutlinePanel(props) {
     body = React.createElement('div', { className: 'edrv-tree' },
       React.createElement('div', { className: 'edrv-tree-error' },
         React.createElement('span', null, String(error)),
-        React.createElement('button', { className: 'edrv-side-btn', onClick: refresh }, '重试')))
+        React.createElement('button', { className: 'edrv-side-btn', onClick: refresh }, uiText('重试', "Retry", "Повторить"))))
   } else if (!activePath) {
     body = React.createElement('div', { className: 'edrv-tree' },
-      React.createElement('div', { className: 'edrv-tree-loading' }, '未打开文件'))
+      React.createElement('div', { className: 'edrv-tree-loading' }, uiText('未打开文件', "No file open", "Файл не открыт")))
   } else if (symbols === null) {
     body = React.createElement('div', { className: 'edrv-tree' },
-      React.createElement('div', { className: 'edrv-tree-loading' }, '加载中…'))
+      React.createElement('div', { className: 'edrv-tree-loading' }, uiText('加载中…', "Loading…", "Загрузка…")))
   } else if (symbols.length === 0) {
     body = React.createElement('div', { className: 'edrv-tree' },
-      React.createElement('div', { className: 'edrv-tree-loading' }, '该语言暂不支持大纲或文件无符号'))
+      React.createElement('div', { className: 'edrv-tree-loading' }, uiText('该语言暂不支持大纲或文件无符号', "Outline is unsupported for this language, or the file has no symbols", "Язык не поддерживает структуру или в файле нет символов")))
   } else {
     body = React.createElement('div', { className: 'edrv-tree' }, ...renderTree(symbols, 0, ''))
   }
 
   return React.createElement('div', { className: 'edrv-side-panel' },
     React.createElement('div', { className: 'edrv-side-head' },
-      React.createElement('span', { className: 'edrv-side-title' }, '大纲'),
+      React.createElement('span', { className: 'edrv-side-title' }, uiText('大纲', "Outline", "Структура")),
       React.createElement('span', { className: 'edrv-side-root', title: activePath || '' }, basename),
       React.createElement('span', { style: { flex: 1 } }),
-      React.createElement('button', { className: 'edrv-side-btn', title: '折叠全部', disabled: !(symbols && symbols.length), onClick: () => setAll(true) }, '−'),
-      React.createElement('button', { className: 'edrv-side-btn', title: '展开全部', disabled: !(symbols && symbols.length), onClick: () => setAll(false) }, '+'),
-      React.createElement('button', { className: 'edrv-side-btn', title: '刷新大纲', onClick: refresh }, '⟳')),
+      React.createElement('button', { className: 'edrv-side-btn', title: uiText('折叠全部', "Collapse all", "Свернуть всё"), disabled: !(symbols && symbols.length), onClick: () => setAll(true) }, '−'),
+      React.createElement('button', { className: 'edrv-side-btn', title: uiText('展开全部', "Expand all", "Развернуть всё"), disabled: !(symbols && symbols.length), onClick: () => setAll(false) }, '+'),
+      React.createElement('button', { className: 'edrv-side-btn', title: uiText('刷新大纲', "Refresh outline", "Обновить структуру"), onClick: refresh }, '⟳')),
     body)
 }

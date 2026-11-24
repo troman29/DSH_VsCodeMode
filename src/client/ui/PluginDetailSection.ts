@@ -5,6 +5,7 @@
  * 只在「本插件自己」的详情页渲染，其余插件页返回 null。
  * 作者 ddj 2026年10月19号
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { rpc } from '../rpc.js'
 
@@ -34,7 +35,7 @@ export function isSelfSubject(subject) {
 function countText(list) {
   const items = Array.isArray(list) ? list : []
   const ok = items.filter((item) => item?.active === true).length
-  return ok + ' / ' + items.length + ' 项生效'
+  return ok + ' / ' + items.length + uiText(' 项生效', " active items", " активных элементов")
 }
 
 /**
@@ -65,18 +66,18 @@ export function PluginDetailSection(props) {
     React.createElement('span', { className: 'vsm-compat-note' }, note),
   )
 
-  const versionText = report?.dshVersion ? 'DSH ' + report.dshVersion : '未探测到 DSH 版本'
-  const pluginText = report?.pluginVersion ? '插件 ' + report.pluginVersion : '插件版本未上报'
+  const versionText = report?.dshVersion ? 'DSH ' + report.dshVersion : uiText('未探测到 DSH 版本', "DSH version not detected", "Версия DSH не определена")
+  const pluginText = report?.pluginVersion ? uiText('插件 ', "Plugin ", "Плагин ") + report.pluginVersion : uiText('插件版本未上报', "Plugin version not reported", "Версия плагина не указана")
   const warnCount = Array.isArray(report?.warnings) ? report.warnings.length : 0
 
   return React.createElement('section', { className: 'vsm-panel', 'data-edrv-plugin-status': '1' },
-    React.createElement('h3', { className: 'vsm-panel-title' }, 'VSCodeMode 运行状态'),
+    React.createElement('h3', { className: 'vsm-panel-title' }, uiText('VSCodeMode 运行状态', "VSCodeMode runtime status", "Состояние VSCodeMode")),
     React.createElement('div', { className: 'vsm-panel-body' },
-      row('版本', versionText + ' · ' + pluginText),
-      row('版本适配', countText(report?.adapters)),
-      row('外部插件与服务', countText(report?.external)),
-      row('护栏', countText(report?.guards)),
-      row('兼容性警告', warnCount ? warnCount + ' 条（设置页「兼容性」可查看详情）' : '未检测到'),
+      row(uiText('版本', "Version", "Версия"), versionText + ' · ' + pluginText),
+      row(uiText('版本适配', "Version adapters", "Адаптация версии"), countText(report?.adapters)),
+      row(uiText('外部插件与服务', "External plugins and services", "Внешние плагины и сервисы"), countText(report?.external)),
+      row(uiText('护栏', "Safeguards", "Защитные ограничения"), countText(report?.guards)),
+      row(uiText('兼容性警告', "Compatibility warnings", "Предупреждения совместимости"), warnCount ? warnCount + uiText(' 条（设置页「兼容性」可查看详情）', " warnings (see Compatibility settings for details)", " предупреждений (подробности в настройках совместимости)") : uiText('未检测到', "None detected", "Не обнаружены")),
     ),
   )
 }
