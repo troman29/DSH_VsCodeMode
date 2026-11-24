@@ -5,6 +5,7 @@
  * 另挂 3s 移交轮询（兼活跃心跳）：launcher 投递的打开请求由已打开页面就地执行，避免重复开新页。
  * 作者 ddj 2026-09-07 / 2026-09-08
  */
+import { uiText } from './uiLocale.js'
 import { EDRV_PARAM_KEYS, parseOpenParams } from '../shared/externalOpen.js'
 import { openDeepLink } from './openFlow.js'
 import { disposeOpenWait } from './openReceipt.js'
@@ -53,7 +54,7 @@ export function setupExtOpen(ctx: unknown, options: ExtOpenOptions = {}): () => 
   stripCurrentUrl()
   void openDeepLink(ctx, params).catch((error) => {
     log.warn('深链打开失败：' + String(error))
-    toastDom('深链打开失败：' + String((error as Error)?.message ?? error))
+    toastDom(uiText('深链打开失败：', 'Deep-link open failed: ', 'Не удалось открыть глубокую ссылку: ') + String((error as Error)?.message ?? error))
   })
   return dispose
 }

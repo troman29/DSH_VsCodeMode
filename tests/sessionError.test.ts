@@ -1,7 +1,11 @@
 /** 会话缺失错误识别与文案单测（跨端「会话不存在」兼容）。作者 ddj 2026年10月16号 */
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { isSessionMissingError, sessionMissingDetail, sessionMissingTitle } from '../src/client/sessionError.js'
 import { SESSION_MISSING_ERROR } from '../src/shared/rpc.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 describe('isSessionMissingError', () => {
   it('命中规范文案本身', () => {

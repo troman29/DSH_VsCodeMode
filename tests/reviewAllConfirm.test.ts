@@ -1,7 +1,12 @@
 import React from 'react'
 import { readFileSync } from 'node:fs'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { bindUiLocale } from '../src/client/uiLocale.js'
 import { ReviewAllConfirm } from '../src/client/ui/ReviewAllConfirm.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({ Modal: vi.fn(), Button: vi.fn() }))
 

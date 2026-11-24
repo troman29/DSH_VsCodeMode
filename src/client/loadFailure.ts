@@ -9,6 +9,7 @@
  * @author ddj 2026年11月02号
  */
 
+import { uiText } from './uiLocale.js'
 /** 状态码 0：请求未完成（网络错误 / 被拦截 / 离线）。 */
 const NETWORK_FAILED = 0
 
@@ -48,11 +49,11 @@ function pathOf(url: string): string {
  * @returns 原因说明
  */
 export function statusHint(status: number): string {
-  if (status === NETWORK_FAILED) return '请求未到达宿主（网络不可达、被浏览器或代理拦截、或宿主已停止）'
-  if (status === 403) return '宿主拒绝了当前页面（Host/Origin 校验未通过；远程访问需经远程访问插件的通道）'
-  if (status === 401) return '宿主登录态失效，请重新打开已登录的应用页面'
-  if (status === 404) return '路由或资源不存在（插件资源缺失或插件版本与宿主不匹配）'
-  return '宿主返回了非预期状态'
+  if (status === NETWORK_FAILED) return uiText('请求未到达宿主（网络不可达、被浏览器或代理拦截、或宿主已停止）', "Request did not reach the host (network unreachable, browser/proxy blocked it, or host stopped)", "Запрос не достиг хоста (сеть недоступна, блокировка браузером/прокси или хост остановлен)")
+  if (status === 403) return uiText('宿主拒绝了当前页面（Host/Origin 校验未通过；远程访问需经远程访问插件的通道）', "Host rejected this page (Host/Origin validation failed; remote access requires the remote-access plugin channel)", "Хост отклонил страницу (проверка Host/Origin не пройдена; удалённый доступ требует канал соответствующего плагина)")
+  if (status === 401) return uiText('宿主登录态失效，请重新打开已登录的应用页面', "Host login expired; reopen the signed-in application page", "Авторизация хоста истекла; заново откройте страницу приложения с выполненным входом")
+  if (status === 404) return uiText('路由或资源不存在（插件资源缺失或插件版本与宿主不匹配）', "Route or resource missing (missing plugin assets or incompatible plugin/host versions)", "Маршрут или ресурс отсутствует (нет ресурсов плагина или версии плагина и хоста несовместимы)")
+  return uiText('宿主返回了非预期状态', "Host returned an unexpected status", "Хост вернул неожиданный статус")
 }
 
 /**
@@ -64,8 +65,8 @@ export function statusHint(status: number): string {
  * @returns 用户可读的诊断文案
  */
 export function loadFailureText(label: string, url: string, status: number): string {
-  const outcome = status === NETWORK_FAILED ? '请求未完成' : '返回 HTTP ' + status
-  return label + '：' + pathOf(url) + ' ' + outcome + '；' + statusHint(status)
+  const outcome = status === NETWORK_FAILED ? uiText('请求未完成', "Request incomplete", "Запрос не завершён") : uiText('返回 HTTP ', "HTTP status ", "Статус HTTP ") + status
+  return label + uiText('：', ": ", ": ") + pathOf(url) + ' ' + outcome + uiText('；', "; ", "; ") + statusHint(status)
 }
 
 /**
@@ -76,9 +77,9 @@ export function loadFailureText(label: string, url: string, status: number): str
  */
 export function monacoHint(message: string): string {
   const text = String(message ?? '')
-  if (/403/.test(text)) return '宿主拒绝了本次请求：远程访问需经远程访问插件的通道（本页已自动接入）；本机访问请用 127.0.0.1 或 localhost 打开。'
-  if (/401/.test(text)) return '宿主登录态失效：请重新打开已登录的应用页面后再试。'
-  if (/404/.test(text)) return 'Monaco 静态资源未找到：插件包 assets/vendor/monaco 可能不完整，或插件版本与宿主不匹配。'
-  if (/请求未完成|Failed to fetch|NetworkError/i.test(text)) return '请求未能到达宿主：请检查网络、代理与宿主进程状态。'
-  return '请展开下方详情，并在浏览器控制台确认失败请求的地址与状态码。'
+  if (/403/.test(text)) return uiText('宿主拒绝了本次请求：远程访问需经远程访问插件的通道（本页已自动接入）；本机访问请用 127.0.0.1 或 localhost 打开。', "Host rejected the request. Remote access requires the remote-access plugin channel (already connected here). For local access use 127.0.0.1 or localhost.", "Хост отклонил запрос. Удалённый доступ требует канал соответствующего плагина (эта страница уже подключена). Локально используйте 127.0.0.1 или localhost.")
+  if (/401/.test(text)) return uiText('宿主登录态失效：请重新打开已登录的应用页面后再试。', "Host login expired. Reopen the signed-in application page and retry.", "Авторизация хоста истекла. Заново откройте страницу приложения с выполненным входом и повторите.")
+  if (/404/.test(text)) return uiText('Monaco 静态资源未找到：插件包 assets/vendor/monaco 可能不完整，或插件版本与宿主不匹配。', "Monaco assets not found. Plugin assets/vendor/monaco may be incomplete, or plugin and host versions are incompatible.", "Ресурсы Monaco не найдены. assets/vendor/monaco плагина может быть неполным или версии плагина и хоста несовместимы.")
+  if (/请求未完成|Request incomplete|Запрос не завершён|Failed to fetch|NetworkError/i.test(text)) return uiText('请求未能到达宿主：请检查网络、代理与宿主进程状态。', "Request could not reach the host. Check network, proxy, and host process status.", "Запрос не достиг хоста. Проверьте сеть, прокси и процесс хоста.")
+  return uiText('请展开下方详情，并在浏览器控制台确认失败请求的地址与状态码。', "Expand details below and check the failed request URL and status in the browser console.", "Откройте подробности ниже и проверьте адрес и статус запроса в консоли браузера.")
 }

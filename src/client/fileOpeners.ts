@@ -2,6 +2,7 @@
  * dsh-vscode-mode client — 文件打开器注册表与自动选择。
  * @author ddj 2026年08月24号 / 2026年09月09号
  */
+import { uiText } from './uiLocale.js'
 import { SIDEBAR_PLUGIN } from './compat.js'
 import { buildFileAddress } from './officialSidebar.js'
 
@@ -149,13 +150,13 @@ export function scanSidebar(ctx: { get: (name: string) => unknown }): FileOpener
     return {
       id: SIDEBAR_OPEN_TOOL,
       label: 'dsh-better-sidebar',
-      description: '在 dsh-web-ui-all 侧边栏编辑器中打开',
+      get description() { return uiText('在 dsh-web-ui-all 侧边栏编辑器中打开', "Open in the dsh-web-ui-all sidebar editor", "Открыть в редакторе боковой панели dsh-web-ui-all") },
       priority: 80,
       isAvailable: () => typeof service.openFile === 'function'
         && (service.features?.includes('openFile') ?? true)
         && (typeof service.isTabEnabled !== 'function' || service.isTabEnabled('editor')),
       open: (path, context) => {
-        if (!context.sessionId) throw new Error('当前没有活动会话')
+        if (!context.sessionId) throw new Error(uiText('当前没有活动会话', "No active session", "Нет активного сеанса"))
         service.openFile!({ sessionId: context.sessionId, cwd: context.cwd }, path, baseName(path))
       },
     }
@@ -201,12 +202,12 @@ export function shouldClaimFiles(selected: unknown): boolean {
 export function officialSidebarOpener(service: OfficialOpenResourceService): FileOpener {
   return {
     id: OFFICIAL_OPEN_TOOL,
-    label: '官方侧边栏',
-    description: '在 DSH 官方右侧侧边栏查看器中打开（0.1.5+）',
+    get label() { return uiText('官方侧边栏', "Official sidebar", "Стандартная боковая панель") },
+    get description() { return uiText('在 DSH 官方右侧侧边栏查看器中打开（0.1.5+）', "Open in the official DSH right sidebar viewer (0.1.5+)", "Открыть в стандартном просмотрщике правой панели DSH (0.1.5+)") },
     priority: 90,
     isAvailable: () => typeof service.openResource === 'function',
     open: (path, context) => {
-      if (typeof service.openResource !== 'function') throw new Error('官方侧边栏 openResource 能力不可用')
+      if (typeof service.openResource !== 'function') throw new Error(uiText('官方侧边栏 openResource 能力不可用', "Official sidebar openResource capability unavailable", "Возможность openResource стандартной боковой панели недоступна"))
       service.openResource(buildFileAddress(path, context.sessionId))
     },
   }

@@ -1,3 +1,7 @@
+import { beforeEach, afterEach } from 'vitest'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
 // @ts-nocheck
 /**
  * SVN 日志统计聚合（P1-10）单测：总数/期间/作者分布/case-insensitive 归并。

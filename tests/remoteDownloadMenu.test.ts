@@ -5,7 +5,7 @@
  * 下载动作本身不在此测（downloadFile.test.ts 覆盖），故 mock 掉该模块。
  * 作者 ddj 2026年11月03号
  */
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 
 const downloadTargetMock = vi.fn()
 
@@ -18,6 +18,10 @@ import { createDefaultFileMenuItems } from '../src/client/sidebar/menuItems.js'
 import type { TreeMenuItem, TreeMenuTarget } from '../src/client/sidebar/contextMenu.js'
 import type { SidebarCtx } from '../src/client/sidebar/types.js'
 import { CHANNEL_SEAT, isRemoteChannel } from '../src/shared/remoteChannel.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 const ctx = { sessionId: 's1', notify: () => {} } as unknown as SidebarCtx
 

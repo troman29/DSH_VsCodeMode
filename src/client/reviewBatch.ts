@@ -1,4 +1,5 @@
 /** Official bulk decisions use persisted metadata, never the visible history page. @author ddj 2026年10月27号 */
+import { uiText } from './uiLocale.js'
 import type { ReviewDetail, ReviewItem, ReviewPage, ReviewResult } from '../shared/review.js'
 import { PENDING_PREFIX } from '../shared/pendingReview.js'
 
@@ -25,10 +26,10 @@ export async function loadPending(port: Pick<BatchPort, 'snapshot'>): Promise<Re
   const page = await port.snapshot()
   const seen = new Set<string>()
   for (const item of page.items) {
-    if (seen.has(item.id) || !item.current || item.decision !== 'pending') throw new Error('待审快照发生重复或版本变化，请刷新后重试')
+    if (seen.has(item.id) || !item.current || item.decision !== 'pending') throw new Error(uiText('待审快照发生重复或版本变化，请刷新后重试', "Pending snapshot duplicated or version changed. Refresh and retry.", "Ожидающий снимок дублируется или версия изменилась. Обновите и повторите."))
     seen.add(item.id)
   }
-  if (page.nextCursor !== null || page.items.length !== page.pending) throw new Error('待审记录数量不完整，未执行批量操作')
+  if (page.nextCursor !== null || page.items.length !== page.pending) throw new Error(uiText('待审记录数量不完整，未执行批量操作', "Pending record count incomplete; batch operation not run", "Число ожидающих записей неполное; пакетная операция не выполнена"))
   return page.items
 }
 
@@ -54,17 +55,17 @@ export async function runReviewBatch(port: BatchPort, reject: boolean): Promise<
       const detail = await port.detail(item.id)
       // 待审条目判定要在会话活跃的一端做：冷端能力位已关闭，这里给出比「版本变化」更准确的原因
       if (detail.capability.live === false && item.id.startsWith(PENDING_PREFIX)) {
-        throw new Error(`${item.display}：待审条目需要在会话活跃的一端判定，请先在那一端处理或在本端打开该会话`)
+        throw new Error(uiText(`${item.display}：待审条目需要在会话活跃的一端判定，请先在那一端处理或在本端打开该会话`, `${item.display}: pending item must be reviewed on the active client. Handle it there or open the session here.`, `${item.display}: ожидающий элемент нужно проверить в активном клиенте. Обработайте там или откройте сессию здесь.`))
       }
       if (!detail.item.current || detail.item.seq !== item.seq || detail.item.revision !== item.revision
-        || !detail.capability.keep) throw new Error(`${item.display}：审查版本变化，请刷新后重试`)
+        || !detail.capability.keep) throw new Error(uiText(`${item.display}：审查版本变化，请刷新后重试`, `${item.display}: review version changed. Refresh and retry.`, `${item.display}: версия проверки изменилась. Обновите и повторите.`))
       if (reject && !detail.capability.undo) throw new Error(`${item.display}：${detail.capability.reason}`)
       details.push(detail)
     }
     // 非 agent 来源（编辑器保存 / 版本库基线 / 外部写入）先问一次，避免整批撤销误伤用户代码
     if (reject && details.some((detail) => detail.capability.confirmUndo)) {
       if (!port.confirmExternal || !port.confirmExternal(details.filter((detail) => detail.capability.confirmUndo))) {
-        throw new Error('已取消：这批修改里有非本会话工具写入的来源，撤销前需要确认')
+        throw new Error(uiText('已取消：这批修改里有非本会话工具写入的来源，撤销前需要确认', "Cancelled: changes include external sources; confirmation is required before undoing", "Отменено: изменения включают внешние источники; перед отменой требуется подтверждение"))
       }
     }
     // Reverse chronological snapshots allow a newer round's result to expose the previous round's endpoint.

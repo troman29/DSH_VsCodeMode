@@ -3,6 +3,8 @@
  * 面板只在读取失败后出现；写盘只发生在用户点「执行」之后（决策 1/2/3）。
  * 作者 ddj 2026-11-21
  */
+import { sharedDisplay } from './sharedDisplay.js'
+import { uiText } from './uiLocale.js'
 import { rpc } from './rpc.js'
 import type { EncodingKind, EncodingVerdict } from '../textEncoding.js'
 import { kindLabelOf, refusalOf } from '../textEncoding.js'
@@ -36,7 +38,7 @@ export function canRepairOf(verdict: EncodingVerdict): boolean {
 
 /** @public @author ddj 2026年11月21号 @param verdict 判定 @returns 不可修复时的说明 */
 export function refusalOfSel(verdict: EncodingVerdict): string {
-  return refusalOf(verdict.kind)
+  return sharedDisplay(refusalOf(verdict.kind))
 }
 
 /**
@@ -46,17 +48,17 @@ export function refusalOfSel(verdict: EncodingVerdict): string {
  * @returns 面向用户的一句话
  */
 export function summaryOf(verdict: EncodingVerdict): string {
-  if (verdict.kind === 'gb18030') return '检测到 ' + kindLabelOf(verdict.kind) + ' 编码 · 整体可无损转成 UTF-8'
-  if (verdict.kind === 'mixed') return '检测到 ' + verdict.badBytes + ' 处非法字节（' + linesOf(verdict) + '）'
-  if (verdict.kind === 'binary') return '文件疑似二进制（含 NUL），不提供转码'
-  return '文件是合法 UTF-8'
+  if (verdict.kind === 'gb18030') return uiText('检测到 ', "Detected ", "Обнаружено ") + sharedDisplay(kindLabelOf(verdict.kind)) + uiText(' 编码 · 整体可无损转成 UTF-8', " encoding · Can be converted losslessly to UTF-8", " — кодировка · Можно без потерь преобразовать в UTF-8")
+  if (verdict.kind === 'mixed') return uiText('检测到 ', "Detected ", "Обнаружено ") + verdict.badBytes + uiText(' 处非法字节（', " invalid byte locations (", " участков некорректных байтов (") + linesOf(verdict) + uiText('）', ")", ")")
+  if (verdict.kind === 'binary') return uiText('文件疑似二进制（含 NUL），不提供转码', "File appears binary (contains NUL); conversion unavailable", "Файл похож на двоичный (содержит NUL); преобразование недоступно")
+  return uiText('文件是合法 UTF-8', "File is valid UTF-8", "Файл содержит корректный UTF-8")
 }
 
 /** @private @author ddj 2026年11月21号 @param verdict 判定 @returns 行号列举（最多 8 行） */
 function linesOf(verdict: EncodingVerdict): string {
   const lines = verdict.lines.slice(0, 8)
-  const listed = lines.join('、')
-  return lines.length < verdict.lines.length ? '第 ' + listed + ' 行等' : '第 ' + listed + ' 行'
+  const listed = lines.join(uiText('、', ", ", ", "))
+  return lines.length < verdict.lines.length ? uiText('第 ', "Lines ", "Строки ") + listed + uiText(' 行等', " and more", " и другие") : uiText('第 ', "Lines ", "Строки ") + listed + uiText(' 行', "", "")
 }
 
 /**
@@ -69,7 +71,7 @@ export async function probeText(sessionId: string, path: string): Promise<{ ok: 
   try {
     const result = await rpc('edrv.textCompat', { sessionId, path, mode: 'probe' })
     if (!result.ok) return { ok: false, error: result.error, code: result.code }
-    if (result.mode !== 'probe') return { ok: false, error: '探测返回了非预期载荷' }
+    if (result.mode !== 'probe') return { ok: false, error: uiText('探测返回了非预期载荷', "Probe returned an unexpected payload", "Проверка вернула неожиданные данные") }
 
     return {
       ok: true,
@@ -91,7 +93,7 @@ export async function previewText(sessionId: string, path: string): Promise<{ ok
   try {
     const result = await rpc('edrv.textCompat', { sessionId, path, mode: 'preview' })
     if (!result.ok) return { ok: false, error: result.error, code: result.code }
-    if (result.mode !== 'preview') return { ok: false, error: '预览返回了非预期载荷' }
+    if (result.mode !== 'preview') return { ok: false, error: uiText('预览返回了非预期载荷', "Preview returned an unexpected payload", "Предпросмотр вернул неожиданные данные") }
 
     return { ok: true, text: result.text, truncated: result.truncated }
   } catch (error) { return { ok: false, error: String(error) } }
@@ -107,7 +109,7 @@ export async function repairText(sessionId: string, path: string, rev: string): 
   try {
     const result = await rpc('edrv.textCompat', { sessionId, path, mode: 'repair', rev })
     if (!result.ok) return { ok: false, error: result.error, code: result.code }
-    if (result.mode !== 'repair') return { ok: false, error: '修复返回了非预期载荷' }
+    if (result.mode !== 'repair') return { ok: false, error: uiText('修复返回了非预期载荷', "Repair returned an unexpected payload", "Исправление вернуло неожиданные данные") }
 
     return { ok: true, version: result.version, backup: result.backup }
   } catch (error) { return { ok: false, error: String(error) } }
@@ -124,7 +126,7 @@ export async function commitText(sessionId: string, path: string, rev: string, t
   try {
     const result = await rpc('edrv.textCompat', { sessionId, path, mode: 'commit', rev, text })
     if (!result.ok) return { ok: false, error: result.error, code: result.code }
-    if (result.mode !== 'commit') return { ok: false, error: '保存返回了非预期载荷' }
+    if (result.mode !== 'commit') return { ok: false, error: uiText('保存返回了非预期载荷', "Save returned an unexpected payload", "Сохранение вернуло неожиданные данные") }
 
     return { ok: true, version: result.version, backup: result.backup }
   } catch (error) { return { ok: false, error: String(error) } }
@@ -146,5 +148,5 @@ export async function undoRepair(sessionId: string, path: string, rev: string): 
 
 /** @public @author ddj 2026年11月21号 @param kind 判定类别 @returns 面板标签 */
 export function labelOf(kind: EncodingKind): string {
-  return kindLabelOf(kind)
+  return sharedDisplay(kindLabelOf(kind))
 }

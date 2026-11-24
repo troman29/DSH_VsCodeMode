@@ -6,12 +6,16 @@
  * ③ shared 的语言目录 / 展示名 / 下拉选项。
  * 作者 ddj 2026-09-10
  */
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { LANG_BY_EXT, langOf, snippetLanguageOf } from '../src/client/monaco/loader.js'
 import { languageOptions, fileMeta } from '../src/client/ui/SnippetsPicker.js'
 import {
   SNIPPET_LANGUAGES, languageLabelOf, snippetFileNameFor, snippetFileTemplate,
 } from '../src/shared/snippets.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 describe('HDL and FPGA language mapping', () => {
   it.each([['v', 'verilog'], ['vh', 'verilog'], ['sv', 'systemverilog'], ['svh', 'systemverilog'], ['tcl', 'tcl'], ['xdc', 'tcl'], ['sdc', 'tcl'], ['ucf', 'tcl']])('maps %s to %s', (extension, language) => {

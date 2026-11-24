@@ -33,6 +33,8 @@ function base64Ok(content = 'aGVsbG8=', mime = 'text/plain'): Response {
 
 beforeEach(async () => {
   vi.resetModules()
+  const { bindUiLocale } = await import('../src/client/uiLocale.js')
+  bindUiLocale({ getLocale: () => ({ active: 'zh' }) })
   mod = await import('../src/client/downloadFile.js')
 
   calls = []

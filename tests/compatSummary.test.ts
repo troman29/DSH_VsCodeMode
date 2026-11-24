@@ -1,6 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { clientSummary, type ClientCompatState } from '../src/client/compatSummary.js'
 import { SIDEBAR_PLUGIN } from '../src/client/compat.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 const modern: ClientCompatState = {
   settingsService: 'configForms', settingsReady: true,

@@ -1,7 +1,11 @@
 /** Application URL and RPC response contracts. @author ddj 2026年09月28号 */
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { appUrl } from '../src/shared/appUrl.js'
 import { rpc } from '../src/client/rpc.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 afterEach(() => vi.unstubAllGlobals())
 

@@ -9,6 +9,7 @@
  * 不再落在这里。
  * 作者 ddj 2026年10月16号
  */
+import { uiText } from './uiLocale.js'
 import { SESSION_MISSING_ERROR } from '../shared/rpc.js'
 
 /**
@@ -27,7 +28,7 @@ export function isSessionMissingError(text: unknown): boolean {
  * @returns 简短标题文案
  */
 export function sessionMissingTitle(): string {
-  return '会话在当前端不可用'
+  return uiText('会话在当前端不可用', "Session unavailable on this client", "Сеанс недоступен в этом клиенте")
 }
 
 /**
@@ -36,8 +37,8 @@ export function sessionMissingTitle(): string {
  * @returns 多句详情文案
  */
 export function sessionMissingDetail(): string {
-  return '该会话可能正被其他 DSH 实例（桌面端 / Web 端）占用，或尚未在当前实例激活。' +
-    '请在持有该会话的一端查看，或在本端打开该会话后重试。'
+  return uiText('该会话可能正被其他 DSH 实例（桌面端 / Web 端）占用，或尚未在当前实例激活。', "This session may belong to another DSH instance (desktop/web), or may not be active here. ", "Сеанс может принадлежать другому экземпляру DSH (настольному/веб) или ещё не активен здесь. ") +
+    uiText('请在持有该会话的一端查看，或在本端打开该会话后重试。', "View it on the owning client, or open it on this client and retry.", "Откройте его в клиенте-владельце или активируйте здесь и повторите.")
 }
 
 /**
@@ -48,6 +49,6 @@ export function sessionMissingDetail(): string {
  * @returns 会话缺失为「标题：详情」，其他错误为原文本，空值返回空串
  */
 export function sessionErrorText(text: unknown): string {
-  if (isSessionMissingError(text)) return sessionMissingTitle() + '：' + sessionMissingDetail()
+  if (isSessionMissingError(text)) return sessionMissingTitle() + uiText('：', ": ", ": ") + sessionMissingDetail()
   return String(text ?? '')
 }

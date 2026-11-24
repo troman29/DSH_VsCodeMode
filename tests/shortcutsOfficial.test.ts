@@ -3,7 +3,7 @@
  * 服务与 scope 全部鸭子类型 mock，不依赖浏览器与官方包。
  * 作者 ddj 2026年10月
  */
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   awaitShortcutsService,
   installLegacyKeys,
@@ -18,6 +18,10 @@ import {
   type ShortcutsServiceLike,
 } from '../src/client/shortcutsOfficial.js'
 import { SHORTCUT_PROFILES } from '../src/shared/keybindings.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** 构造鸭子类型官方服务 mock。 */
 function mockService(overrides: Partial<ShortcutsServiceLike> = {}): ShortcutsServiceLike {

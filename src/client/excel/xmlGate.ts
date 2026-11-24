@@ -1,3 +1,4 @@
+import { uiText } from '../uiLocale.js'
 import { SaxesParser, type SaxesTagNS } from 'saxes'
 import { EXCEL_LIMITS, validRef } from './model.js'
 
@@ -29,7 +30,7 @@ const CONTENTS = new Set([
 /** @public @author ddj 2026年10月28号 @param xml Original XML. @param visit Namespace-aware opening-tag inspection. @sideEffects Throws on malformed XML, DTD or entity declarations. */
 export function parseXml(xml: string, visit: (tag: SaxesTagNS, parent?: string) => void): void {
   const parser = new SaxesParser({ xmlns: true })
-  parser.on('doctype', () => { throw new Error('Excel XML 禁止 DTD/实体声明') })
+  parser.on('doctype', () => { throw new Error(uiText('Excel XML 禁止 DTD/实体声明', "Excel XML forbids DTD/entity declarations", "XML Excel запрещает объявления DTD/сущностей")) })
   parser.on('error', (error) => { throw error })
   const stack: string[] = []
   parser.on('opentag', (tag) => { visit(tag, stack.at(-1)); stack.push(tag.local) })
@@ -54,31 +55,31 @@ export function xmlGate(parts: Map<string, string>): string[] {
       if (part === '[Content_Types].xml') { checkType(tag, parts, reasons); return }
       if (!spreadsheet) return
       if (tag.local === 'pageSetup' && tag.uri === MAIN && parent === 'worksheet' && defaultPage(tag)) return
-      if (tag.uri !== MAIN || !(tag.local in TAGS)) { reasons.add('不支持的 XML 元素：' + part + ':' + tag.name); return }
-      if (!parent && tag.local !== expected) throw new Error('Excel XML 根元素错误：' + part)
+      if (tag.uri !== MAIN || !(tag.local in TAGS)) { reasons.add(uiText('不支持的 XML 元素：', "Unsupported XML element: ", "Неподдерживаемый элемент XML: ") + part + ':' + tag.name); return }
+      if (!parent && tag.local !== expected) throw new Error(uiText('Excel XML 根元素错误：', "Invalid Excel XML root element: ", "Некорректный корневой элемент XML Excel: ") + part)
       // Differential styles are valid OOXML but still trigger read-only via the unsupported dxf tag.
       // Their shared children must not turn a safe preview into a malformed-document error.
       const parents: Record<string, string> = { c: 'row', row: 'sheetData', v: 'c', f: 'c', sheet: 'sheets', mergeCell: 'mergeCells', col: 'cols', si: 'sst', numFmt: 'numFmts dxf', xf: 'cellXfs cellStyleXfs', font: 'fonts dxf', fill: 'fills dxf', border: 'borders dxf' }
-      if (parents[tag.local] && !parents[tag.local].split(' ').includes(parent || '')) throw new Error('Excel XML 元素层级错误：' + tag.name)
+      if (parents[tag.local] && !parents[tag.local].split(' ').includes(parent || '')) throw new Error(uiText('Excel XML 元素层级错误：', "Invalid Excel XML element hierarchy: ", "Некорректная иерархия элементов XML Excel: ") + tag.name)
       if (['sheetData', 'sheets', 'cellXfs', 'styles', 'mergeCells'].includes(tag.local)) {
-        if (singleton.has(tag.local)) throw new Error('Excel XML 重复关键元素：' + tag.name)
+        if (singleton.has(tag.local)) throw new Error(uiText('Excel XML 重复关键元素：', "Duplicate critical Excel XML element: ", "Повторяющийся ключевой элемент XML Excel: ") + tag.name)
         singleton.add(tag.local)
       }
       const allowed = TAGS[tag.local].split(' ')
       for (const attribute of Object.values(tag.attributes)) {
         if (attribute.uri === 'http://www.w3.org/2000/xmlns/' || defaultAttr(tag, attribute.local, attribute.uri, attribute.value)) continue
         const qualified = !attribute.uri || (attribute.local === 'id' && attribute.uri === OFFICE.slice(0, -1)) || (attribute.local === 'space' && attribute.uri === 'http://www.w3.org/XML/1998/namespace') || (attribute.local === 'dyDescent' && attribute.uri === 'http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac')
-        if (!qualified || !allowed.includes(attribute.local)) reasons.add('不支持的 XML 属性：' + part + ':' + tag.name + '.' + attribute.name)
+        if (!qualified || !allowed.includes(attribute.local)) reasons.add(uiText('不支持的 XML 属性：', "Unsupported XML attribute: ", "Неподдерживаемый атрибут XML: ") + part + ':' + tag.name + '.' + attribute.name)
       }
-      if (tag.local === 'sheet' && ++sheets > EXCEL_LIMITS.sheets) throw new Error('Excel 超过 50 个工作表')
-      if (tag.local === 'c' && ++cells > EXCEL_LIMITS.cells) throw new Error('Excel 已用单元格超过 200000')
+      if (tag.local === 'sheet' && ++sheets > EXCEL_LIMITS.sheets) throw new Error(uiText('Excel 超过 50 个工作表', "Excel exceeds 50 worksheets", "В Excel более 50 листов"))
+      if (tag.local === 'c' && ++cells > EXCEL_LIMITS.cells) throw new Error(uiText('Excel 已用单元格超过 200000', "Excel exceeds 200000 used cells", "В Excel более 200000 используемых ячеек"))
       mergeCells += checkRanges(tag)
-      if (mergeCells > EXCEL_LIMITS.cells) throw new Error('Excel 累计合并范围超过 200000 单元格')
-      if (tag.local === 'sheet' && attribute(tag, 'state') && attribute(tag, 'state') !== 'visible') reasons.add('隐藏工作表')
-      if (tag.local === 'alignment' && ['fill', 'centerContinuous'].includes(attribute(tag, 'horizontal'))) reasons.add('不支持的填充/跨列居中对齐')
-      if (tag.local === 'u' && attribute(tag, 'val') && attribute(tag, 'val') !== 'single') reasons.add('不支持的双下划线/会计下划线')
-      if (tag.local === 'patternFill' && !['none', 'solid', 'gray125'].includes(attribute(tag, 'patternType'))) reasons.add('复杂图案填充')
-      if (tag.local === 'xf' && Object.values(tag.attributes).some((entry) => entry.local === 'applyProtection')) reasons.add('样式保护')
+      if (mergeCells > EXCEL_LIMITS.cells) throw new Error(uiText('Excel 累计合并范围超过 200000 单元格', "Excel merged ranges exceed 200000 cells in total", "Объединённые диапазоны Excel превышают 200000 ячеек суммарно"))
+      if (tag.local === 'sheet' && attribute(tag, 'state') && attribute(tag, 'state') !== 'visible') reasons.add(uiText('隐藏工作表', "Hidden worksheet", "Скрытый лист"))
+      if (tag.local === 'alignment' && ['fill', 'centerContinuous'].includes(attribute(tag, 'horizontal'))) reasons.add(uiText('不支持的填充/跨列居中对齐', "Unsupported fill/center-across alignment", "Неподдерживаемое заполнение/выравнивание по центру диапазона"))
+      if (tag.local === 'u' && attribute(tag, 'val') && attribute(tag, 'val') !== 'single') reasons.add(uiText('不支持的双下划线/会计下划线', "Unsupported double/accounting underline", "Неподдерживаемое двойное/бухгалтерское подчёркивание"))
+      if (tag.local === 'patternFill' && !['none', 'solid', 'gray125'].includes(attribute(tag, 'patternType'))) reasons.add(uiText('复杂图案填充', "Complex pattern fill", "Сложная узорная заливка"))
+      if (tag.local === 'xf' && Object.values(tag.attributes).some((entry) => entry.local === 'applyProtection')) reasons.add(uiText('样式保护', "Style protection", "Защита стиля"))
     })
   }
   return [...reasons]
@@ -109,12 +110,12 @@ function attribute(tag: SaxesTagNS, name: string): string {
 
 /** @private @author ddj 2026年10月28号 @param tag Node. @sideEffects Rejects sparse extreme coordinates and huge merge allocations before ExcelJS sees them. */
 function checkRanges(tag: SaxesTagNS): number {
-  if (tag.local === 'c' && !validRef(attribute(tag, 'r'))) throw new Error('Excel 单元格坐标越界')
-  if (tag.local === 'row' && (!/^\d+$/.test(attribute(tag, 'r')) || Number(attribute(tag, 'r')) > 1048576)) throw new Error('Excel 行坐标越界')
-  if (tag.local === 'col' && (Number(attribute(tag, 'max')) > 16384 || Number(attribute(tag, 'min')) < 1)) throw new Error('Excel 列坐标越界')
+  if (tag.local === 'c' && !validRef(attribute(tag, 'r'))) throw new Error(uiText('Excel 单元格坐标越界', "Excel cell coordinate out of bounds", "Координата ячейки Excel вне границ"))
+  if (tag.local === 'row' && (!/^\d+$/.test(attribute(tag, 'r')) || Number(attribute(tag, 'r')) > 1048576)) throw new Error(uiText('Excel 行坐标越界', "Excel row coordinate out of bounds", "Координата строки Excel вне границ"))
+  if (tag.local === 'col' && (Number(attribute(tag, 'max')) > 16384 || Number(attribute(tag, 'min')) < 1)) throw new Error(uiText('Excel 列坐标越界', "Excel column coordinate out of bounds", "Координата столбца Excel вне границ"))
   if (!['dimension', 'mergeCell'].includes(tag.local)) return 0
   const range = attribute(tag, 'ref')
-  if (!validRef(range)) throw new Error('Excel 范围越界')
+  if (!validRef(range)) throw new Error(uiText('Excel 范围越界', "Excel range out of bounds", "Диапазон Excel вне границ"))
   if (tag.local !== 'mergeCell') return 0
   const positions = range.split(':').map((cell) => {
     const match = /^([A-Z]+)(\d+)$/i.exec(cell)!
@@ -124,17 +125,17 @@ function checkRanges(tag: SaxesTagNS): number {
   })
   const end = positions[1] || positions[0]
   const area = (Math.abs(end.row - positions[0].row) + 1) * (Math.abs(end.column - positions[0].column) + 1)
-  if (area > EXCEL_LIMITS.cells) throw new Error('Excel 合并范围超过 200000 单元格')
+  if (area > EXCEL_LIMITS.cells) throw new Error(uiText('Excel 合并范围超过 200000 单元格', "Excel merged range exceeds 200000 cells", "Объединённый диапазон Excel превышает 200000 ячеек"))
   return area
 }
 
 /** @private @author ddj 2026年10月28号 @param tag Node. @param part Relationship part. @param parts All original entries. @param reasons Refusal set. @sideEffects Validates complete relationship URIs and normalized targets against the archive. */
 function checkRelation(tag: SaxesTagNS, part: string, parts: Map<string, string>, reasons: Set<string>): void {
-  if (tag.uri !== REL || !['Relationships', 'Relationship'].includes(tag.local)) { reasons.add('未知关系命名空间/元素：' + part); return }
+  if (tag.uri !== REL || !['Relationships', 'Relationship'].includes(tag.local)) { reasons.add(uiText('未知关系命名空间/元素：', "Unknown relationship namespace/element: ", "Неизвестное пространство имён/элемент связи: ") + part); return }
   if (tag.local !== 'Relationship') return
   for (const field of Object.values(tag.attributes)) {
     if (field.uri === 'http://www.w3.org/2000/xmlns/') continue
-    if (field.uri || !['Id', 'Type', 'Target', 'TargetMode'].includes(field.local)) reasons.add('未知关系属性：' + field.name)
+    if (field.uri || !['Id', 'Type', 'Target', 'TargetMode'].includes(field.local)) reasons.add(uiText('未知关系属性：', "Unknown relationship attribute: ", "Неизвестный атрибут связи: ") + field.name)
   }
   const type = attribute(tag, 'Type')
   const accepted = ['officeDocument', 'worksheet', 'styles', 'sharedStrings', 'theme', 'extended-properties'].map((suffix) => OFFICE + suffix)
@@ -143,28 +144,28 @@ function checkRelation(tag: SaxesTagNS, part: string, parts: Map<string, string>
   const base = part === '_rels/.rels' ? '' : part.slice(0, part.indexOf('/_rels/')) + '/'
   const resolved: string[] = []
   for (const segment of (target.startsWith('/') ? target.slice(1) : base + target).split('/')) {
-    if (segment === '..') { if (!resolved.length) throw new Error('Excel 关系路径越界'); resolved.pop() }
+    if (segment === '..') { if (!resolved.length) throw new Error(uiText('Excel 关系路径越界', "Excel relationship path out of bounds", "Путь связи Excel вне границ")); resolved.pop() }
     else if (segment !== '.' && segment) resolved.push(segment)
   }
   const role = type.slice(type.lastIndexOf('/') + 1)
   const targetPart = resolved.join('/')
   const targets: Record<string, RegExp> = { officeDocument: /^xl\/workbook\.xml$/, worksheet: /^xl\/worksheets\/sheet\d+\.xml$/, styles: /^xl\/styles\.xml$/, sharedStrings: /^xl\/sharedStrings\.xml$/, theme: /^xl\/theme\/theme\d+\.xml$/, 'core-properties': /^docProps\/core\.xml$/, 'extended-properties': /^docProps\/app\.xml$/ }
   const sourceValid = part === '_rels/.rels' ? ['officeDocument', 'core-properties', 'extended-properties'].includes(role) : part === 'xl/_rels/workbook.xml.rels' && ['worksheet', 'styles', 'sharedStrings', 'theme'].includes(role)
-  if (!sourceValid || !targets[role]?.test(targetPart)) reasons.add('关系类型与来源/目标不匹配：' + part + ':' + target)
-  if (!accepted.includes(type) || attribute(tag, 'TargetMode') || /[\\:%?#]/.test(target) || !parts.has(resolved.join('/'))) reasons.add('外部、未知或无效目标关系：' + part + ':' + target)
+  if (!sourceValid || !targets[role]?.test(targetPart)) reasons.add(uiText('关系类型与来源/目标不匹配：', "Relationship type does not match source/target: ", "Тип связи не соответствует источнику/цели: ") + part + ':' + target)
+  if (!accepted.includes(type) || attribute(tag, 'TargetMode') || /[\\:%?#]/.test(target) || !parts.has(resolved.join('/'))) reasons.add(uiText('外部、未知或无效目标关系：', "External, unknown, or invalid target relationship: ", "Внешняя, неизвестная или некорректная целевая связь: ") + part + ':' + target)
 }
 
 /** @private @author ddj 2026年10月28号 @param tag Node. @param reasons Refusal set. @sideEffects Refuses content types outside basic OOXML. */
 function checkType(tag: SaxesTagNS, parts: Map<string, string>, reasons: Set<string>): void {
-  if (tag.uri !== TYPES || !['Types', 'Default', 'Override'].includes(tag.local)) { reasons.add('未知 Content_Types 命名空间/元素'); return }
+  if (tag.uri !== TYPES || !['Types', 'Default', 'Override'].includes(tag.local)) { reasons.add(uiText('未知 Content_Types 命名空间/元素', "Unknown Content_Types namespace/element", "Неизвестное пространство имён/элемент Content_Types")); return }
   for (const field of Object.values(tag.attributes)) {
     if (field.uri === 'http://www.w3.org/2000/xmlns/') continue
-    if (field.uri || !['PartName', 'Extension', 'ContentType'].includes(field.local)) reasons.add('未知内容类型属性：' + field.name)
+    if (field.uri || !['PartName', 'Extension', 'ContentType'].includes(field.local)) reasons.add(uiText('未知内容类型属性：', "Unknown content type attribute: ", "Неизвестный атрибут типа содержимого: ") + field.name)
   }
   // ExcelJS emits an unused VML default even without a VML part; never accept an actual drawing.
   if (tag.local === 'Default' && attribute(tag, 'Extension') === 'vml' && attribute(tag, 'ContentType') === 'application/vnd.openxmlformats-officedocument.vmlDrawing' && ![...parts.keys()].some((part) => /\.vml$/i.test(part))) return
   const name = attribute(tag, 'PartName')
-  if (tag.local === 'Override' && (!name.startsWith('/') || !parts.has(name.slice(1)))) reasons.add('内容类型目标不存在：' + name)
-  if (tag.local === 'Default' && !['rels', 'xml'].includes(attribute(tag, 'Extension'))) reasons.add('未知默认内容扩展')
-  if (tag.local !== 'Types' && !CONTENTS.has(attribute(tag, 'ContentType'))) reasons.add('不支持的内容类型：' + attribute(tag, 'ContentType'))
+  if (tag.local === 'Override' && (!name.startsWith('/') || !parts.has(name.slice(1)))) reasons.add(uiText('内容类型目标不存在：', "Content type target missing: ", "Цель типа содержимого отсутствует: ") + name)
+  if (tag.local === 'Default' && !['rels', 'xml'].includes(attribute(tag, 'Extension'))) reasons.add(uiText('未知默认内容扩展', "Unknown default content extension", "Неизвестное расширение содержимого по умолчанию"))
+  if (tag.local !== 'Types' && !CONTENTS.has(attribute(tag, 'ContentType'))) reasons.add(uiText('不支持的内容类型：', "Unsupported content type: ", "Неподдерживаемый тип содержимого: ") + attribute(tag, 'ContentType'))
 }

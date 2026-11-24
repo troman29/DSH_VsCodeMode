@@ -1,10 +1,14 @@
+import { beforeEach, afterEach } from 'vitest'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
 /**
  * client reviewBar 纯函数测试（不触 DOM/RPC）。
  * 作者 ddj 2026年10月27号
  */
 import { describe, expect, it } from 'vitest'
 import {
-  SESSION_DOWN_NOTICE, SIDECAR_KEEP_TITLE, SIDECAR_LABEL, SIDECAR_LABEL_TITLE, SIDECAR_UNDO_TITLE,
+  sessionDownNotice, sidecarKeepTitle, sidecarLabel, sidecarLabelTitle, sidecarUndoTitle,
   officialDownView, reviewBarView,
 } from '../src/client/reviewBar.js'
 
@@ -137,18 +141,18 @@ describe('officialDownView 官方通道不可用', () => {
 
 describe('非官方栏标识与作用域说明', () => {
   it('标识用日常说法，不出现内部术语', () => {
-    expect(SIDECAR_LABEL).toBe('历史改动')
-    expect(SIDECAR_LABEL).not.toContain('侧车')
+    expect(sidecarLabel()).toBe('历史改动')
+    expect(sidecarLabel()).not.toContain('侧车')
   })
   it('Keep/Undo 说明作用域只到历史记录', () => {
-    expect(SIDECAR_KEEP_TITLE).toContain('不影响官方审查')
-    expect(SIDECAR_KEEP_TITLE).toContain('不改写磁盘')
-    expect(SIDECAR_UNDO_TITLE).toContain('不影响官方审查')
-    expect(SIDECAR_LABEL_TITLE).toContain('官方审查列表')
+    expect(sidecarKeepTitle()).toContain('不影响官方审查')
+    expect(sidecarKeepTitle()).toContain('不改写磁盘')
+    expect(sidecarUndoTitle()).toContain('不影响官方审查')
+    expect(sidecarLabelTitle()).toContain('官方审查列表')
   })
   it('会话未激活用中性说明，不出现报错口吻', () => {
-    expect(SESSION_DOWN_NOTICE).toContain('仍可查看')
-    expect(SESSION_DOWN_NOTICE).not.toContain('错误')
-    expect(SESSION_DOWN_NOTICE).not.toContain('不可用：该会话可能')
+    expect(sessionDownNotice()).toContain('仍可查看')
+    expect(sessionDownNotice()).not.toContain('错误')
+    expect(sessionDownNotice()).not.toContain('不可用：该会话可能')
   })
 })

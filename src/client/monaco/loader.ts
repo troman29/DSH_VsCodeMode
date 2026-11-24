@@ -4,6 +4,7 @@
  * 迁移自原 src/client/index.ts 的 MONACO_BASE/LANG_BY_EXT/langOf/loadMonaco，语义不改。
  * 作者 ddj 2026-08-20
  */
+import { uiText } from '../uiLocale.js'
 import { applyOfficial, registerThemes } from './theme.js'
 import { registerTemplates } from './templateLanguages.js'
 
@@ -12,7 +13,7 @@ import { loadFailureText, probeStatus } from '../loadFailure.js'
 
 export const MONACO_BASE = transportUrl('/edrv/vendor/monaco/vs')
 let monacoPromise = null
-let monacoStage = { phase: 'idle', progress: 0, message: '准备加载 Monaco…' }
+let monacoStage = { phase: 'idle', progress: 0, get message() { return uiText('准备加载 Monaco…', "Preparing to load Monaco…", "Подготовка загрузки Monaco…") } }
 const stageListeners = new Set()
 
 /**
@@ -20,10 +21,10 @@ const stageListeners = new Set()
  * @author ddj 2026年08月22号
  */
 export const MONACO_STAGES = {
-  loader: { progress: 18, message: '加载 Monaco 引导模块…' },
-  core: { progress: 72, message: '加载编辑器核心模块…' },
-  ready: { progress: 100, message: 'Monaco 编辑器已就绪' },
-  error: { progress: 0, message: 'Monaco 编辑器加载失败' },
+  loader: { progress: 18, get message() { return uiText('加载 Monaco 引导模块…', "Loading Monaco bootstrap module…", "Загрузка начального модуля Monaco…") } },
+  core: { progress: 72, get message() { return uiText('加载编辑器核心模块…', "Loading editor core…", "Загрузка ядра редактора…") } },
+  ready: { progress: 100, get message() { return uiText('Monaco 编辑器已就绪', "Monaco editor ready", "Редактор Monaco готов") } },
+  error: { progress: 0, get message() { return uiText('Monaco 编辑器加载失败', "Monaco editor failed to load", "Не удалось загрузить редактор Monaco") } },
 }
 
 /**
@@ -217,7 +218,7 @@ export function loadMonaco(onProgress) {
           // 探测真实状态码，把 403（Host 围栏）/401/404/网络错误区分开，避免一律提示「资源不完整」
           const loaderUrl = MONACO_BASE + '/loader.js'
           const status = await probeStatus(loaderUrl)
-          fail(new Error(loadFailureText('Monaco loader 加载失败', loaderUrl, status)))
+          fail(new Error(loadFailureText(uiText('Monaco loader 加载失败', "Monaco loader failed to load", "Не удалось загрузить загрузчик Monaco"), loaderUrl, status)))
         }
         hideNodeGlobals()
         document.head.appendChild(s)
@@ -228,7 +229,7 @@ export function loadMonaco(onProgress) {
           // loader 已执行但未挂载 require（全局 module 污染残留/文件异常）：报真实原因，
           // 不再重注入——残留标签场景已在注入前分支处理，此处重试只会无限循环
           if (typeof window.require !== 'function' || typeof window.require.config !== 'function') {
-            fail(new Error('Monaco loader 未挂载 window.require（可能被其他脚本注入的全局 module 干扰）'))
+            fail(new Error(uiText('Monaco loader 未挂载 window.require（可能被其他脚本注入的全局 module 干扰）', "Monaco loader did not initialize window.require (another script’s global module may interfere)", "Загрузчик Monaco не создал window.require (возможно влияние глобального module другого скрипта)")))
             return
           }
           window.require.config({ paths: { vs: MONACO_BASE } })
@@ -246,7 +247,7 @@ export function loadMonaco(onProgress) {
               applyOfficial(window.monaco)
             } catch (error) { /* 主题失败不阻塞编辑器 */ }
             resolve(window.monaco)
-          }, (err) => fail(new Error('Monaco 模块加载失败：' + String(err))))
+          }, (err) => fail(new Error(uiText('Monaco 模块加载失败：', "Monaco module loading failed: ", "Ошибка загрузки модуля Monaco: ") + String(err))))
         } catch (error) {
           fail(error)
         }

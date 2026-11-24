@@ -1,6 +1,10 @@
 /** 调试面板断点行右键菜单条目测试（对齐 CodeBuddy 断点视图行菜单）。作者 ddj 2026年09月21号 */
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { buildBpRowMenu } from '../src/client/dap/bpRowMenu.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 describe('buildBpRowMenu', () => {
   it('启用态：编辑组四项 + 禁用断点 + 删除断点，编辑组后置分隔线', () => {

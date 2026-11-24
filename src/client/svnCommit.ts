@@ -5,6 +5,7 @@
  * 纯投影规则在 ui/svnCommitModel（可单测）。
  * @author ddj 2026年11月15号
  */
+import { uiText } from './uiLocale.js'
 import type { AiCommitStyle, SvnCommitPlan, SvnCommitResult } from '../shared/svn.js'
 import { rpc } from './rpc.js'
 
@@ -55,10 +56,10 @@ export interface SvnAiCommitOutcome {
 export async function svnCommitPlan(sessionId?: string): Promise<SvnCommitPlanOutcome> {
   try {
     const res = await rpc('svn.commitPlan', { sessionId })
-    if (!res.ok) return { ok: false, message: '读取提交清单失败：' + res.error }
-    return { ok: true, plan: res as unknown as SvnCommitPlan, message: '已读取提交清单' }
+    if (!res.ok) return { ok: false, message: uiText('读取提交清单失败：', "Failed to read commit list: ", "Не удалось прочитать список коммита: ") + res.error }
+    return { ok: true, plan: res as unknown as SvnCommitPlan, message: uiText('已读取提交清单', "Commit list loaded", "Список коммита загружен") }
   } catch (error) {
-    return { ok: false, message: '读取提交清单失败：' + String(error) }
+    return { ok: false, message: uiText('读取提交清单失败：', "Failed to read commit list: ", "Не удалось прочитать список коммита: ") + String(error) }
   }
 }
 
@@ -75,10 +76,10 @@ export async function svnCommitNow(
 ): Promise<SvnCommitDoOutcome> {
   try {
     const res = await rpc('svn.commit', { sessionId, ...request })
-    if (!res.ok) return { ok: false, message: '提交失败：' + res.error }
-    return { ok: true, result: res as unknown as SvnCommitResult, message: res.summary ?? '提交完成' }
+    if (!res.ok) return { ok: false, message: uiText('提交失败：', "Commit failed: ", "Ошибка коммита: ") + res.error }
+    return { ok: true, result: res as unknown as SvnCommitResult, message: res.summary ?? uiText('提交完成', "Commit completed", "Коммит завершён") }
   } catch (error) {
-    return { ok: false, message: '提交失败：' + String(error) }
+    return { ok: false, message: uiText('提交失败：', "Commit failed: ", "Ошибка коммита: ") + String(error) }
   }
 }
 
@@ -93,7 +94,7 @@ export async function svnCommitNow(
 export async function svnAiCommitMsg(sessionId: string | undefined, paths: string[], style?: AiCommitStyle): Promise<SvnAiCommitOutcome> {
   try {
     const res = await rpc('svn.aiCommitMsg', { sessionId, paths, ...(style ? { style } : {}) })
-    if (!res.ok) return { ok: false, message: 'AI 生成提交信息失败：' + res.error }
+    if (!res.ok) return { ok: false, message: uiText('AI 生成提交信息失败：', "AI commit message generation failed: ", "Не удалось создать сообщение коммита с AI: ") + res.error }
     return {
       ok: true,
       subject: res.subject,
@@ -101,9 +102,9 @@ export async function svnAiCommitMsg(sessionId: string | undefined, paths: strin
       text: res.message,
       model: res.model,
       stats: res.stats,
-      message: '已生成提交信息（请确认后再提交）',
+      message: uiText('已生成提交信息（请确认后再提交）', "Commit message generated (review before committing)", "Сообщение коммита создано (проверьте перед коммитом)"),
     }
   } catch (error) {
-    return { ok: false, message: 'AI 生成提交信息失败：' + String(error) }
+    return { ok: false, message: uiText('AI 生成提交信息失败：', "AI commit message generation failed: ", "Не удалось создать сообщение коммита с AI: ") + String(error) }
   }
 }

@@ -1,5 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { addReloadGuard, createPageReload, installPageReload, pageKeysAllowed } from '../src/client/pageReload.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers() })
 

@@ -1,5 +1,6 @@
 /** Real SVN button result decisions under isolated IO, not real Host acceptance. @author ddj 2026年10月29号 */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { bindUiLocale } from '../src/client/uiLocale.js'
 
 interface HookMemo { deps?: unknown[]; result: unknown }
 interface HookEffect { deps?: unknown[]; cleanup?: () => void }
@@ -26,6 +27,10 @@ vi.mock('../src/client/svnStatus.js', () => ({
 import { SvnPanel } from '../src/client/sidebar/panels/SvnPanel.js'
 import { createAddToConversation } from '../src/client/addToConversation.js'
 import { buildAgentPrompt } from '../src/shared/svn.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** @private @author ddj 2026年10月29号 @param initial Initial state. @returns Persistent state and setter. */
 function stateHook(initial: any): [any, (next: any) => void] {
@@ -104,7 +109,7 @@ function callerContext(scenario: CallerCase) {
 /** @private @author ddj 2026年10月29号 @param ctx Actual panel input. @param scenario Receipt scenario. Checks targets, exact prompt and side-effect counts. */
 function assertCalls(ctx: ReturnType<typeof callerContext>, scenario: CallerCase): void {
   const add = ctx.addToConversation
-  expect(add.startDraftSession).toHaveBeenCalledExactlyOnceWith('/isolated-wc')
+  expect(add.startDraftSession.mock.calls).toEqual([['/isolated-wc']])
   expect(add.sendTask).not.toHaveBeenCalled()
   expect(add.sendTaskResult).toHaveBeenCalledTimes(Number(scenario.created))
   if (scenario.created) expect(add.sendTaskResult).toHaveBeenCalledWith('target-session', buildAgentPrompt('/isolated-wc', 'target-session'))
@@ -193,7 +198,7 @@ describe('SVN deep-analysis detailed-result regression', () => {
     deepButton(renderPanel(ctx)).props.onClick()
     await flushPanel(ctx)
     expect(ctx.addToConversation.sendTaskResult).not.toHaveBeenCalled()
-    expect(ctx.addToConversation.appendText).toHaveBeenCalledExactlyOnceWith('current-session', buildAgentPrompt('/isolated-wc', 'current-session'))
+    expect(ctx.addToConversation.appendText.mock.calls).toEqual([['current-session', buildAgentPrompt('/isolated-wc', 'current-session')]])
     expect(ctx.notify).toHaveBeenCalledWith('已填入当前草稿，请手动发送')
     await assertPolling(ctx, false)
   })
@@ -216,7 +221,7 @@ describe('SVN deep-analysis detailed-result regression', () => {
     ctx.addToConversation.sendTaskResult.mockImplementation(actions.sendTaskResult!)
     deepButton(renderPanel(ctx)).props.onClick()
     await flushPanel(ctx)
-    expect(prompt).toHaveBeenCalledExactlyOnceWith([{ type: 'text', text: buildAgentPrompt('/isolated-wc', 'target-session') }], 'queue', expect.any(AbortSignal))
+    expect(prompt.mock.calls).toEqual([[[{ type: 'text', text: buildAgentPrompt('/isolated-wc', 'target-session') }], 'queue', expect.any(AbortSignal)]])
     expect(release).toHaveBeenCalledTimes(1)
     expect(remote.prompt).not.toHaveBeenCalled()
     expect(ctx.addToConversation.appendText).toHaveBeenCalledTimes(Number(outcome === 'false'))
@@ -235,9 +240,9 @@ describe('SVN deep-analysis detailed-result regression', () => {
     const services = { sessions, conversation, 'remote.session': { prompt: remotePrompt } }
     const ctx = { get: (name: string) => services[name as keyof typeof services] }
     expect(await createAddToConversation(ctx).appendText('current-session', '仅草稿任务')).toBe('ok')
-    expect(sessions.binding).toHaveBeenCalledExactlyOnceWith('current-session')
-    expect(conversation.input.for).toHaveBeenCalledExactlyOnceWith(scope)
-    expect(input.insertText).toHaveBeenCalledExactlyOnceWith('仅草稿任务', { start: 0, end: 0, draftRev: 7 })
+    expect(sessions.binding.mock.calls).toEqual([['current-session']])
+    expect(conversation.input.for.mock.calls).toEqual([[scope]])
+    expect(input.insertText.mock.calls).toEqual([['仅草稿任务', { start: 0, end: 0, draftRev: 7 }]])
     for (const send of [input.submit, retain, prompt, remotePrompt, input.setDraft]) expect(send).not.toHaveBeenCalled()
     expect(vi.getTimerCount()).toBe(0)
   })

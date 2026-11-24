@@ -1,3 +1,7 @@
+import { beforeEach, afterEach } from 'vitest'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
 /** Row and hover contract regressions. @author ddj 2026年10月20号 */
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'

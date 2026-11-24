@@ -2,7 +2,7 @@
  * client/openFlow.ts 测试：路径匹配/最近会话/规则分派纯函数 + openDeepLink 编排（mock deps 全分支）。
  * 作者 ddj 2026-09-07
  */
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import {
   containsPath,
   dirnameOf,
@@ -13,6 +13,11 @@ import {
   recentSession,
 } from '../src/client/openFlow.js'
 import type { OpenDeps, PathKind, SessionRow, WsView } from '../src/client/openFlow.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 const WS_POP: WsView = { workspaceId: 'ws-pop', path: 'D:\\Work\\PopIsland', title: 'PopIsland', sessionIds: ['s-pop'], updatedAt: '2026-09-07T10:00:00Z' }
 

@@ -2,7 +2,11 @@
  * client HTML 计划动作桥测试：可选服务探测、官方答案构造、命令与兜底路径。
  * @author ddj 2026年11月21号
  */
-import { afterEach, describe, expect, it } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it } from 'vitest'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
 import {
   answerPlanReview,
   exitPlanMode,
@@ -15,6 +19,10 @@ import {
   submitPlanResponse,
   subscribePlanFaces,
 } from '../src/client/htmlPlan/planActions.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** 投影 face 假实现（可手动触发订阅回调）。 */
 function fakeFace(snapshot: unknown) {

@@ -1,3 +1,4 @@
+import { uiText } from '../uiLocale.js'
 // @ts-nocheck
 /**
  * dsh-vscode-mode client — pdf.js 加载器（vendor 产物离线随包，/edrv/vendor/pdfjs/*）。
@@ -55,7 +56,7 @@ export function loadPdfjs() {
           resolve(handoff)
           return
         }
-        reject(new Error('pdf.js 模块加载失败：handoff 缺失'))
+        reject(new Error(uiText("pdf.js 模块加载失败：handoff 缺失", "Failed to load pdf.js: handoff missing", "Не удалось загрузить pdf.js: отсутствует handoff")))
       }
       const fail = (error) => {
         pdfjsPromise = null
@@ -81,7 +82,7 @@ export function loadPdfjs() {
         // 探测真实状态码：403（Host 围栏）/401/404/网络错误各自给不同排查方向
         const moduleUrl = PDFJS_BASE + '/build/pdf.mjs'
         const status = await probeStatus(moduleUrl)
-        fail(new Error(loadFailureText('pdf.js 模块加载失败', moduleUrl, status)))
+        fail(new Error(loadFailureText(uiText("pdf.js 模块加载失败", "Failed to load pdf.js", "Не удалось загрузить pdf.js"), moduleUrl, status)))
       }
       document.head.appendChild(s)
     })

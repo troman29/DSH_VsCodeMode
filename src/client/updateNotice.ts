@@ -4,6 +4,7 @@
  * 设计：检查失败静默（不打扰）；开发形态（link: 安装）下不提醒（应走工作区同步）。
  * 作者 ddj 2026-10-16
  */
+import { uiText } from './uiLocale.js'
 import { rpc } from './rpc.js'
 import { toastDom } from './externalOpen.js'
 import { PLUGIN_NAME } from '../compat.js'
@@ -47,7 +48,7 @@ async function checkAndNotify(): Promise<void> {
   try { storage = window.localStorage } catch { /* 隐私模式等场景静默降级 */ }
   if (storage?.getItem(NOTICE_KEY) === latest) return
   storage?.setItem(NOTICE_KEY, latest)
-  toastDom(PLUGIN_NAME + ' 有可用更新：v' + latest + '（设置页「文件与安装」可一键更新）')
+  toastDom(PLUGIN_NAME + uiText(' 有可用更新：v', " update available: v", " — доступно обновление: v") + latest + uiText('（设置页「文件与安装」可一键更新）', " (update from the installation section in settings)", " (обновите через раздел установки в настройках)"))
 }
 
 /**

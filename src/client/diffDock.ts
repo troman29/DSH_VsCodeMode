@@ -1,3 +1,4 @@
+import { uiText } from './uiLocale.js'
 /**
  * dsh-vscode-mode client — 对话差异 dock 纯函数。
  * 只负责差异文件轮转和文案，状态查询仍由组件复用现有 edrv.list/summarize。
@@ -25,7 +26,7 @@ export function nextDiffPath(paths: string[], index: number): { path: string | n
  * @returns 展示文案
  */
 export function diffDockText(count: number): string {
-  return '差异 ' + Math.max(0, Math.floor(count)) + ' 个文件 · 查看下一个'
+  return uiText("差异 ", "Changes ", "Изменения ") + Math.max(0, Math.floor(count)) + uiText(" 个文件 · 查看下一个", " files · Show next", " файлов · Показать следующий")
 }
 
 /**

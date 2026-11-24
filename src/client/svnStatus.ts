@@ -8,6 +8,7 @@
  * 动作：svnUpdate / svnTortoise / svnRevert / svnAdd / svnDiffBase 统一执行与反馈文案。
  * 作者 ddj 2026年09月16号
  */
+import { sharedDisplay } from './sharedDisplay.js'
 import { uiText } from './uiLocale.js'
 import type { SvnAction, SvnAiPlan, SvnChangeEntry, SvnIgnoreItem, SvnItemStatus, SvnPathKind, SvnStatusPayload, SvnUpdateEntry } from '../shared/svn.js'
 import { SVN_TORTOISE_LABELS, SVN_UPDATE_LABEL } from '../shared/svn.js'
@@ -192,7 +193,7 @@ export async function svnTortoise(sessionId: string | undefined, action: SvnActi
   try {
     const res = await rpc('svn.tortoise', { sessionId, action, path })
     if (!res.ok) return { ok: false, message: uiText('TortoiseSVN 启动失败：', "TortoiseSVN launch failed: ", "Ошибка запуска TortoiseSVN: ") + res.error }
-    return { ok: true, message: uiText('已打开：', "Opened: ", "Открыто: ") + SVN_TORTOISE_LABELS[action] }
+    return { ok: true, message: uiText('已打开：', "Opened: ", "Открыто: ") + sharedDisplay(SVN_TORTOISE_LABELS[action]) }
   } catch (error) {
     return { ok: false, message: uiText('TortoiseSVN 启动失败：', "TortoiseSVN launch failed: ", "Ошибка запуска TortoiseSVN: ") + String(error) }
   }
@@ -712,12 +713,12 @@ export function svnEditorActions(
     if ((def.capability ?? 'cli') === 'tortoise') {
       actions.push({
         id,
-        label: def.label,
+        label: sharedDisplay(def.label),
         kind: 'tortoise',
         tortoiseAction: tortoiseActionOf(def.id),
       })
     } else {
-      actions.push({ id, label: def.label, kind: def.id === 'update' ? 'update' : 'cli', actionId: def.id })
+      actions.push({ id, label: sharedDisplay(def.label), kind: def.id === 'update' ? 'update' : 'cli', actionId: def.id })
     }
   }
   return actions

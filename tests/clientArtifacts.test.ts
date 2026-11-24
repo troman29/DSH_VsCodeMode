@@ -41,16 +41,16 @@ const SHEET_TEXT = 'body{}'
 
 const root = `window.__ModuleLoader__.load({id:'${OWNER}',factory:(require)=>{
   ${fallbackOf(SHEET_TEXT)}
-  const exports = { __lazyShared: {rpc(){},dbg(){},dapStore:{},BP_MODE:{},MODES:[],fieldOfMode(){},ContextMenu(){},editExcel(){},exportExcel(){},notifyExcel(){},openOriginal(){}}, __setPanelImport(){} };
+  const exports = { __lazyShared: {rpc(){},dbg(){},dapStore:{},BP_MODE:{},MODES:[],fieldOfMode(){},ContextMenu(){},editExcel(){},exportExcel(){},notifyExcel(){},openOriginal(){},uiText(){}}, __setPanelImport(){} };
   exports.__setPanelImport(require.async?.bind(require)); return exports;
 }${ROOT_META}});`
 
 /** Root keys each chunk is contracted to consume. */
 const CHUNK_KEYS: Record<string, string[]> = {
-  'client.rules.js': ['rpc'],
-  'client.debug.js': ['dapStore', 'BP_MODE', 'MODES', 'fieldOfMode', 'ContextMenu', 'rpc'],
+  'client.rules.js': ['rpc', 'uiText'],
+  'client.debug.js': ['dapStore', 'BP_MODE', 'MODES', 'fieldOfMode', 'ContextMenu', 'rpc', 'uiText'],
   'client.excel.js': ['editExcel', 'exportExcel', 'notifyExcel', 'openOriginal'],
-  'client.excelcodec.js': [],
+  'client.excelcodec.js': ['uiText'],
 }
 
 /** Chunk stylesheet each chunk must declare (only the engine carries CSS today). */
@@ -85,7 +85,7 @@ async function fixture(): Promise<string> {
     writeFile(join(directory, 'client.rules.js'), chunk('client.rules.js', 'RulesPanel')),
     writeFile(join(directory, 'client.debug.js'), chunk('client.debug.js', 'DebugPanel')),
     writeFile(join(directory, 'client.excel.js'), chunk('client.excel.js', 'excelPanel')),
-    writeFile(join(directory, 'client.excelcodec.js'), `window.__ModuleLoader__.load({id:'${OWNER}',chunk:'client.excelcodec.js',factory:(require)=>({decodeExcel:function(){return 1},downloadExcel:function(){return 1}})${metaOf()}});`),
+    writeFile(join(directory, 'client.excelcodec.js'), `window.__ModuleLoader__.load({id:'${OWNER}',chunk:'client.excelcodec.js',factory:(require)=>{const {uiText}=require('${OWNER}').__lazyShared;return {decodeExcel:function(){return 1},downloadExcel:function(){return 1}}}${metaOf()}});`),
   ])
   return directory
 }

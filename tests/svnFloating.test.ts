@@ -1,6 +1,11 @@
 import { readFileSync } from 'node:fs'
 import ts from 'typescript'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { bindUiLocale, uiText } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** @private @author ddj 2026年10月14号 @param name UI module basename. @returns Current production source for wiring assertions. */
 function source(name: string): string { return readFileSync(new URL('../src/client/ui/' + name + '.ts', import.meta.url), 'utf8') }
@@ -15,7 +20,8 @@ function callback(text: string, name: string, scope: Record<string, unknown>): (
   }
   visit(file)
   if (!body) throw new Error('Missing callback: ' + name)
-  return new Function(...Object.keys(scope), ts.transpile(body) + '; return ' + name)(...Object.values(scope))
+  const dependencies = { uiText, ...scope }
+  return new Function(...Object.keys(dependencies), ts.transpile(body) + '; return ' + name)(...Object.values(dependencies))
 }
 
 const editor = source('EditorView')
@@ -34,7 +40,8 @@ describe('SVN nonmodal window wiring', () => {
   it('mounts diff independently in both render paths and preserves all diff guards', () => {
     expect(editor).not.toContain('} else if (svnDiff) {')
     expect(editor.match(/\n\s+svnDiffEl,/g)).toHaveLength(2)
-    expect(editor).toContain("title: '文件对比 · ' + baseNameOf(svnDiff.path)")
+    expect(editor).toContain("title: uiText('文件对比 · '")
+    expect(editor).toContain('+ baseNameOf(svnDiff.path), width: 1100, height: 680')
     expect(editor).toContain('...svnDiff, key:')
     expect(editor).toContain('blocked: false')
     expect(editor).not.toContain('&& !svnDiff')

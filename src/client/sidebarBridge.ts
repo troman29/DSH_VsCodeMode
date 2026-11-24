@@ -6,6 +6,7 @@
  * 作者 ddj 2026年08月25号
  */
 
+import { uiText } from './uiLocale.js'
 import React from 'react'
 import { log } from './log.js'
 
@@ -15,6 +16,7 @@ export const BETTER_SIDEBAR_SERVICE = 'betterSidebar'
 export const SIDE_TAB_ID = 'edrv-editor'
 /** 侧边栏 Tab 标题。 */
 export const SIDE_TAB_TITLE = '文件编辑'
+const editorTabTitle = (): string => uiText('文件编辑', 'File editor', 'Файловый редактор')
 /** 推荐安装命令（提示条/兼容性报告共用）。 */
 export const SIDEBAR_INSTALL_CMD = 'dsh plugin --profile web add dsh-better-sidebar'
 
@@ -195,7 +197,7 @@ export function installSideEditor(options: {
     try {
       service.openTab({
         type: SIDE_TAB_ID,
-        title: SIDE_TAB_TITLE,
+        get title() { return editorTabTitle() },
         ...(path ? { path } : {}),
         meta: { openPath: path || undefined, focusDiff },
       }, { sessionId, cwd: scope?.cwd })
@@ -216,7 +218,7 @@ export function installSideEditor(options: {
   try {
     tabDisposer = service.registerTab({
       id: SIDE_TAB_ID,
-      title: SIDE_TAB_TITLE,
+      get title() { return editorTabTitle() },
       icon: codeIcon,
       single: true,
       badge: (_ctx: unknown, scope: { sessionId?: string }) => getSidePending(scope?.sessionId) || null,

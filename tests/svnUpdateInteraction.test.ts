@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { bindUiLocale } from '../src/client/uiLocale.js'
 const h = vi.hoisted(() => ({ slots: [] as any[], effects: [] as any[], cursor: 0, ec: 0, queue: [] as any[], rpc: vi.fn() }))
 vi.mock('../src/client/rpc.js', () => ({ rpc: h.rpc }))
 vi.mock('../src/client/ui/ContextMenu.js', () => ({ ContextMenu: 'context-menu' }))
@@ -29,6 +30,10 @@ vi.mock('react', async (original) => {
   } }
 })
 import { SvnUpdateDialog } from '../src/client/ui/SvnUpdateDialog.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 const state = { ok: true, jobId: 'j', target: 'Assets', phase: 'completed', counts: { A: 0, U: 0, D: 0, G: 0, C: 2, E: 0, R: 0 },
   revision: 2, elapsedMs: 1, error: '', rawTail: '', truncated: false, nextSeq: 2 }
 const rows = [{ seq: 1, action: 'C', path: 'z.txt', relPath: 'z.txt', label: '冲突', raw: 'C z.txt' },

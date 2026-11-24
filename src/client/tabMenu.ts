@@ -1,3 +1,4 @@
+import { sharedDisplay } from './sharedDisplay.js'
 import { uiText } from './uiLocale.js'
 /**
  * dsh-vscode-mode client — 文件页签右键菜单模型（纯函数，可单测）。
@@ -98,7 +99,7 @@ function svnEntriesOf(state: TabMenuState): TabMenuEntry[] {
     if (!svnActionOn(action, context)) continue
     entries.push({
       id: 'svn-' + action.id,
-      label: action.label,
+      label: sharedDisplay(action.label),
       danger: action.danger === true,
       // 分隔线属入口级外观：页签菜单的 SVN 组恒以分隔线起头（挂在前一组「固定」之后），
       // 故由本入口决定，不放进共享元数据（否则会连带改动树菜单的分组外观）

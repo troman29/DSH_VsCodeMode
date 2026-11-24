@@ -6,6 +6,7 @@
  * 编辑器、文件夹补引用。纯函数可单测；编排依赖经 OpenDeps 注入（mock 可测）。
  * 作者 ddj 2026-09-07
  */
+import { uiText } from './uiLocale.js'
 import { rpc } from './rpc.js'
 import { chooseWorkspace } from './chooseDialog.js'
 import { requestOpen } from './openReceipt.js'
@@ -125,7 +126,7 @@ export function pickRule(kind: PathKind, matched: boolean, hasSession: boolean):
 export async function openDeepLink(ctx: unknown, params: OpenParams, overrides: Partial<OpenDeps> = {}): Promise<boolean> {
   const deps = realDeps(ctx, overrides)
   if (!(await waitListsReady(deps))) {
-    deps.notify('DSH 会话列表未就绪，请稍后重试')
+    deps.notify(uiText('DSH 会话列表未就绪，请稍后重试', "DSH session list is not ready; retry shortly", "Список сеансов DSH не готов; повторите позже"))
     return false
   }
   const primary = params.paths[0]
@@ -134,7 +135,7 @@ export async function openDeepLink(ctx: unknown, params: OpenParams, overrides: 
   const rule = pickRule(kind, matchWorkspaces(deps.workspaces().items, primary).length > 0, Boolean(recentSession(sess.byId, sess.ids)))
   try {
     if (rule === 'abort') {
-      deps.notify('路径不存在：' + primary)
+      deps.notify(uiText('路径不存在：', "Path does not exist: ", "Путь отсутствует: ") + primary)
       return false
     }
     if (rule === 'choose') await runChoose(deps, primary, params)
@@ -143,7 +144,7 @@ export async function openDeepLink(ctx: unknown, params: OpenParams, overrides: 
     else await runFileBootstrap(deps, primary, params)
     return true
   } catch (error) {
-    deps.notify('打开失败：' + String((error as Error)?.message ?? error))
+    deps.notify(uiText('打开失败：', "Open failed: ", "Ошибка открытия: ") + String((error as Error)?.message ?? error))
     return false
   }
 }
@@ -161,8 +162,8 @@ async function waitListsReady(deps: OpenDeps): Promise<boolean> {
 async function runChoose(deps: OpenDeps, folder: string, params: OpenParams): Promise<void> {
   const matches = matchWorkspaces(deps.workspaces().items, folder)
   const best = bestMatch(deps, matches)
-  const choice = await deps.choose(best?.title ?? '工作区', folder)
-  if (choice === null) throw new Error('用户取消打开')
+  const choice = await deps.choose(best?.title ?? uiText('工作区', "Workspace", "Рабочее пространство"), folder)
+  if (choice === null) throw new Error(uiText('用户取消打开', "Opening cancelled by user", "Открытие отменено пользователем"))
   if (choice === 'create') return runFolderNew(deps, folder, params)
   const ws = best ?? deps.workspaces().items[0]
   const sessionId = await spawnInWorkspace(deps, ws.workspaceId, undefined)
@@ -264,7 +265,7 @@ async function settleRef(deps: OpenDeps, sessionId: string, path: string, appear
     if (await deps.reference(sessionId, path, appearance)) return
     await sleep(deps, REF_RETRY_MS)
   }
-  throw new Error('引用插入未完成')
+  throw new Error(uiText('引用插入未完成', "Reference insertion incomplete", "Вставка ссылки не завершена"))
 }
 
 /** 其余路径：文件进编辑器（步进），文件夹补文件夹引用。 */
@@ -277,7 +278,7 @@ async function openRest(deps: OpenDeps, sessionId: string | null, params: OpenPa
     } else if (kind === 'directory' && sessionId) {
       await settleRef(deps, sessionId, path, 'folder')
     } else {
-      throw new Error('路径不存在：' + path)
+      throw new Error(uiText('路径不存在：', "Path does not exist: ", "Путь отсутствует: ") + path)
     }
   }
 }
@@ -323,7 +324,7 @@ function realDeps(ctx: unknown, overrides: Partial<OpenDeps> = {}): OpenDeps {
       }
       const draft = await newDraftSession(ctx as CtxLike, opts.cwd)
       if (draft.ok && draft.id) return draft.id
-      throw new Error('新建会话失败')
+      throw new Error(uiText('新建会话失败', "Failed to create session", "Ошибка создания сеанса"))
     },
     createWorkspace: async (path) => {
       const ws = await service('workspaces').create({ path })
@@ -365,5 +366,5 @@ function realDeps(ctx: unknown, overrides: Partial<OpenDeps> = {}): OpenDeps {
  * @param column Optional column.
  */
 async function openChecked(deps: OpenDeps, sessionId: string | undefined, path: string | null, line?: number, column?: number): Promise<void> {
-  if (!(await deps.openEditor(path, line, column, sessionId))) throw new Error('编辑器打开未完成：' + (path ?? '工作区'))
+  if (!(await deps.openEditor(path, line, column, sessionId))) throw new Error(uiText('编辑器打开未完成：', "Editor opening incomplete: ", "Открытие редактора не завершено: ") + (path ?? uiText('工作区', "Workspace", "Рабочее пространство")))
 }

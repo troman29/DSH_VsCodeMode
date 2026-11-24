@@ -1,4 +1,5 @@
 /** Panel-local callback and React subtree isolation, not a security sandbox. @author ddj 2026年10月22号 */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import type { SidebarCtx, SidebarPanelDef } from './types.js'
 
@@ -42,10 +43,10 @@ export class PanelBoundary extends React.Component<BoundaryProps, BoundaryState>
   /** @public @author ddj 2026年10月22号 @returns Original subtree or panel-local retry UI. */
   render(): React.ReactNode {
     if (!this.state.error) return React.createElement(React.Fragment, { key: ownerKey(this.props) }, this.props.children)
-    if (this.props.compact) return React.createElement('span', { role: 'img', title: '图标加载失败', 'aria-label': '图标加载失败' }, '!')
+    if (this.props.compact) return React.createElement('span', { role: 'img', title: uiText('图标加载失败', "Icon failed to load", "Ошибка загрузки значка"), 'aria-label': uiText('图标加载失败', "Icon failed to load", "Ошибка загрузки значка") }, '!')
     return React.createElement('div', { className: 'edrv-empty', role: 'alert' },
       this.props.panel.title + '：' + String(this.state.error.message),
-      React.createElement('button', { onClick: this.retry }, '重试'))
+      React.createElement('button', { onClick: this.retry }, uiText('重试', "Retry", "Повторить")))
   }
 }
 

@@ -1,3 +1,4 @@
+import { uiText } from '../uiLocale.js'
 /** Shared in-page window chrome, without a mask or focus trap. @author ddj 2026年10月14号 */
 import React from 'react'
 import { createPortal } from 'react-dom'
@@ -164,5 +165,5 @@ export function FloatingWindow(props: WindowProps): React.ReactPortal {
   React.createElement('div', { className: 'edrv-floating-title', onPointerDown: moveStart },
     React.createElement('span', null, props.title), props.actions),
   React.createElement('div', { className: 'edrv-floating-content' + (props.dialogClass ? ' ' + props.dialogClass : '') }, props.children),
-  React.createElement('div', { className: 'edrv-floating-grip', title: '拖动调整窗口大小', onPointerDown: sizeStart })), document.body)
+  React.createElement('div', { className: 'edrv-floating-grip', title: uiText("拖动调整窗口大小", "Drag to resize window", "Перетащи для изменения размера окна"), onPointerDown: sizeStart })), document.body)
 }

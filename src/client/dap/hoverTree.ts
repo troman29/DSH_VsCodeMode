@@ -12,6 +12,7 @@
  * Monaco 构建中确认存在）；找不到容器时退化为静态行，不抛错、不影响其它功能。
  * 作者 ddj 2026年09月21号
  */
+import { uiText } from '../uiLocale.js'
 import { dapStore } from './store.js'
 import { dapTrace } from './trace.js'
 import type { DapVariableView } from '../../shared/dap.js'
@@ -34,7 +35,7 @@ export const HINT_HOST_ATTR = 'data-edrv-hint-host'
 /** LSP 占位行标记（Alt 按住但真实 LSP 行尚未返回时顶位显示）。 */
 export const PLACEHOLDER_ATTR = 'data-edrv-placeholder'
 /** LSP 占位行文案。 */
-export const LSP_PLACEHOLDER_TEXT = 'LSP 信息加载中…'
+export const lspPlaceholderText = (): string => uiText('LSP 信息加载中…', "Loading LSP information…", "Загрузка информации LSP…")
 /** 行归属标记（`debug` = 调试块所在行，其余为 `lsp`）。 */
 const ROW_ATTR = 'data-edrv-row'
 /**
@@ -176,7 +177,7 @@ export function rowPlan(held: boolean): { debug: boolean; lsp: boolean } {
  * @returns 单行文案
  */
 export function hintText(held: boolean): string {
-  return held ? '松开 Alt 返回调试值' : '按住 Alt 查看 LSP 信息'
+  return held ? uiText('松开 Alt 返回调试值', "Release Alt to return to debug values", "Отпустите Alt для возврата к значениям отладки") : uiText('按住 Alt 查看 LSP 信息', "Hold Alt to view LSP information", "Удерживайте Alt для просмотра информации LSP")
 }
 
 /**
@@ -265,7 +266,7 @@ export function rowsOf(state: TreeState, parent: string, depth: number, anc: rea
  * @returns 提示行 HTML
  */
 function limitNoteHtml(depth: number): string {
-  return '<li ' + LINE_ATTR + '="1" data-edrv-depth="' + String(depth) + '" ' + NOTE_ATTR + '="limit">已达行数上限（' + String(MAX_ROWS) + '），请在监视面板查看</li>'
+  return '<li ' + LINE_ATTR + '="1" data-edrv-depth="' + String(depth) + '" ' + NOTE_ATTR + '="limit">' + uiText('已达行数上限（', 'Row limit reached (', 'Достигнут лимит строк (') + String(MAX_ROWS) + uiText('），请在监视面板查看', '); use the Watch panel', '); используйте панель наблюдения') + '</li>'
 }
 
 /**
@@ -275,7 +276,7 @@ function limitNoteHtml(depth: number): string {
  * @returns 提示行 HTML
  */
 function emptyNoteHtml(depth: number): string {
-  return '<li ' + LINE_ATTR + '="1" data-edrv-depth="' + String(depth) + '" ' + NOTE_ATTR + '="empty">（无子项）</li>'
+  return '<li ' + LINE_ATTR + '="1" data-edrv-depth="' + String(depth) + '" ' + NOTE_ATTR + '="empty">' + uiText('（无子项）', '(No children)', '(Нет дочерних элементов)') + '</li>'
 }
 
 /**
@@ -557,7 +558,7 @@ function syncPlaceholder(hover: HTMLElement, held: boolean): void {
   node.setAttribute(ROW_ATTR, 'lsp')
   // 内联样式：占位行不在本文件既有 CSS 钩子清单里，避免为此扩散样式改动
   node.style.cssText = 'padding:2px 8px;font-style:italic;color:var(--dsw-alias-label-tertiary,#8a949b)'
-  node.textContent = LSP_PLACEHOLDER_TEXT
+  node.textContent = lspPlaceholderText()
   content.appendChild(node)
 }
 

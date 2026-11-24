@@ -1,3 +1,4 @@
+import { uiText } from '../uiLocale.js'
 /** Mounts the shared Excel engine panel without ever duplicating an engine. @author ddj 2026年11月10号 */
 import type { ExcelState } from './controller.js'
 import { loadChunk } from '../lazyPanel.js'
@@ -10,7 +11,7 @@ type ExcelPanelLoader = () => Promise<ExcelPanel>
 function loadExcelPanel(): Promise<ExcelPanel> {
   return loadChunk(FILE).then((exports) => {
     const { excelPanel } = exports
-    if (typeof excelPanel !== 'function') throw new Error('表格脚本缺少面板导出')
+    if (typeof excelPanel !== 'function') throw new Error(uiText("表格脚本缺少面板导出", "Spreadsheet script has no panel export", "В табличном модуле отсутствует экспорт панели"))
     return excelPanel as ExcelPanel
   })
 }

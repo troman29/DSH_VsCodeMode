@@ -2,8 +2,12 @@
  * client sessionError 文案归一测试（不触 DOM/RPC）。
  * 作者 ddj 2026年10月27号
  */
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { sessionErrorText, sessionMissingTitle } from '../src/client/sessionError.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 describe('sessionErrorText', () => {
   it('规范会话缺失文案归一为终态提示', () => {

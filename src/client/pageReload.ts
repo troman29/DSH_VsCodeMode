@@ -1,4 +1,5 @@
 /** Guarded page-only reload; never restarts Host. @author ddj 2026年10月12号 */
+import { uiText } from './uiLocale.js'
 export interface ReloadGuard { check(): string | null; prepare(): void }
 export interface ReloadDeps {
   flush(): Promise<void>
@@ -34,18 +35,18 @@ export function createPageReload(deps: ReloadDeps, checks: Iterable<ReloadGuard>
     let timer: ReturnType<typeof setTimeout> | undefined
     try {
       const reason = reloadBlock(checks)
-      if (reason) { deps.notify('未刷新：' + reason); return }
+      if (reason) { deps.notify(uiText('未刷新：', "Page not refreshed: ", "Страница не обновлена: ") + reason); return }
       for (const guard of checks) guard.prepare()
       const timeout = new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error('界面状态保存超时')), deps.timeoutMs ?? 5000)
+        timer = setTimeout(() => reject(new Error(uiText('界面状态保存超时', "Saving UI state timed out", "Истекло время сохранения состояния интерфейса"))), deps.timeoutMs ?? 5000)
       })
       await Promise.race([deps.flush(), timeout])
       if (disposed) return
       const changed = reloadBlock(checks)
-      if (changed) { deps.notify('未刷新：' + changed); return }
+      if (changed) { deps.notify(uiText('未刷新：', "Page not refreshed: ", "Страница не обновлена: ") + changed); return }
       deps.reload()
     } catch (error) {
-      if (!disposed) deps.notify('未刷新：' + String(error))
+      if (!disposed) deps.notify(uiText('未刷新：', "Page not refreshed: ", "Страница не обновлена: ") + String(error))
     } finally {
       clearTimeout(timer)
       busy = false

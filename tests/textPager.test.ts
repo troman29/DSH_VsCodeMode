@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { bindUiLocale, uiText } from '../src/client/uiLocale.js'
 
 const viewHooks = vi.hoisted(() => ({ refs: [] as any[], states: [] as any[], effects: [] as any[], refIndex: 0, stateIndex: 0, effectIndex: 0 }))
 vi.mock('react', () => ({ default: {
@@ -36,7 +37,7 @@ async function editorFunction(name: string, dependencies: Record<string, unknown
   const javascript = ts.transpileModule(found.getText(ast), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
   // Extracted functions still need the production import used by their Excel guard.
   // useOffice 是 v0.30.0 起 EditorView 的 Office 路由判定：本测试跑文本分页，统一按「非 Office」注入
-  const scope = { isExcelPath, useOffice: () => false, ...dependencies }
+  const scope = { uiText, isExcelPath, useOffice: () => false, ...dependencies }
   return new Function(...Object.keys(scope), javascript + `;return ${name}`)(...Object.values(scope))
 }
 
@@ -133,6 +134,10 @@ import { createTextPager } from '../src/client/textPages.js'
 import { TEXT_PAGE_BYTES, TEXT_VIEW_BYTES, TEXT_VIEW_LINES } from '../src/shared/textPages.js'
 import type { TextPageResult } from '../src/shared/textPages.js'
 
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
+
 /** @private @author ddj 2026年10月22号 @param text Page content. @param offset Byte position. @param eof End marker. @returns Valid server envelope. */
 function page(text: string, offset = text.length, eof = false): TextPageResult {
   return { ok: true, text, offset, size: eof ? offset : TEXT_VIEW_BYTES * 2, version: 'v1', eof,
@@ -150,8 +155,8 @@ describe('actual EditorView paging integration', () => {
       isImagePath: () => false, isPdfPath: () => false, rpc, openFile, setOpenInput, setPathDraft, setStatus, setError, doSave })
 
     await open()
-    expect(rpc).toHaveBeenCalledExactlyOnceWith('edrv.read', { sessionId: 's', path: 'sample.txt' })
-    expect(openFile).toHaveBeenCalledExactlyOnceWith('sample.txt', false)
+    expect(rpc.mock.calls).toEqual([['edrv.read', { sessionId: 's', path: 'sample.txt' }]])
+    expect(openFile.mock.calls).toEqual([['sample.txt', false]])
     expect(setOpenInput).toHaveBeenCalledWith(false)
     expect(setPathDraft).toHaveBeenCalledWith('')
     expect(setError).toHaveBeenLastCalledWith(null)

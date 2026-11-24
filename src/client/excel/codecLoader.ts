@@ -1,3 +1,4 @@
+import { uiText } from '../uiLocale.js'
 /** Lazily materialized Excel codec; the root bundle never carries exceljs/fflate/saxes. @author ddj 2026年11月10号 */
 import type { IWorkbookData } from '@univerjs/presets'
 import { loadChunk } from '../lazyPanel.js'
@@ -19,7 +20,7 @@ export function setExcelCodec(next?: () => Promise<ExcelCodec>): void {
 /** @private @author ddj 2026年11月10号 @param exports Raw codec chunk exports. @returns Validated codec functions. @throws Incomplete chunk export. */
 function pickCodec(exports: Record<string, unknown>): ExcelCodec {
   const { decodeExcel, downloadExcel } = exports
-  if (typeof decodeExcel !== 'function' || typeof downloadExcel !== 'function') throw new Error('表格编解码脚本缺少导出')
+  if (typeof decodeExcel !== 'function' || typeof downloadExcel !== 'function') throw new Error(uiText("表格编解码脚本缺少导出", "Spreadsheet codec exports are missing", "Отсутствуют экспорты табличного кодека"))
   return { decodeExcel, downloadExcel } as ExcelCodec
 }
 

@@ -3,8 +3,12 @@
  * 期望值逐字对齐 CodeBuddy（VS Code 内核）官方中文语言包译文。
  * 作者 ddj 2026年09月29号
  */
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { buildBpMenu } from '../src/client/dap/bpMenu.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 describe('buildBpMenu · 无断点（CodeBuddy 四项添加类）', () => {
   it('四项文案与顺序逐字一致', () => {

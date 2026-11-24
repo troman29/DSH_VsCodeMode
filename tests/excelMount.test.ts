@@ -1,4 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
 import { mountExcel } from '../src/client/excel/mountExcel.js'
 import { setPanelImport } from '../src/client/lazyPanel.js'
 
@@ -38,7 +42,7 @@ describe('excel engine mounting', () => {
     const second = fakeHost()
     await mountExcel(second, state, '/tmp/a.xlsx', '/tmp', load as any)
 
-    expect(excelPanel).toHaveBeenCalledExactlyOnceWith(state, '/tmp/a.xlsx', '/tmp')
+    expect(excelPanel.mock.calls).toEqual([[state, '/tmp/a.xlsx', '/tmp']])
     expect(load).toHaveBeenCalledTimes(1)
     expect(first.children).toEqual([node])
     expect(second.children).toEqual([node])

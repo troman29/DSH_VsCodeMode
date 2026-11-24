@@ -13,6 +13,7 @@
  * - 单个文件失败不整批中断：失败条目记入结果，由调用方统一提示。
  * 作者 ddj 2026年11月03号
  */
+import { uiText } from './uiLocale.js'
 import { readBinaryPreview } from '../shared/rpc.js'
 import { baseNameOf } from '../shared/fsNames.js'
 import { rpc } from './rpc.js'
@@ -168,17 +169,17 @@ async function runBatch(paths: string[], ctx?: SidebarCtx): Promise<void> {
   // 选择器必须在用户手势的同步栈里触发，故放在第一个 await 之前。
   const sink = await pickSaveSink()
   if (sink === 'cancelled') {
-    ctx?.notify?.('已取消下载')
+    ctx?.notify?.(uiText('已取消下载', "Download cancelled", "Скачивание отменено"))
     return
   }
   if (sink.kind === 'browser') ctx?.notify?.(fallbackText(sink.reason))
-  if (paths.length > 1) ctx?.notify?.('正在下载 ' + paths.length + ' 个文件…')
+  if (paths.length > 1) ctx?.notify?.(uiText('正在下载 ', "Downloading ", "Скачивание ") + paths.length + uiText(' 个文件…', " files…", " файлов…"))
 
   try {
     const out = await downloadMany(paths, { sessionId: ctx?.sessionId, sink })
     ctx?.notify?.(batchText(out))
   } catch (error) {
-    ctx?.notify?.('下载失败：' + textOfError(error))
+    ctx?.notify?.(uiText('下载失败：', "Download failed: ", "Ошибка скачивания: ") + textOfError(error))
   }
 }
 
@@ -189,9 +190,9 @@ async function runBatch(paths: string[], ctx?: SidebarCtx): Promise<void> {
  * @returns 单行提示文案
  */
 function fallbackText(reason: SaveFallback): string {
-  if (reason === 'unsupported') return '浏览器不支持选择保存目录，已保存到默认下载目录'
-  if (reason === 'insecure') return '当前页面不是安全上下文（需 https 或 localhost），已保存到默认下载目录'
-  return '未获得目录写入权限，已保存到默认下载目录'
+  if (reason === 'unsupported') return uiText('浏览器不支持选择保存目录，已保存到默认下载目录', "Browser cannot select a save directory; saved to default downloads", "Браузер не поддерживает выбор каталога; сохранено в стандартные загрузки")
+  if (reason === 'insecure') return uiText('当前页面不是安全上下文（需 https 或 localhost），已保存到默认下载目录', "Page is not a secure context (requires https or localhost); saved to default downloads", "Страница вне безопасного контекста (нужны https или localhost); сохранено в стандартные загрузки")
+  return uiText('未获得目录写入权限，已保存到默认下载目录', "Directory write permission not granted; saved to default downloads", "Нет разрешения записи в каталог; сохранено в стандартные загрузки")
 }
 
 /**
@@ -201,11 +202,11 @@ function fallbackText(reason: SaveFallback): string {
  * @returns 单行提示文案
  */
 function batchText(out: DownloadBatch): string {
-  if (!out.failed.length) return '已下载 ' + out.ok.length + ' 个文件'
+  if (!out.failed.length) return uiText('已下载 ', "Downloaded ", "Скачано ") + out.ok.length + uiText(' 个文件', " files", " файлов")
   const first = out.failed[0]
-  const tail = '（' + first.path + '：' + first.message + '）'
-  if (!out.ok.length) return '下载失败：' + first.message + tail
-  return '已下载 ' + out.ok.length + ' 个，失败 ' + out.failed.length + ' 个' + tail
+  const tail = uiText('（', " (", " (") + first.path + uiText('：', ": ", ": ") + first.message + uiText('）', ")", ")")
+  if (!out.ok.length) return uiText('下载失败：', "Download failed: ", "Ошибка скачивания: ") + first.message + tail
+  return uiText('已下载 ', "Downloaded ", "Скачано ") + out.ok.length + uiText(' 个，失败 ', " succeeded, failed ", " успешно, ошибок ") + out.failed.length + uiText(' 个', " items", " элементов") + tail
 }
 
 // --endregion

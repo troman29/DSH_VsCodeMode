@@ -1,5 +1,6 @@
 /** Lazy module cache and mounted component ownership. @author ddj 2026年10月22号 */
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { bindUiLocale } from '../src/client/uiLocale.js'
 const hooks = vi.hoisted(() => ({ state: [] as any[], cursor: 0, cleanup: null as any, deps: null as any, writes: 0 }))
 vi.mock('react', () => ({ default: {
   createElement: (type: any, props: any, ...children: any[]) => ({ type, props, children }),
@@ -14,6 +15,10 @@ vi.mock('react', () => ({ default: {
   },
 } }))
 import { LazyPanel, loadChunk, loadPanel, setPanelImport } from '../src/client/lazyPanel.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 /** @private @author ddj 2026年10月22号 @returns Controlled transport response. */
 function deferred() {
   let resolve!: (exports: Record<string, unknown>) => void
@@ -33,7 +38,7 @@ describe('lazy panel loading', () => {
     const first = loadPanel('rules'), second = loadPanel('rules'); expect(first).toBe(second)
     result.resolve({ RulesPanel }); expect(await first).toBe(RulesPanel)
     expect(await loadPanel('rules')).toBe(RulesPanel)
-    expect(transport).toHaveBeenCalledExactlyOnceWith('./client.rules.js')
+    expect(transport.mock.calls).toEqual([['./client.rules.js']])
   })
   it('clears failed transports and malformed exports for explicit retry', async () => {
     const transport = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({}).mockResolvedValue({ RulesPanel })
@@ -67,7 +72,7 @@ describe('lazy chunk loading', () => {
     setPanelImport(transport)
     expect(await loadChunk('./client.excelcodec.js')).toHaveProperty('decodeExcel')
     expect(await loadChunk('./client.excelcodec.js')).toHaveProperty('decodeExcel')
-    expect(transport).toHaveBeenCalledExactlyOnceWith('./client.excelcodec.js')
+    expect(transport.mock.calls).toEqual([['./client.excelcodec.js']])
     setPanelImport(transport)
     await loadChunk('./client.excelcodec.js')
     expect(transport).toHaveBeenCalledTimes(2)

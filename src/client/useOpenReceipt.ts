@@ -1,4 +1,5 @@
 /** Correlated editor readiness for external file opens. @author ddj 2026年09月28号 */
+import { uiText } from './uiLocale.js'
 import React from 'react'
 import { finishOpen, hasOpen, peekOpen } from './openReceipt.js'
 import type { EditorRequest } from './openReceipt.js'
@@ -34,7 +35,7 @@ export class OpenMonitor {
     window.removeEventListener('edrv:open-request', this.listener)
     if (this.frame !== undefined) cancelAnimationFrame(this.frame)
     this.frame = undefined
-    if (this.pending) finishOpen(this.pending.requestId, false, '编辑器已关闭')
+    if (this.pending) finishOpen(this.pending.requestId, false, uiText('编辑器已关闭', "Editor closed", "Редактор закрыт"))
     this.pending = undefined
   }
 
@@ -101,7 +102,7 @@ export class OpenMonitor {
     if (!request || !hasOpen(request.requestId)) { this.pending = undefined; this.claim(); return }
     try {
       const host = this.read()
-      if (request.sessionId !== host.sessionId) { this.finish(request, false, '会话已切换'); return }
+      if (request.sessionId !== host.sessionId) { this.finish(request, false, uiText('会话已切换', "Session changed", "Сессия сменилась")); return }
       if (this.opening) { this.arm(); return }
       const error = host.error(request)
       if (error || host.ready(request)) { this.finish(request, !error, error ?? undefined); return }

@@ -9,6 +9,7 @@
  * 作者 ddj 2026年09月09号
  */
 
+import { uiText } from './uiLocale.js'
 import { log } from './log.js'
 import { setEnsureSideEditor } from './sidebarBridge.js'
 import { CACHE_KEY } from './paths.js'
@@ -34,6 +35,7 @@ export const OFFICIAL_TAB_ID = 'dsh-vscode-mode'
 export const OFFICIAL_TAB_KIND = 'edrvEditor'
 /** Tab 标题（与 better-sidebar 形态一致）。 */
 export const OFFICIAL_TAB_TITLE = '文件编辑'
+const editorTabTitle = (): string => uiText('文件编辑', 'File editor', 'Файловый редактор')
 /** 官方 file 资源地址前缀（0.1.5+ 聊天文件链接/文件树打开的统一地址语法）。 */
 export const OFFICIAL_FILE_PREFIX = 'dsh-resource://file/'
 /** file 地址认领的 patterns（extension 档接管官方 textpreview 的 fallback 认领，注销自动回落）。 */
@@ -309,7 +311,7 @@ export function installOfficial(options: {
   title?: () => string
 }): (() => void) | null {
   const { tabs, service, slots, renderTab, guide } = options
-  const titleOf = typeof options.title === 'function' ? options.title : () => OFFICIAL_TAB_TITLE
+  const titleOf = typeof options.title === 'function' ? options.title : () => editorTabTitle()
   const open = (path: string | null, focusDiff: boolean): boolean => {
     try {
       // 官方语义：打开即展开侧栏；seat 未挂载（无会话画面）时抛错，降级其他打开器

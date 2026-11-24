@@ -12,6 +12,7 @@
  * 显示开关持久化到 localStorage（CACHE_KEY.svn + scope），与既有面板一致。
  * 作者 ddj 2026年09月16号
  */
+import { sharedDisplay } from '../../sharedDisplay.js'
 import React from 'react'
 import { uiText } from '../../uiLocale.js'
 import { IconRefreshOutline16, entryIconEl } from '../../ui/icons.js'
@@ -246,7 +247,7 @@ function statusLetterEl(entry) {
   const tone = SVN_STATUS_TONE[entry.status] ?? 'plain'
   return React.createElement('span', {
     className: 'edrv-svn-ch edrv-svn-ch-' + tone,
-    title: SVN_STATUS_LABEL[entry.status] ?? entry.status,
+    title: sharedDisplay(SVN_STATUS_LABEL[entry.status] ?? entry.status),
   }, SVN_STATUS_LETTER[entry.status] ?? '?')
 }
 
@@ -314,9 +315,9 @@ const SvnRow = React.memo(function SvnRow(props) {
     (pairNote ? React.createElement('span', { className: 'edrv-svn-pair-mark', title: pairNote }, '⇄') : null),
     React.createElement('span', { className: 'edrv-svn-acts' },
       (entry.status === 'conflicted' ? act(uiText('冲突对比', "Compare conflicts", "Сравнить конфликты"), uiText('与 .mine/.rN 冲突副本并排对比（解决指引见差异视图顶部）', "Compare .mine/.rN conflict copies side by side (resolution guidance is at the top of the diff)", "Сравнить конфликтующие копии .mine/.rN рядом (инструкция по разрешению — сверху сравнения)"), false, () => onConflict(entry.path)) : null),
-      (diffable ? act(uiText('比较', "Compare", "Сравнить"), SVN_DIFF_BASE_LABEL + uiText('（BASE 与工作区并排）', " (BASE and workspace side by side)", " (BASE и рабочая область рядом)"), false, () => onDiff(entry.path)) : null),
-      (!entry.versioned ? act(uiText('加入', "Add", "Добавить"), SVN_ADD_LABEL, false, () => onAdd([entry.path])) : null),
-      (entry.versioned ? act(uiText('还原', "Revert", "Восстановить"), SVN_REVERT_LABEL + uiText('（放弃本地改动）', " (discard local changes)", " (отбросить локальные изменения)"), true, () => onRevert([entry.path])) : null)))
+      (diffable ? act(uiText('比较', "Compare", "Сравнить"), sharedDisplay(SVN_DIFF_BASE_LABEL) + uiText('（BASE 与工作区并排）', " (BASE and workspace side by side)", " (BASE и рабочая область рядом)"), false, () => onDiff(entry.path)) : null),
+      (!entry.versioned ? act(uiText('加入', "Add", "Добавить"), sharedDisplay(SVN_ADD_LABEL), false, () => onAdd([entry.path])) : null),
+      (entry.versioned ? act(uiText('还原', "Revert", "Восстановить"), sharedDisplay(SVN_REVERT_LABEL) + uiText('（放弃本地改动）', " (discard local changes)", " (отбросить локальные изменения)"), true, () => onRevert([entry.path])) : null)))
 })
 
 /**

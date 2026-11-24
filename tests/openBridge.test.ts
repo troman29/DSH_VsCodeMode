@@ -81,7 +81,7 @@ describe('ensureActiveBridge（tmp 端到端）', () => {
     const plain = join(base, 'plain')
     await mkdir(plain, { recursive: true })
     await writeFile(join(plain, 'package.json'), JSON.stringify({ name: 'not-a-profile' }), 'utf8')
-    const ctx = { get: () => undefined } as unknown as Ctx
+    const ctx = { get: (key: string) => key === 'dshHomePath' ? () => base : undefined } as unknown as Ctx
     expect(await ensureActiveBridge(ctx, 'http://127.0.0.1:19387')).toBeNull()
   })
 

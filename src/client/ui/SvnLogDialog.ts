@@ -21,6 +21,7 @@
  *       提到 SVN_LOG_SHOW_ALL_LIMIT（P1-7，仍是有界护栏，真全量按蓝图结论不做）。
  * 作者 ddj 2026年09月16号 / 2026年09月17号 / 2026年09月18号
  */
+import { sharedDisplay } from '../sharedDisplay.js'
 import React from 'react'
 import { uiText } from '../uiLocale.js'
 import { SVN_LOG_ACTION_LABEL } from '../../shared/svn.js'
@@ -136,7 +137,7 @@ function actionLetterEl(action) {
   const key = action || 'M'
   return React.createElement('span', {
     className: 'edrv-svn-ch edrv-svn-ch-' + (ACTION_TONE[key] ?? 'plain'),
-    title: SVN_LOG_ACTION_LABEL[key] ?? key,
+    title: sharedDisplay(SVN_LOG_ACTION_LABEL[key] ?? key),
   }, key)
 }
 

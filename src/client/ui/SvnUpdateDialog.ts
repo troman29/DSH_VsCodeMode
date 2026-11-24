@@ -2,6 +2,7 @@
  * dsh-vscode-mode client — live SVN update dialog with bounded virtual rows.
  * @author ddj 2026年09月24号
  */
+import { sharedDisplay } from '../sharedDisplay.js'
 import React from 'react'
 import { uiText } from '../uiLocale.js'
 import type { SvnConflictState, SvnPathKind, SvnResolveAccept, SvnUpdateRow, SvnUpdateState } from '../../shared/svn.js'
@@ -307,7 +308,7 @@ function rowElement(row: SvnUpdateRow, cwd: string | null | undefined, picked: b
     role: 'row', 'aria-selected': picked, className: 'edrv-update-row' + (picked ? ' is-selected' : ''),
     onClick: onPick, onContextMenu: onMenu, title: row.raw,
   },
-    React.createElement('span', { role: 'cell', className: 'edrv-update-action tone-' + tone }, resolved ? row.label + uiText('（已解决）', " (resolved)", " (разрешён)") : row.action ? row.label : uiText('信息', "Message", "Сообщение")),
+    React.createElement('span', { role: 'cell', className: 'edrv-update-action tone-' + tone }, resolved ? sharedDisplay(row.label) + uiText('（已解决）', " (resolved)", " (разрешён)") : row.action ? sharedDisplay(row.label) : uiText('信息', "Message", "Сообщение")),
     // 信息行（Updating '.' / At revision N 等）不是文件行，图标列留空。
     React.createElement('span', { role: 'cell', className: 'edrv-update-icon', 'aria-hidden': true },
       row.action ? entryIconEl(path, isDirOf(path, dirs, kinds)) : null),

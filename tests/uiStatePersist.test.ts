@@ -5,7 +5,7 @@
  *       首次搬运标记仅在整批成功后落盘 / 水合失败重试与「水合阶段结束」语义 / 无门控上报口径。
  * 作者 ddj 2026-09-28 / 2026-09-29
  */
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { rpc } from '../src/client/rpc.js'
 vi.mock('../src/client/rpc.js', () => ({ rpc: vi.fn(), dbg: vi.fn() }))
 import {
@@ -22,6 +22,11 @@ import {
   type UiStateMirror,
   type UiStatePush,
 } from '../src/client/state/uiStatePersist.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** 等一轮宏任务（重试回调内部 await fetch，需让微任务全部跑完）。 */
 function tick(): Promise<void> {

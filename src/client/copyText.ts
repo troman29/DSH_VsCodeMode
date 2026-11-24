@@ -12,9 +12,10 @@
  * @param notify 反馈通道（缺省不反馈）
  * @returns 是否复制成功
  */
+import { uiText } from './uiLocale.js'
 export async function copyText(value: string, okText: string, notify?: (message: string) => void): Promise<boolean> {
   if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
-    notify?.('剪贴板不可用')
+    notify?.(uiText('剪贴板不可用', "Clipboard unavailable", "Буфер обмена недоступен"))
     return false
   }
   try {
@@ -22,7 +23,7 @@ export async function copyText(value: string, okText: string, notify?: (message:
     notify?.(okText)
     return true
   } catch {
-    notify?.('剪贴板写入失败')
+    notify?.(uiText('剪贴板写入失败', "Failed to write to clipboard", "Не удалось записать в буфер обмена"))
     return false
   }
 }

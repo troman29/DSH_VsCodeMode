@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -10,6 +10,10 @@ import { goneStateOf } from '../src/client/missingReview.js'
 import type { Ctx } from '../src/store.js'
 import type { Registry } from '../src/registry.js'
 import type { ReviewSnapshot } from '../src/shared/review.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 vi.mock('../src/treeIndex.js', () => ({ invalidateIndex: vi.fn() }))
 vi.mock('../src/debugLog.js', () => ({ debugRecord: vi.fn() }))
 

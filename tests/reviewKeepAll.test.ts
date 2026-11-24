@@ -1,6 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { runKeepAll, type KeepAllPort } from '../src/client/reviewKeepAll.js'
 import type { KeepAllResult, ReviewItem, ReviewPage } from '../src/shared/review.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** @private @author ddj 2026年11月03号 @param index 条目序号 @returns 最小待审条目夹具 */
 function item(index: number): ReviewItem {

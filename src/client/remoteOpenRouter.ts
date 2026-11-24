@@ -8,6 +8,7 @@
  * 纯逻辑，node 环境可单测（不依赖 DOM / events 模块）。
  * 作者 ddj 2026年09月08号
  */
+import { uiText } from './uiLocale.js'
 import { isAvailable, selectOpener, type FileOpenContext, type FileOpenerRegistry } from './fileOpeners.js'
 import { memberDescriptor } from './compat.js'
 import { absoluteOf, isAbsolutePath } from './tabActions.js'
@@ -101,16 +102,16 @@ let nativeOwner: { open: RemoteOpen; context: () => FileOpenContext } | undefine
 
 /** @public @author ddj 2026年10月28号 @param request Original path and optional official action/application. @param cwd Owning view workspace; otherwise current routing context. @returns Native handoff result. @throws Original Host failure or missing absolute workspace path. */
 export async function openOriginal(request: OpenPathRequest, cwd?: string): Promise<OpenPathResult> {
-  if (!nativeOwner) throw new Error('官方系统打开能力不可用，请在支持桌面打开的 Host 中重试')
+  if (!nativeOwner) throw new Error(uiText('官方系统打开能力不可用，请在支持桌面打开的 Host 中重试', "Official system opening is unavailable; retry on a Host with desktop opening support", "Стандартное системное открытие недоступно; повторите на хосте с поддержкой настольного открытия"))
   const path = absoluteOf(String(request.path ?? ''), cwd ?? nativeOwner.context().cwd)
-  if (!isAbsolutePath(path)) throw new Error('无法确定文件的 Host 绝对路径，请确认所属工作区')
+  if (!isAbsolutePath(path)) throw new Error(uiText('无法确定文件的 Host 绝对路径，请确认所属工作区', "Cannot determine the file's absolute Host path; verify its workspace", "Не удалось определить абсолютный путь файла на хосте; проверьте рабочее пространство"))
 
   // The official endpoint resolves against the Host process, not this tab's workspace.
   const result = await nativeOwner.open({ ...request, path })
   if (!result.ok) {
     const failure = result.error
-    throw new Error(failure ? `${failure.code || 'Host'}: ${failure.message || '系统打开失败'}` : 'Host 未确认系统打开')
+    throw new Error(failure ? `${failure.code || 'Host'}: ${failure.message || uiText('系统打开失败', "System opening failed", "Ошибка системного открытия")}` : uiText('Host 未确认系统打开', "Host did not confirm system opening", "Хост не подтвердил системное открытие"))
   }
-  if (result.value?.opened !== true) throw new Error('Host 未确认系统打开')
+  if (result.value?.opened !== true) throw new Error(uiText('Host 未确认系统打开', "Host did not confirm system opening", "Хост не подтвердил системное открытие"))
   return result
 }

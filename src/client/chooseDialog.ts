@@ -5,6 +5,7 @@
  * token），React portal 挂 body；Esc / 遮罩点击 / 取消 → null（中止流程不改任何状态）。
  * 作者 ddj 2026-09-07
  */
+import { uiText } from './uiLocale.js'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 
@@ -37,12 +38,12 @@ function ChoiceModal({ title, folder, done }: ChoiceModalProps) {
     },
   },
     React.createElement('div', { className: 'vsm-mcp-dialog' },
-      React.createElement('h3', null, '在 DSH 中打开'),
-      React.createElement('label', null, '文件夹 ' + folder + ' 位于已注册的工作区「' + title + '」内，选择打开方式：'),
+      React.createElement('h3', null, uiText('在 DSH 中打开', "Open in DSH", "Открыть в DSH")),
+      React.createElement('label', null, uiText('文件夹 ', "Folder ", "Папка ") + folder + uiText(' 位于已注册的工作区「', " is in registered workspace “", " находится в зарегистрированном пространстве «") + title + uiText('」内，选择打开方式：', "”. Choose how to open:", "». Выберите способ открытия:")),
       React.createElement('div', { className: 'vsm-mcp-dialog-actions' },
-        React.createElement('button', { onClick: () => done(null) }, '取消'),
-        React.createElement('button', { onClick: () => done('create') }, '新建工作区'),
-        React.createElement('button', { className: 'vsm-primary', onClick: () => done('recent') }, '使用最近的工作区'),
+        React.createElement('button', { onClick: () => done(null) }, uiText('取消', "Cancel", "Отмена")),
+        React.createElement('button', { onClick: () => done('create') }, uiText('新建工作区', "New workspace", "Новое рабочее пространство")),
+        React.createElement('button', { className: 'vsm-primary', onClick: () => done('recent') }, uiText('使用最近的工作区', "Use nearest workspace", "Использовать ближайшее рабочее пространство")),
       ),
     ),
   )

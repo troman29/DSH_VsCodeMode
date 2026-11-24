@@ -10,6 +10,7 @@
  * 远端更新箭头由显式只读检查提供，与本地状态并存，不执行更新。
  * 作者 ddj 2026-08-26 / 2026-08-27 / 2026-08-31 / 2026-09-10 / 2026-09-16 / 2026-10-09
  */
+import { uiText } from '../../uiLocale.js'
 import React from 'react'
 import { IconRefreshOutline16, dirIconEl, fileIconEl } from '../../ui/icons.js'
 import { rpc } from '../../rpc.js'
@@ -92,7 +93,7 @@ function rowView(props) {
   return React.createElement('div', {
     className: 'edrv-tree-row' + (active ? ' edrv-tree-active' : '') + (context ? ' edrv-tree-context' : '')
       + (reveal ? ' edrv-tree-reveal' : '') + (mark?.stale ? ' edrv-tree-stale' : ''),
-    title: path + (mark?.stale ? '；SVN 状态陈旧，等待确认' : ''), 'data-edrv-path': path,
+    title: path + (mark?.stale ? uiText('；SVN 状态陈旧，等待确认', "; SVN status stale, awaiting confirmation", "; состояние SVN устарело, ожидает подтверждения") : ''), 'data-edrv-path': path,
     style: { paddingLeft: 6 + depth * 14 }, tabIndex: 0, onClick: select, onContextMenu: menu, onKeyDown: menuKey,
     draggable: !isDir, onDragStart: drag,
   },
@@ -204,7 +205,7 @@ export function FileExplorer(props) {
         if (doPrefetch) prefetchDirs(rel, res.entries)
       } else if (!entriesOf(rel)) {
         // 保留有缓存时的 SWR 降级；仅缺失的子目录自愈，根目录错误必须继续展示。
-        const message = res?.error ? String(res.error) : '读取目录失败'
+        const message = res?.error ? String(res.error) : uiText('读取目录失败', "Failed to read directory", "Ошибка чтения каталога")
         if (rel && message.startsWith(MISSING_DIR_PREFIX)) {
           dropDeadDir(rel)
           return
@@ -214,7 +215,7 @@ export function FileExplorer(props) {
     }).catch((e) => {
       if (scopeRef.current !== scope || tokensRef.current !== tokens || tokens[rel] !== token) return
       if (!entriesOf(rel)) {
-        setErrors((prev) => Object.assign({}, prev, { [rel]: '读取目录异常:' + String(e) }))
+        setErrors((prev) => Object.assign({}, prev, { [rel]: uiText('读取目录异常:', "Directory read error: ", "Ошибка чтения каталога: ") + String(e) }))
       }
     }).finally(() => {
       if (scopeRef.current !== scope || tokensRef.current !== tokens || tokens[rel] !== token) return
@@ -519,7 +520,7 @@ export function FileExplorer(props) {
 
   /** @private @author ddj 2026年10月15号 Open the existing update window for the current project root. */
   function updateProject() { ctx?.openSvnUpdate?.('') }
-  const updateHint = !ctx?.svn?.svnCli ? 'SVN CLI 不可用' : !ctx?.openSvnUpdate ? 'SVN 更新窗口不可用' : '更新项目（打开 SVN 更新窗口）'
+  const updateHint = !ctx?.svn?.svnCli ? uiText('SVN CLI 不可用', "SVN CLI unavailable", "SVN CLI недоступен") : !ctx?.openSvnUpdate ? uiText('SVN 更新窗口不可用', "SVN update window unavailable", "Окно обновления SVN недоступно") : uiText('更新项目（打开 SVN 更新窗口）', "Update project (open SVN update window)", "Обновить проект (открыть окно обновления SVN)")
 
   const errorList = Object.entries(errors)
   // 跨端会话缺失：裸错误替换为友好标题 + 详情（重试仍保留，会话在本端可用后即恢复）
@@ -537,20 +538,20 @@ export function FileExplorer(props) {
 
   return React.createElement('div', { className: 'edrv-side-panel', onContextMenu: onPanelContext },
     React.createElement('div', { className: 'edrv-side-head' },
-      React.createElement('span', { className: 'edrv-side-title' }, '资源管理器'),
+      React.createElement('span', { className: 'edrv-side-title' }, uiText('资源管理器', "Explorer", "Проводник")),
       React.createElement('span', { className: 'edrv-side-root', title: root || '' }, rootName),
       React.createElement('span', { style: { flex: 1 } }),
       ctx?.svn?.managed ? React.createElement(Button, {
         variant: 'toolbar', size: 'sm', disabled: !ctx.svn.svnCli || !ctx.openSvnUpdate,
         title: updateHint, onClick: updateProject,
-        'aria-label': '更新项目',
+        'aria-label': uiText('更新项目', "Update project", "Обновить проект"),
       }, '↓') : null,
-      React.createElement('button', { className: 'edrv-side-btn', title: '刷新目录树', onClick: () => emitRefresh({ scope, kind: 'unknown' }) }, refreshIconEl())),
+      React.createElement('button', { className: 'edrv-side-btn', title: uiText('刷新目录树', "Refresh directory tree", "Обновить дерево каталогов"), onClick: () => emitRefresh({ scope, kind: 'unknown' }) }, refreshIconEl())),
     svn.message ? React.createElement('div', { className: 'edrv-tree-status', role: 'status' }, svn.message) : null,
     (errorText
         ? React.createElement('div', { className: 'edrv-tree-error' },
             React.createElement('span', null, String(errorText)),
-            React.createElement('button', { className: 'edrv-side-btn', onClick: () => emitRefresh({ scope, kind: 'unknown' }) }, '重试'))
+            React.createElement('button', { className: 'edrv-side-btn', onClick: () => emitRefresh({ scope, kind: 'unknown' }) }, uiText('重试', "Retry", "Повторить")))
         : null),
     React.createElement('div', { className: 'edrv-tree edrv-tree-virtual', ref: treeRef, onScroll: scrollTree },
       React.createElement('div', { 'aria-hidden': true, style: { height: windowRows.start * TREE_ROW_HEIGHT } }),

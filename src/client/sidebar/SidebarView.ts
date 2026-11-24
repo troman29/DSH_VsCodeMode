@@ -8,6 +8,7 @@
  * 面板可按 visible(ctx) 声明可用性（如「SVN 变更」仅在受 SVN 管理时出现，非 SVN 工作区零变化）。
  * 作者 ddj 2026-08-26 / 2026-09-04 / 2026-09-16
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import type { SidebarCtx } from './types.js'
 import { inspectPanel, PanelBoundary, PanelContent } from './PanelBoundary.js'
@@ -199,7 +200,7 @@ export function SidebarView(props) {
       })),
     React.createElement('button', {
       className: 'edrv-rail-btn',
-      title: (visible ? '隐藏面板区' : '展开面板区') + ' (Ctrl+B)',
+      title: (visible ? uiText('隐藏面板区', "Hide panels", "Скрыть панели") : uiText('展开面板区', "Show panels", "Показать панели")) + ' (Ctrl+B)',
       onClick: () => (visible ? onHide() : onShow?.()),
     }, visible ? '◀' : '▶'))
 
@@ -218,5 +219,5 @@ export function SidebarView(props) {
     visible
       ? React.createElement('div', { className: 'edrv-side-resize', onPointerDown: onPointerDown })
       // 隐藏态接缝：悬浮显示拖拽光标与高亮，向右拖把面板区拉出来
-      : React.createElement('div', { className: 'edrv-side-resize', title: '拖拽展开面板区', onPointerDown: onSeamPointerDown }))
+      : React.createElement('div', { className: 'edrv-side-resize', title: uiText('拖拽展开面板区', "Drag to expand panels", "Перетащите для раскрытия панелей"), onPointerDown: onSeamPointerDown }))
 }

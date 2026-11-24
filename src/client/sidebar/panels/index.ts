@@ -5,6 +5,7 @@
  * 「SVN 变更」带 visible 守卫：仅受 SVN 管理的工作区出现（非 SVN 工作区零变化）。
  * 作者 ddj 2026-08-26 / 2026-09-03 / 2026-09-10 / 2026-09-16
  */
+import { uiText } from '../../uiLocale.js'
 import React from 'react'
 import { IconBranchOutline16, IconFolderOpenOutline16, IconListPenOutline16, IconSearchOutline16 } from '../../ui/icons.js'
 import { dapStore } from '../../dap/store.js'
@@ -22,7 +23,7 @@ import type { SidebarPanelDef, SidebarCtx } from '../types.js'
 export function createFilePanel(): SidebarPanelDef {
   return {
     id: 'explorer',
-    title: '文件管理',
+    get title() { return uiText('文件管理', "Files", "Файлы") },
     icon: IconFolderOpenOutline16,
     order: 10,
     badge: (ctx: SidebarCtx) => (ctx.sum && ctx.sum.totalFiles > 0 ? ctx.sum.totalFiles : null),
@@ -38,7 +39,7 @@ export function createFilePanel(): SidebarPanelDef {
 export function createSearchPanel(): SidebarPanelDef {
   return {
     id: 'search',
-    title: '搜索',
+    get title() { return uiText('搜索', "Search", "Поиск") },
     icon: IconSearchOutline16,
     order: 15,
     render: (ctx: SidebarCtx) => React.createElement(SearchPanel, { ctx }),
@@ -53,7 +54,7 @@ export function createSearchPanel(): SidebarPanelDef {
 export function createRulesPanel(): SidebarPanelDef {
   return {
     id: 'rules',
-    title: '规则',
+    get title() { return uiText('规则', "Rules", "Правила") },
     icon: IconListPenOutline16,
     order: 20,
     render: (ctx: SidebarCtx) => React.createElement(LazyPanel, { key: 'rules', panel: 'rules', ctx }),
@@ -70,7 +71,7 @@ export function createRulesPanel(): SidebarPanelDef {
 export function createSvnPanel(): SidebarPanelDef {
   return {
     id: 'svn',
-    title: 'SVN 变更',
+    get title() { return uiText('SVN 变更', "SVN changes", "Изменения SVN") },
     icon: typeof IconBranchOutline16 === 'function' ? IconBranchOutline16 : '⎇',
     order: 25,
     visible: (ctx: SidebarCtx) => Boolean(ctx?.svn?.managed && ctx?.svn?.svnCli),
@@ -108,7 +109,7 @@ function svnVisibleCount(entries) {
 export function createDebugPanel(): SidebarPanelDef {
   return {
     id: 'debug',
-    title: '调试',
+    get title() { return uiText('调试', "Debug", "Отладка") },
     icon: '🐞',
     order: 22,
     badge: () => (dapStore.getSnapshot().phase === 'paused' ? 1 : null),

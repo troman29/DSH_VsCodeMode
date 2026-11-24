@@ -8,6 +8,7 @@
  * 提交前仍单次 window.confirm 确认；AI 结果只回填文本框，**绝不自动提交**。
  * @author ddj 2026年11月15号
  */
+import { sharedDisplay } from '../sharedDisplay.js'
 import React from 'react'
 import { uiText } from '../uiLocale.js'
 import { ContextMenu } from './ContextMenu.js'
@@ -360,7 +361,7 @@ function rowEl(entry, checked, onToggle, s) {
     React.createElement('span', {
       className: 'edrv-svn-ch edrv-svn-ch-' + tone,
       role: 'cell',
-      title: SVN_STATUS_LABEL[entry.status] ?? entry.status,
+      title: sharedDisplay(SVN_STATUS_LABEL[entry.status] ?? entry.status),
     }, SVN_STATUS_LETTER[entry.status] ?? '?'),
     React.createElement('span', { className: 'edrv-svncommit-icon', role: 'cell', 'aria-hidden': true },
       entryIconEl(entry.path, isDirOf(entry.path, s.dirs, s.kinds))),

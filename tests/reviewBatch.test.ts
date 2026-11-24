@@ -1,6 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { loadPending, runReviewBatch, type BatchPort } from '../src/client/reviewBatch.js'
 import type { ReviewDetail, ReviewItem, ReviewPage } from '../src/shared/review.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** @private @author ddj 2026年10月31号 @param index Record identity. @returns Minimal persisted metadata fixture. */
 function item(index: number): ReviewItem {

@@ -8,6 +8,7 @@
  * 作者 ddj 2026年08月26号 / 2026年09月10号 / 2026年10月
  */
 import React from 'react'
+import { uiText } from './uiLocale.js'
 import { BRIDGE_COMMANDS, EDITOR_COMMANDS } from './ui/commandCatalog.js'
 
 /** 解析后的键位（修饰符 + 规范化主键）。 */
@@ -21,9 +22,9 @@ export interface Binding {
 
 /** 命令目录（设置页展示标签；命令栏候选与键位提示共用）。 */
 export const COMMANDS: Array<{ id: string; label: string }> = [
-  ...EDITOR_COMMANDS.map((command) => ({ id: command.id, label: command.label })),
-  { id: 'edrv.showCommands', label: '显示所有命令' },
-  ...BRIDGE_COMMANDS.map((command) => ({ id: command.id, label: command.label })),
+  ...EDITOR_COMMANDS.map((command) => ({ id: command.id, get label() { return command.label } })),
+  { id: 'edrv.showCommands', get label() { return uiText('显示所有命令', 'Show all commands', 'Показать все команды') } },
+  ...BRIDGE_COMMANDS.map((command) => ({ id: command.id, get label() { return command.label } })),
 ]
 
 const MODIFIERS: Record<string, 'ctrl' | 'shift' | 'alt' | 'meta'> = {

@@ -1,5 +1,6 @@
 import React from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { bindUiLocale } from '../src/client/uiLocale.js'
 
 vi.mock('react', async (original) => {
   const real = await original<typeof import('react')>()
@@ -23,6 +24,10 @@ vi.mock('../src/client/ui/icons.js', () => ({
 }))
 import { FileExplorer } from '../src/client/sidebar/panels/FileExplorer.js'
 import { SvnPanel } from '../src/client/sidebar/panels/SvnPanel.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** @private @author ddj 2026年10月15号 @param node Production element tree. @returns Flattened elements without mounting side effects. */
 function flatten(node: any): any[] {

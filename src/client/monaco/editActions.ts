@@ -1,4 +1,5 @@
 /** Plugin-local Monaco editing bindings. @author ddj 2026年10月12号 */
+import { uiText } from '../uiLocale.js'
 export interface EditTarget {
   getModel(): unknown
   getOption(option: number): unknown
@@ -40,8 +41,8 @@ export function bindEditActions(editor: EditTarget, monaco: EditMonaco): () => v
   /** @private @author ddj 2026年10月12号 Runs the native multi-selection line-copy action. */
   const duplicate = (): void => { runEditAction(editor, monaco, 'editor.action.copyLinesDownAction') }
   const actions = [
-    editor.addAction({ id: 'edrv.toggleComment', label: '切换行注释', precondition: writable, contextMenuGroupId: '1_edrv', run: comment }),
-    editor.addAction({ id: 'edrv.duplicateLine', label: '向下复制行（Ctrl+D，编辑器本地）', precondition: writable, contextMenuGroupId: '1_edrv', run: duplicate }),
+    editor.addAction({ id: 'edrv.toggleComment', label: uiText('切换行注释', "Toggle line comment", "Переключить комментарий строки"), precondition: writable, contextMenuGroupId: '1_edrv', run: comment }),
+    editor.addAction({ id: 'edrv.duplicateLine', label: uiText('向下复制行（Ctrl+D，编辑器本地）', "Duplicate line down (Ctrl+D, editor only)", "Дублировать строку вниз (Ctrl+D, только редактор)"), precondition: writable, contextMenuGroupId: '1_edrv', run: duplicate }),
   ]
   let disposed = false
   /** @private @author ddj 2026年10月12号 Releases global rule contributions owned by this instance. */

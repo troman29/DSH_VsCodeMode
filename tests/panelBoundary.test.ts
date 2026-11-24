@@ -1,10 +1,15 @@
 /** Panel callbacks plus the real React server render path. @author ddj 2026年10月22号 */
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it } from 'vitest'
 import { inspectPanel, PanelBoundary, PanelContent } from '../src/client/sidebar/PanelBoundary.js'
 import { SidebarView } from '../src/client/sidebar/SidebarView.js'
 import type { SidebarCtx, SidebarPanelDef } from '../src/client/sidebar/types.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 const ctx = { scope: 'ws:a', sessionId: 's1' } as SidebarCtx
 /** @private @author ddj 2026年10月22号 @param overrides Callback overrides. @returns Test extension. */
 function panel(overrides: Partial<SidebarPanelDef> = {}): SidebarPanelDef {

@@ -2,7 +2,7 @@
  * client officialSidebar 纯函数与装配测试（不触 DOM/窗口事件，mock ctx/slots）。
  * 作者 ddj 2026-09-09
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it } from 'vitest'
 import {
   detectOfficial,
   installOfficial,
@@ -30,6 +30,11 @@ import {
 import { routeSideEditor, setEnsureSideEditor } from '../src/client/sidebarBridge.js'
 import { setNativeCsv, resetNativeOpen } from '../src/client/nativeOpenStore.js'
 import { resetHtmlPreviewProbe, setOfficialHtmlPreview } from '../src/client/htmlPreview.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** 构造探测用 ctx：name→value 映射，可注入抛错。 */
 function ctxOf(map: Record<string, unknown>, boom = false): { get: (name: string) => unknown } {

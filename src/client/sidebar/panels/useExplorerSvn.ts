@@ -1,4 +1,5 @@
 /** Explorer lifecycle: local refresh is offline, remote checks are explicit. @author ddj 2026年10月09号 */
+import { uiText } from '../../uiLocale.js'
 import React from 'react'
 import { bindSvnScope } from '../../svnNotice.js'
 import { rpc } from '../../rpc.js'
@@ -42,7 +43,7 @@ function useRemoteCheck(ctx: SidebarCtx | undefined, local: LocalSnapshot | null
     control.current = controller
     const seq = epoch.current
     setBusy(true)
-    setMessage('正在检查仓库更新（只读）…')
+    setMessage(uiText('正在检查仓库更新（只读）…', "Checking repository updates (read-only)…", "Проверка обновлений репозитория (только чтение)…"))
     try {
       const out = await rpc('svn.remoteStatus', { sessionId: ctx?.sessionId, path: '' }, controller.signal)
       if (controller.signal.aborted || seq !== epoch.current) return
@@ -54,10 +55,10 @@ function useRemoteCheck(ctx: SidebarCtx | undefined, local: LocalSnapshot | null
       }
       const scoped = out.outdated.flatMap(scopeEntry)
       setRemote(remoteIndexOf(scoped))
-      setMessage('检查于 ' + new Date().toLocaleTimeString() + '：' + scoped.length + ' 项可更新'
-        + (out.truncated ? '（结果不完整）' : '') + (out.againstRev === null ? '' : '，仓库 r' + out.againstRev))
+      setMessage(uiText('检查于 ', "Checked at ", "Проверено в ") + new Date().toLocaleTimeString() + uiText('：', ": ", ": ") + scoped.length + uiText(' 项可更新', " updates available", " доступных обновлений")
+        + (out.truncated ? uiText('（结果不完整）', " (partial result)", " (неполный результат)") : '') + (out.againstRev === null ? '' : uiText('，仓库 r', ", repository r", ", репозиторий r") + out.againstRev))
       /** @private @author ddj 2026年10月09号 Expire evidence; no automatic repository recheck. */
-      function expire() { setRemote(null); setMessage('远端检查已过期，请重新检查仓库更新') }
+      function expire() { setRemote(null); setMessage(uiText('远端检查已过期，请重新检查仓库更新', "Remote check expired; check repository updates again", "Удалённая проверка устарела; проверьте обновления снова")) }
       expiry.current = setTimeout(expire, 60_000)
     } catch (error) { if (!controller.signal.aborted && seq === epoch.current) setMessage(String(error)) }
     finally { if (seq === epoch.current) { control.current = null; setBusy(false) } }
@@ -68,10 +69,10 @@ function useRemoteCheck(ctx: SidebarCtx | undefined, local: LocalSnapshot | null
 
 /** @private @author ddj 2026年10月10号 @param view Compact metadata. @returns Honest refresh/failure/last-confirmed status. */
 function localMessage(view?: ExplorerView): string {
-  if (!view) return '正在读取本地 SVN 状态…'
-  const time = view.confirmedAt ? '；最后确认 ' + new Date(view.confirmedAt).toLocaleTimeString() : '；尚未确认'
-  if (view.error) return 'SVN 状态陈旧：' + view.error + time
-  return (view.refreshing ? 'SVN 状态刷新中' : view.complete ? 'SVN 本地状态已确认' : 'SVN 状态未完整确认') + time
+  if (!view) return uiText('正在读取本地 SVN 状态…', "Loading local SVN status…", "Загрузка локального состояния SVN…")
+  const time = view.confirmedAt ? uiText('；最后确认 ', "; last confirmed ", "; последнее подтверждение ") + new Date(view.confirmedAt).toLocaleTimeString() : uiText('；尚未确认', "; not confirmed yet", "; ещё не подтверждено")
+  if (view.error) return uiText('SVN 状态陈旧：', "SVN status is stale: ", "Состояние SVN устарело: ") + view.error + time
+  return (view.refreshing ? uiText('SVN 状态刷新中', "Refreshing SVN status", "Обновление состояния SVN") : view.complete ? uiText('SVN 本地状态已确认', "Local SVN status confirmed", "Локальное состояние SVN подтверждено") : uiText('SVN 状态未完整确认', "SVN status not fully confirmed", "Состояние SVN подтверждено не полностью")) + time
 }
 // --region Offline local status
 /** @public @author ddj 2026年10月09号 @param ctx Sidebar context. @returns Scope-bound local/remote icons; unknown entries never show green. */
@@ -136,6 +137,6 @@ export function useExplorerSvn(ctx: SidebarCtx | undefined, rows: readonly SvnVi
   /** @public @author ddj 2026年10月10号 Request an explicit offline full scan. */
   function refreshLocal() { owner.current?.refresh() }
   return { ...remote, local: snapshot?.view.marks ?? null, remote: snapshot ? remote.remote : null,
-    message: ready ? localMessage(snapshot?.view) + (remote.message ? '；' + remote.message : '') : '', canCheck: ready && snapshot !== null, refreshLocal }
+    message: ready ? localMessage(snapshot?.view) + (remote.message ? uiText('；', "; ", "; ") + remote.message : '') : '', canCheck: ready && snapshot !== null, refreshLocal }
 }
 // --endregion

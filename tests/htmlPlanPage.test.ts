@@ -2,7 +2,11 @@
  * client HTML 计划页纯逻辑测试：标记解析、路径归位、打包检测、状态推导、审批答案。
  * @author ddj 2026年11月21号
  */
-import { describe, expect, it } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it } from 'vitest'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
 import {
   buildPlanSrcDoc,
   derivePlanUiState,
@@ -16,6 +20,10 @@ import {
   reviewAnswerOf,
   unresolvedRuntimeRefs,
 } from '../src/client/htmlPlan/planPage.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 const BACKTICK = String.fromCharCode(96)
 

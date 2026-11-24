@@ -2,8 +2,12 @@
  * 加载失败诊断回归：状态探测、四类原因区分、文案不泄露 origin/查询串。
  * @author ddj 2026年11月02号
  */
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { loadFailureText, monacoHint, probeStatus, statusHint } from '../src/client/loadFailure.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 afterEach(() => vi.unstubAllGlobals())
 

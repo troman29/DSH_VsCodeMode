@@ -10,12 +10,17 @@
  *    否则自研项与官方同名项并列、用户会点到官方弹窗（用户实测反馈的根因）。
  * 作者 ddj 2026-09-16
  */
-import { describe, expect, it } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it } from 'vitest'
 import {
   SVN_ACTIONS, SVN_ACTION_BY_ID, svnActionCovered, svnActionOn, svnActionsFor, visibleSvnActions,
 } from '../src/shared/svnActions.js'
 import type { SvnActionContext } from '../src/shared/svnActions.js'
 import type { SvnFeature } from '../src/shared/svn.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** 全能力就绪的求值上下文（文件、受版本控制、可比较）。 */
 const ready = (over: Partial<SvnActionContext> = {}): SvnActionContext => ({

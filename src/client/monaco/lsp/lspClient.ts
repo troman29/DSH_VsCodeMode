@@ -5,6 +5,7 @@
  * 并提供 definition/references/documentSymbol/hover/status 的 RPC 薄封装。
  * 作者 ddj 2026-08-27
  */
+import { uiText } from '../../uiLocale.js'
 import { rpc, dbg } from '../../rpc.js'
 import { monoToLsp } from '../../../shared/lsp.js'
 import { classifyMemberSet } from './memberScope.js'
@@ -178,7 +179,7 @@ export function closeDoc(path) {
 async function queryLsp(action, method, args) {
   const res = await rpc(method, { ...args, sessionId }).catch(() => null)
   if (!res || !res.ok) {
-    reportStatus('LSP ' + action + '失败：' + ((res && res.error) ? res.error : '请求异常'))
+    reportStatus('LSP ' + action + uiText('失败：', " failed: ", " — ошибка: ") + ((res && res.error) ? res.error : uiText('请求异常', "Request error", "Ошибка запроса")))
     return null
   }
   return res
@@ -187,7 +188,7 @@ async function queryLsp(action, method, args) {
 /** 立即推送 + 查询定义；返回 [{ uri, range }]（uri 已转 edrv://）。 */
 export async function findDefinition(path, text, position) {
   await syncDoc(path, text, true)
-  const res = await queryLsp('转到定义', 'edrv.lsp.definition', { path, position: monoToLsp(position.lineNumber, position.column) })
+  const res = await queryLsp(uiText('转到定义', "Go to definition", "Перейти к определению"), 'edrv.lsp.definition', { path, position: monoToLsp(position.lineNumber, position.column) })
   if (!res || !Array.isArray(res.locations)) return []
   return res.locations.map(toClientLocation)
 }
@@ -195,7 +196,7 @@ export async function findDefinition(path, text, position) {
 /** 立即推送 + 查询引用。 */
 export async function findReferences(path, text, position, includeDeclaration = false) {
   await syncDoc(path, text, true)
-  const res = await queryLsp('查找引用', 'edrv.lsp.references', { path, position: monoToLsp(position.lineNumber, position.column), includeDeclaration })
+  const res = await queryLsp(uiText('查找引用', "Find references", "Найти ссылки"), 'edrv.lsp.references', { path, position: monoToLsp(position.lineNumber, position.column), includeDeclaration })
   if (!res || !Array.isArray(res.locations)) return []
   return res.locations.map(toClientLocation)
 }
@@ -203,7 +204,7 @@ export async function findReferences(path, text, position, includeDeclaration = 
 /** 查询大纲符号（documentSymbol）。 */
 export async function fetchDocumentSymbols(path, text) {
   await syncDoc(path, text, true)
-  const res = await queryLsp('查询大纲', 'edrv.lsp.documentSymbol', { path })
+  const res = await queryLsp(uiText('查询大纲', "Query outline", "Запрос структуры"), 'edrv.lsp.documentSymbol', { path })
   if (!res || !Array.isArray(res.symbols)) return []
   return res.symbols
 }
@@ -211,7 +212,7 @@ export async function fetchDocumentSymbols(path, text) {
 /** 查询 hover 内容。 */
 export async function fetchHover(path, text, position) {
   await syncDoc(path, text, true)
-  const res = await queryLsp('查询悬停', 'edrv.lsp.hover', { path, position: monoToLsp(position.lineNumber, position.column) })
+  const res = await queryLsp(uiText('查询悬停', "Query hover", "Запрос подсказки"), 'edrv.lsp.hover', { path, position: monoToLsp(position.lineNumber, position.column) })
   if (!res) return null
   return res.hover || null
 }
@@ -267,7 +268,7 @@ export async function fetchCompletions(path, text, position, context, prefix) {
   const args = { path, position: monoToLsp(position.lineNumber, position.column) }
   if (context) args.context = context
   if (prefix) args.prefix = prefix
-  const res = await queryLsp('查询补全', 'edrv.lsp.completion', args)
+  const res = await queryLsp(uiText('查询补全', "Query completions", "Запрос дополнений"), 'edrv.lsp.completion', args)
   if (!res || !res.completions) return null
   const list = res.completions
   if (list.truncated === true) {
@@ -285,7 +286,7 @@ export async function fetchCompletions(path, text, position, context, prefix) {
  * @returns 补全后的条目；失败时回落原条目
  */
 export async function resolveCompletion(path, item) {
-  const res = await queryLsp('解析补全', 'edrv.lsp.resolveCompletion', { path, item })
+  const res = await queryLsp(uiText('解析补全', "Resolve completion", "Уточнение дополнения"), 'edrv.lsp.resolveCompletion', { path, item })
   if (!res || !res.item) return item
   return res.item
 }
@@ -300,7 +301,7 @@ export async function resolveCompletion(path, item) {
  */
 export async function fetchSignatureHelp(path, text, position) {
   await syncDoc(path, text, true)
-  const res = await queryLsp('查询签名', 'edrv.lsp.signatureHelp', { path, position: monoToLsp(position.lineNumber, position.column) })
+  const res = await queryLsp(uiText('查询签名', "Query signature", "Запрос сигнатуры"), 'edrv.lsp.signatureHelp', { path, position: monoToLsp(position.lineNumber, position.column) })
   if (!res) return null
   return res.signatureHelp || null
 }
@@ -308,7 +309,7 @@ export async function fetchSignatureHelp(path, text, position) {
 /** 查询当前文档的 semantic tokens（host 已归一化 legend 与 delta data）。 */
 export async function fetchSemanticTokens(path, text) {
   await syncDoc(path, text, true)
-  const res = await queryLsp('查询语义分色', 'edrv.lsp.semanticTokens', { path })
+  const res = await queryLsp(uiText('查询语义分色', "Query semantic tokens", "Запрос семантической подсветки"), 'edrv.lsp.semanticTokens', { path })
   if (!res || !res.tokens || !Array.isArray(res.tokens.data)) return null
   return res.tokens
 }

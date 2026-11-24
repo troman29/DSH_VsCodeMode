@@ -1,4 +1,5 @@
 /** Internal pointer drag: never converts external text into file paths. @author ddj 2026年10月14号 */
+import { uiText } from './uiLocale.js'
 import { clampFloat, type DropTarget, type Edge } from './state/editorLayout.js'
 
 export interface Rect { left: number; top: number; width: number; height: number }
@@ -42,7 +43,7 @@ export function splitRect(rect: Rect, edge: Edge): Rect {
 export function hitTarget(input: DragHitInput): { target: TabDrop; rect: Rect; label: string } | null {
   const { point, viewport, composer, regions } = input
   if (!contains(point, { left: 0, top: 0, ...viewport })) return null
-  if (composer && contains(point, composer)) return { target: { kind: 'reference' }, rect: composer, label: '添加文件引用（不发送）' }
+  if (composer && contains(point, composer)) return { target: { kind: 'reference' }, rect: composer, label: uiText('添加文件引用（不发送）', "Add file reference (without sending)", "Добавить ссылку на файл (без отправки)") }
   for (const region of regions) {
     if (!contains(point, region.rect)) continue
     if (region.tabRect && contains(point, region.tabRect)) {
@@ -50,16 +51,16 @@ export function hitTarget(input: DragHitInput): { target: TabDrop; rect: Rect; l
       const index = tabs.findIndex((tab) => point.x < tab.rect.left + tab.rect.width / 2)
       const at = index < 0 ? tabs.length : index
       const left = tabs[at]?.rect.left ?? (tabs.length ? tabs[tabs.length - 1]!.rect.left + tabs[tabs.length - 1]!.rect.width : region.tabRect.left)
-      return { target: { kind: 'group', group: region.group, index: at }, rect: { left, top: region.tabRect.top, width: 3, height: region.tabRect.height }, label: '移动到此处' }
+      return { target: { kind: 'group', group: region.group, index: at }, rect: { left, top: region.tabRect.top, width: 3, height: region.tabRect.height }, label: uiText('移动到此处', "Move here", "Переместить сюда") }
     }
     const edge = edgeAt(point, region.rect)
     const fits = edge === 'left' || edge === 'right' ? region.rect.width >= 480 : region.rect.height >= 320
-    if (edge && !region.floating && input.allowCreate && fits) return { target: { kind: 'split', group: region.group, edge }, rect: splitRect(region.rect, edge), label: '分屏编辑' }
-    return { target: { kind: 'group', group: region.group }, rect: region.rect, label: '移入编辑组' }
+    if (edge && !region.floating && input.allowCreate && fits) return { target: { kind: 'split', group: region.group, edge }, rect: splitRect(region.rect, edge), label: uiText('分屏编辑', "Split editor", "Разделить редактор") }
+    return { target: { kind: 'group', group: region.group }, rect: region.rect, label: uiText('移入编辑组', "Move into editor group", "Переместить в группу редактора") }
   }
   if (!input.blank || !input.allowCreate) return null
   const rect = clampFloat({ left: point.x - 120, top: point.y - 18, width: 600, height: 400 }, viewport.width, viewport.height)
-  return { target: { kind: 'float', rect }, rect, label: '独立浮窗' }
+  return { target: { kind: 'float', rect }, rect, label: uiText('独立浮窗', "Separate floating window", "Отдельное плавающее окно") }
 }
 
 export interface DragDeps {
@@ -81,7 +82,7 @@ export function createTabDrag(deps: DragDeps, host: Window) {
     const hit = deps.hit(session.point)
     // DOMRect properties live on its prototype; React style needs own enumerable geometry.
     const rect = hit ? { left: hit.rect.left, top: hit.rect.top, width: hit.rect.width, height: hit.rect.height } : null
-    deps.preview({ path: session.path, point: session.point, target: hit?.target ?? null, rect, label: hit?.label ?? '无法放置' })
+    deps.preview({ path: session.path, point: session.point, target: hit?.target ?? null, rect, label: hit?.label ?? uiText('无法放置', "Cannot drop here", "Нельзя разместить здесь") })
   }
   /** @public @author ddj 2026年10月14号 Cancel without changing file/layout ownership. */
   function cancel(): void {

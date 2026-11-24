@@ -9,8 +9,12 @@
  * 本文件钉住：坐标用 detect 投影、降级走 insertText（保留既有 chip）、绝不调用 setDraft。
  * 作者 ddj 2026年08月25号 / 2026年09月11号
  */
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { buildFileRef, createAddToConversation, detectEndOf, detectToClipboardOf, insertOffsetOf, mentionOf, newDraftSession, paddingAt, statusOfAdd } from '../src/client/addToConversation.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** 构造假 ctx：sessions.scope + conversation.input.for 返回假 shell。 */
 const makeCtx = (shell) => ({

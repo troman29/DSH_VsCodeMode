@@ -4,9 +4,13 @@
  * 组件渲染走 React DOM，node 环境不挂载；此处只覆盖可离线断言的纯函数部分。
  * 作者 ddj 2026-09-10
  */
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { fileMeta } from '../src/client/ui/SnippetsPicker.js'
 import { snippetFileNameFor, snippetFileTemplate } from '../src/shared/snippets.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 describe('fileMeta 列表行摘要', () => {
   it('有语言：语言 · 条目数 · [相对提示]', () => {

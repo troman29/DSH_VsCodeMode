@@ -1,4 +1,5 @@
 /** Redirect the DSH settings document action into the plugin editor. */
+import { uiText } from './uiLocale.js'
 import { patchAccessor } from './compat.js'
 
 export interface SettingsDocResult {
@@ -26,7 +27,7 @@ export function patchSettingsDoc(
   return patchAccessor(service, 'openSettingsDocument', async (original, ...args) => {
     try {
       const result = await getPath()
-      if (!result.ok || !result.path) throw new Error(result.error || '设置配置文件路径不可用')
+      if (!result.ok || !result.path) throw new Error(result.error || uiText('设置配置文件路径不可用', "Settings configuration path unavailable", "Путь к файлу настроек недоступен"))
       openEditor(result.path)
       return { ok: true, value: { opened: true } }
     } catch (error) {

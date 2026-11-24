@@ -1,4 +1,5 @@
 /** Current-workspace owned Office cache management. @author ddj 2026年11月13号 */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 import { rpc } from '../rpc.js'
@@ -30,14 +31,14 @@ export function UniverCacheSettings(props: { getSession: () => string | undefine
     const generation = ++sequence.current
     setCache(undefined)
     setSelected(new Set())
-    if (!sessionId) { setMessage('选择一个工作区会话后查看缓存'); return }
+    if (!sessionId) { setMessage(uiText('选择一个工作区会话后查看缓存', "Select a workspace session to view its cache", "Выберите сеанс рабочего пространства для просмотра кэша")); return }
     setBusy(true)
     try {
       const result = await rpc('edrv.univer.cacheList', { sessionId })
       if (generation !== sequence.current) return
       if (!result.ok) throw new Error(result.error)
       setCache(result.cache)
-      setMessage(result.cache.truncated ? '仅显示前500项，请分批管理' : '')
+      setMessage(result.cache.truncated ? uiText('仅显示前500项，请分批管理', "Only the first 500 entries are shown; manage in batches", "Показаны первые 500 записей; обрабатывайте частями") : '')
     } catch (error) { if (generation === sequence.current) setMessage(String(error)) }
     finally { if (generation === sequence.current) setBusy(false) }
   }
@@ -45,7 +46,7 @@ export function UniverCacheSettings(props: { getSession: () => string | undefine
   async function clean(): Promise<void> {
     if (!sessionId || !cache || !cache.writable || busy) return
     const chosen = cache.entries.filter((entry) => selected.has(entry.id))
-    if (!chosen.length || !window.confirm('清理所选 ' + chosen.length + ' 项缓存（' + sizeLabel(chosen.reduce((sum, entry) => sum + entry.bytes, 0)) + '）？可能包含尚未导出的编辑，删除不可恢复；原Office文件不受影响。占用条目会跳过。')) return
+    if (!chosen.length || !window.confirm(uiText('清理所选 ', "Clean selected ", "Очистить выбранные ") + chosen.length + uiText(' 项缓存（', " cache entries (", " записей кэша (") + sizeLabel(chosen.reduce((sum, entry) => sum + entry.bytes, 0)) + uiText('）？可能包含尚未导出的编辑，删除不可恢复；原Office文件不受影响。占用条目会跳过。', ")? They may contain unexported edits. Deletion is irreversible; original Office files are unaffected. Busy entries are skipped.", ")? Они могут содержать неэкспортированные правки. Удаление необратимо; оригиналы Office не затрагиваются. Занятые записи пропускаются."))) return
     setBusy(true)
     const generation = sequence.current
     try {
@@ -56,20 +57,20 @@ export function UniverCacheSettings(props: { getSession: () => string | undefine
       forgetUniver(sessionId, chosen.filter((entry) => deleted.has(entry.id)).map((entry) => entry.file))
       emitRefresh({ kind: 'structure' })
       await refresh()
-      setMessage(result.results.map((entry) => (entry.status === 'deleted' ? '已删除' : entry.status === 'skipped' ? '已跳过' : '失败') + '：' + (chosen.find((item) => item.id === entry.id)?.source ?? entry.id) + (entry.reason ? '；' + entry.reason : '')).join('\n'))
+      setMessage(result.results.map((entry) => (entry.status === 'deleted' ? uiText('已删除', "Deleted", "Удалено") : entry.status === 'skipped' ? uiText('已跳过', "Skipped", "Пропущено") : uiText('失败', "Failed", "Ошибка")) + uiText('：', ": ", ": ") + (chosen.find((item) => item.id === entry.id)?.source ?? entry.id) + (entry.reason ? uiText('；', "; ", "; ") + entry.reason : '')).join('\n'))
     } catch (error) { if (generation === sequence.current) setMessage(String(error)) }
     finally { if (generation === sequence.current) setBusy(false) }
   }
   return React.createElement('section', { className: 'edrv-uv-cache-settings' },
-    React.createElement('h3', null, 'Univer 工作区缓存'),
-    React.createElement('p', null, '缓存可能包含唯一的未导出编辑，不自动清除。服务占用时跳过，不自动停服务。'),
-    cache ? React.createElement('p', { title: cache.root }, cache.workspace + ' · ' + cache.entries.length + ' 项 · ' + sizeLabel(cache.entries.reduce((sum, entry) => sum + entry.bytes, 0))) : null,
-    React.createElement(Button, { disabled: busy, onClick: refresh }, '刷新'),
-    React.createElement(Button, { disabled: busy || !cache?.writable || !selected.size, onClick: clean }, '清理所选'),
+    React.createElement('h3', null, uiText('Univer 工作区缓存', "Univer workspace cache", "Кэш рабочего пространства Univer")),
+    React.createElement('p', null, uiText('缓存可能包含唯一的未导出编辑，不自动清除。服务占用时跳过，不自动停服务。', "Cache may contain the only copy of unexported edits and is not cleared automatically. Busy entries are skipped without stopping services.", "Кэш может содержать единственную копию правок и автоматически не очищается. Занятые записи пропускаются без остановки сервисов.")),
+    cache ? React.createElement('p', { title: cache.root }, cache.workspace + ' · ' + cache.entries.length + uiText(' 项 · ', " entries · ", " записей · ") + sizeLabel(cache.entries.reduce((sum, entry) => sum + entry.bytes, 0))) : null,
+    React.createElement(Button, { disabled: busy, onClick: refresh }, uiText('刷新', "Refresh", "Обновить")),
+    React.createElement(Button, { disabled: busy || !cache?.writable || !selected.size, onClick: clean }, uiText('清理所选', "Clean selected", "Очистить выбранные")),
     cache?.entries.map((entry) => React.createElement('div', { key: entry.id, className: 'edrv-uv-cache-row' },
-      React.createElement(Input, { type: 'checkbox', checked: selected.has(entry.id), disabled: busy || !cache.writable, 'aria-label': '选择 ' + entry.source, onChange: () => setSelected((current) => { const next = new Set(current); if (next.has(entry.id)) next.delete(entry.id); else next.add(entry.id); return next }) }),
-      React.createElement('span', null, entry.source, React.createElement('small', null, new Date(entry.createdAt).toLocaleString() + ' · ' + sizeLabel(entry.bytes) + ' · ' + (entry.complete ? '已准备' : '未完成'))),
-      React.createElement(Button, { disabled: busy, onClick: () => openEditorView(entry.file) }, '打开缓存'))),
-    cache && !cache.entries.length ? React.createElement('p', null, '当前工作区没有受管理的缓存') : null,
+      React.createElement(Input, { type: 'checkbox', checked: selected.has(entry.id), disabled: busy || !cache.writable, 'aria-label': uiText('选择 ', "Select ", "Выбрать ") + entry.source, onChange: () => setSelected((current) => { const next = new Set(current); if (next.has(entry.id)) next.delete(entry.id); else next.add(entry.id); return next }) }),
+      React.createElement('span', null, entry.source, React.createElement('small', null, new Date(entry.createdAt).toLocaleString() + ' · ' + sizeLabel(entry.bytes) + ' · ' + (entry.complete ? uiText('已准备', "Ready", "Готово") : uiText('未完成', "Incomplete", "Не завершено")))),
+      React.createElement(Button, { disabled: busy, onClick: () => openEditorView(entry.file) }, uiText('打开缓存', "Open cache", "Открыть кэш")))),
+    cache && !cache.entries.length ? React.createElement('p', null, uiText('当前工作区没有受管理的缓存', "No managed cache in this workspace", "В рабочем пространстве нет управляемого кэша")) : null,
     message ? React.createElement('p', { role: 'status', style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } }, message) : null)
 }

@@ -1,3 +1,4 @@
+import { uiText } from './uiLocale.js'
 import { absoluteOf } from './tabActions.js'
 import type { EditorRequest } from './openReceipt.js'
 
@@ -102,7 +103,7 @@ export function receiptReadyFor(request: EditorRequest, view: ReceiptView): bool
 export function receiptErrorFor(request: EditorRequest, view: ReceiptView): string | null {
   if (!ownsLoad(request, view)) return null
   if (view.engineError) return view.engineError
-  return view.load?.status === 'error' ? view.load.error ?? '文件加载失败' : null
+  return view.load?.status === 'error' ? view.load.error ?? uiText('文件加载失败', "File loading failed", "Не удалось загрузить файл") : null
 }
 
 /**

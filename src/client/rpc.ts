@@ -4,6 +4,7 @@
  * 诊断开关运行时化：内存缓存 + localStorage 持久（日志弹窗开关即改即生效，免刷新）。
  * 作者 ddj 2026-08-20 / 2026-09-17
  */
+import { uiText } from './uiLocale.js'
 import { svnNotice } from './svnNotice.js'
 import { channelPrefix, transportUrl } from '../shared/remoteChannel.js'
 import { RPC_PATH } from '../shared/rpc.js'
@@ -64,11 +65,11 @@ async function rpcFetch<M extends RpcMethod>(method: M, args: RpcRequestMap[M], 
   })
   if (!res.ok) throw new Error(await failureMessage(res))
   if (!/^application\/json(?:\s*;|\s*$)/i.test(res.headers.get('content-type') ?? '')) {
-    throw new Error('DSH 返回了非 JSON 响应，请检查应用地址和代理配置')
+    throw new Error(uiText('DSH 返回了非 JSON 响应，请检查应用地址和代理配置', "DSH returned a non-JSON response. Check the application address and proxy settings.", "DSH вернул ответ не в JSON. Проверьте адрес приложения и настройки прокси."))
   }
   const value: unknown = await res.json()
   if (!value || typeof value !== 'object' || typeof (value as { ok?: unknown }).ok !== 'boolean') {
-    throw new Error('DSH RPC 响应格式不正确')
+    throw new Error(uiText('DSH RPC 响应格式不正确', "Invalid DSH RPC response format", "Некорректный формат ответа DSH RPC"))
   }
   return value as RpcResult<M>
 }
@@ -81,14 +82,14 @@ async function rpcFetch<M extends RpcMethod>(method: M, args: RpcRequestMap[M], 
  */
 async function failureMessage(res: Response): Promise<string> {
   if (res.status === 403) {
-    if (await unpairedDenied(res)) return '远程访问设备尚未配对：请在远程访问面板完成配对后重试（HTTP 403）'
-    return 'DSH 拒绝了当前页面的访问（HTTP 403，Host 校验未通过）' + channelNote()
+    if (await unpairedDenied(res)) return uiText('远程访问设备尚未配对：请在远程访问面板完成配对后重试（HTTP 403）', "Remote device is not paired. Complete pairing in the remote access panel and retry (HTTP 403).", "Удалённое устройство не сопряжено. Выполните сопряжение на панели удалённого доступа и повторите (HTTP 403).")
+    return uiText('DSH 拒绝了当前页面的访问（HTTP 403，Host 校验未通过）', "DSH denied access from this page (HTTP 403; Host validation failed)", "DSH запретил доступ с этой страницы (HTTP 403; проверка Host не пройдена)") + channelNote()
   }
-  if (res.status === 401) return 'DSH 登录已失效，请重新打开已登录的应用页面'
-  if (res.status === 404) return '插件路由不存在（HTTP 404），请确认 dsh-vscode-mode 与宿主版本匹配'
-  if (res.status === 413) return '请求超过支持的文件大小'
-  if (res.status === 503) return 'DSH 认证服务尚未就绪'
-  return 'DSH 请求失败（HTTP ' + res.status + '）'
+  if (res.status === 401) return uiText('DSH 登录已失效，请重新打开已登录的应用页面', "DSH login expired. Reopen the authenticated application page.", "Авторизация DSH истекла. Откройте заново страницу приложения с действующим входом.")
+  if (res.status === 404) return uiText('插件路由不存在（HTTP 404），请确认 dsh-vscode-mode 与宿主版本匹配', "Plugin route not found (HTTP 404). Check that dsh-vscode-mode matches the host version.", "Маршрут плагина не найден (HTTP 404). Проверьте совместимость версий dsh-vscode-mode и хоста.")
+  if (res.status === 413) return uiText('请求超过支持的文件大小', "Request exceeds the supported file size", "Запрос превышает поддерживаемый размер файла")
+  if (res.status === 503) return uiText('DSH 认证服务尚未就绪', "DSH authentication service is not ready", "Служба авторизации DSH ещё не готова")
+  return uiText('DSH 请求失败（HTTP ', "DSH request failed (HTTP ", "Ошибка запроса DSH (HTTP ") + res.status + '）'
 }
 
 /**
@@ -118,7 +119,7 @@ function channelNote(): string {
     if (typeof location === 'undefined') return ''
     const host = location.hostname
     if (host === 'localhost' || host === '::1' || host === '[::1]' || /^127(\.\d{1,3}){3}$/.test(host)) return ''
-    return '；本页未接入远程访问通道（远程访问插件未安装或未完成配对）'
+    return uiText('；本页未接入远程访问通道（远程访问插件未安装或未完成配对）', "; this page has no remote access channel (plugin missing or pairing incomplete)", "; у страницы нет канала удалённого доступа (плагин не установлен или сопряжение не завершено)")
   } catch (e) {
     return ''
   }

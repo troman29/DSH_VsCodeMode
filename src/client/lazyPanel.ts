@@ -1,4 +1,5 @@
 /** Package-local CJS chunk loading; transport, revision URLs and HMR belong to DSH. @author ddj 2026年10月22号 */
+import { uiText } from './uiLocale.js'
 import React from 'react'
 import type { SidebarCtx } from './sidebar/types.js'
 
@@ -25,14 +26,14 @@ function loadModule<T>(file: string, pick: (exports: ChunkExports) => T): Promis
   const cached = loads.get(file) as ChunkLoad<T> | undefined
   if (cached?.value !== undefined) return Promise.resolve(cached.value)
   if (cached?.pending) return cached.pending
-  if (!importer) return Promise.reject(new Error('当前 DSH 不支持包内面板加载，请升级宿主'))
+  if (!importer) return Promise.reject(new Error(uiText('当前 DSH 不支持包内面板加载，请升级宿主', "This DSH version cannot load package panels. Upgrade the host.", "Эта версия DSH не поддерживает загрузку панелей пакета. Обновите хост.")))
 
   const epoch = generation
   const transport = importer
   const state: ChunkLoad<T> = {}
   const pending = Promise.resolve().then(() => transport(file)).then((exports) => {
     const value = pick(exports)
-    if (epoch !== generation) throw new Error('面板加载已失效，请重试')
+    if (epoch !== generation) throw new Error(uiText('面板加载已失效，请重试', "Panel load expired. Retry.", "Загрузка панели устарела. Повторите."))
     state.value = value
     return value
   }).catch((error) => {
@@ -53,7 +54,7 @@ export function loadChunk(file: string): Promise<ChunkExports> {
 export function loadPanel(key: PanelKey): Promise<Panel> {
   return loadModule(FILES[key], (exports) => {
     const component = exports[EXPORTS[key]]
-    if (typeof component !== 'function') throw new Error('面板脚本缺少组件导出')
+    if (typeof component !== 'function') throw new Error(uiText('面板脚本缺少组件导出', "Panel script has no component export", "Скрипт панели не экспортирует компонент"))
     return component as Panel
   })
 }
@@ -78,5 +79,5 @@ export function LazyPanel(props: { panel: PanelKey; ctx: SidebarCtx }): React.Re
   function onRetry(): void { retry(attempt + 1) }
   if (view.component) return React.createElement(view.component, { ctx: props.ctx })
   return React.createElement('div', { className: 'edrv-empty', role: view.error ? 'alert' : 'status' },
-    view.error ?? '正在加载面板…', view.error && React.createElement('button', { onClick: onRetry }, '重试'))
+    view.error ?? uiText('正在加载面板…', "Loading panel…", "Загрузка панели…"), view.error && React.createElement('button', { onClick: onRetry }, uiText('重试', "Retry", "Повторить")))
 }

@@ -4,7 +4,12 @@
  * monacoPromise 缓存用 vi.resetModules + 动态 import 逐例隔离。
  * 作者 ddj 2026-09-22
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** 模拟 script 元素（dataset/onload/onerror/parentNode，够 loader 使用即可）。 */
 interface FakeScript {
@@ -76,8 +81,10 @@ function withNodeGlobals(fakeModule: unknown, fakeExports: unknown, run: () => P
 }
 
 describe('monaco loader（issue #3 回归）', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.resetModules()
+    const locale = await import('../src/client/uiLocale.js')
+    locale.bindUiLocale({ getLocale: () => ({ active: 'zh' }) })
     vi.unstubAllGlobals()
   })
 

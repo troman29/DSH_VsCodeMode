@@ -3,6 +3,7 @@
  * 归一化为 { ok, error? }，不抛异常；无会话/异常降级返回错误文案。
  * 作者 ddj 2026-08-27
  */
+import { uiText } from './uiLocale.js'
 import { rpc } from './rpc.js'
 
 export interface RevealOutcome {
@@ -18,11 +19,11 @@ export interface RevealOutcome {
  * @returns 成功或失败原因
  */
 export async function revealInExplorer(sessionId: string | undefined, path: string): Promise<RevealOutcome> {
-  if (!sessionId) return { ok: false, error: '无活动会话' }
+  if (!sessionId) return { ok: false, error: uiText('无活动会话', "No active session", "Нет активной сессии") }
   try {
     const res = await rpc('edrv.revealInExplorer', { sessionId, path })
     return res.ok ? { ok: true } : { ok: false, error: res.error }
   } catch (error) {
-    return { ok: false, error: '打开异常:' + String(error) }
+    return { ok: false, error: uiText('打开异常:', "Open error: ", "Ошибка открытия: ") + String(error) }
   }
 }

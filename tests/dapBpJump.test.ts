@@ -106,7 +106,7 @@ describe('DebugPanel 断点行接线（契约：整行唯一跳转入口）', ()
   })
 
   it('整行点击同时驱动跳转与「跳转到」提示文案', () => {
-    expect(code).toContain("title: '跳转到 ' + row.path + ':' + row.entry.line")
+    expect(code).toContain('title: uiText(\'跳转到 \', "Go to ", "Перейти к ") + row.path + \':\' + row.entry.line')
   })
 })
 

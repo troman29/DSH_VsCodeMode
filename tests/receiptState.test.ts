@@ -1,10 +1,15 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { bindUiLocale, uiText } from '../src/client/uiLocale.js'
 import { readFileSync } from 'node:fs'
 import ts from 'typescript'
 import { acceptsLoad, receiptErrorFor, receiptPath, receiptReadyFor, receiptTabPath } from '../src/client/receiptState.js'
 import type { ReceiptView } from '../src/client/receiptState.js'
 import type { EditorRequest } from '../src/client/openReceipt.js'
 import { planDocument } from '../src/client/planState.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 const request: EditorRequest = { requestId: 'request-b', sessionId: 's', path: '/work/B.ts', line: 10, column: 2 }
 
@@ -36,7 +41,7 @@ function editorFunction(name: string, scope: Record<string, unknown>): (...args:
   const text = functions.get(name)
   if (!text) throw new Error('Missing editor adapter: ' + name)
   // useOffice 是 v0.30.0 起 EditorView 的 Office 路由判定：单测不涉及 Office，统一兜底为 false（显式 scope 可覆盖）
-  const resolved = { useOffice: () => false, ...scope }
+  const resolved = { uiText, useOffice: () => false, ...scope }
   return new Function(...Object.keys(resolved), text + '; return ' + name)(...Object.values(resolved))
 }
 

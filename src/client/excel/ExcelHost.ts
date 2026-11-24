@@ -1,3 +1,4 @@
+import { uiText } from '../uiLocale.js'
 /** React boundary that materializes the Excel engine chunk on demand. @author ddj 2026年11月10号 */
 import React from 'react'
 import { mountExcel } from './mountExcel.js'
@@ -32,9 +33,9 @@ export function ExcelHost(props: ExcelHostProps): React.ReactElement {
 
   const status = view.status === 'failed'
     ? React.createElement('div', { className: 'edrv-empty', role: 'alert' }, view.error,
-      React.createElement('button', { onClick: onRetry }, '重试'))
+      React.createElement('button', { onClick: onRetry }, uiText("重试", "Retry", "Повторить")))
     : view.status === 'loading'
-      ? React.createElement('div', { className: 'edrv-empty', role: 'status' }, '正在加载表格引擎…')
+      ? React.createElement('div', { className: 'edrv-empty', role: 'status' }, uiText("正在加载表格引擎…", "Loading spreadsheet engine…", "Загрузка табличного редактора…"))
       : null
   return React.createElement('div', { className: 'edrv-excel-host', ref: hostRef }, status)
 }

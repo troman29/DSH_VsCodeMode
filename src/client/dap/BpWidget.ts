@@ -13,6 +13,7 @@
  * 文案逐字取自 CodeBuddy 官方中文语言包（索引 7259/7262~7265）。
  * 作者 ddj 2026年09月29号
  */
+import { uiText } from '../uiLocale.js'
 import { setEditingLine } from './decorate.js'
 
 /** 模式索引（与权威实现 context 一致：0 表达式 / 1 命中次数 / 2 日志消息 / 3 等待断点）。 */
@@ -38,10 +39,10 @@ export interface BpWidgetHost {
 
 /** 模式项（顺序与权威实现一致）。 */
 const MODES: readonly { mode: number; label: string; placeholder: string }[] = [
-  { mode: BP_MODE.EXPRESSION, label: '表达式', placeholder: '在表达式结果为真时中断。按 "Enter" 键确认，"Escape" 键取消。' },
-  { mode: BP_MODE.HIT_COUNT, label: '命中次数', placeholder: '在满足命中次数条件时中断。按 "Enter" 键确认，"Escape" 键取消。' },
-  { mode: BP_MODE.LOG_MESSAGE, label: '日志消息', placeholder: '断点命中时记录的消息。{} 内的表达式将被替换。按 "Enter" 键确认，"Escape" 键取消。' },
-  { mode: BP_MODE.WAIT, label: '等待断点', placeholder: '选择此断点命中前必须先命中的断点。' },
+  { mode: BP_MODE.EXPRESSION, get label() { return uiText('表达式', "Expression", "Выражение") }, get placeholder() { return uiText('在表达式结果为真时中断。按 "Enter" 键确认，"Escape" 键取消。', "Break when the expression is true. Enter confirms; Escape cancels.", "Остановить при истинном выражении. Enter подтверждает; Escape отменяет.") } },
+  { mode: BP_MODE.HIT_COUNT, get label() { return uiText('命中次数', "Hit count", "Число срабатываний") }, get placeholder() { return uiText('在满足命中次数条件时中断。按 "Enter" 键确认，"Escape" 键取消。', "Break when the hit-count condition is met. Enter confirms; Escape cancels.", "Остановить при выполнении условия числа срабатываний. Enter подтверждает; Escape отменяет.") } },
+  { mode: BP_MODE.LOG_MESSAGE, get label() { return uiText('日志消息', "Log message", "Сообщение журнала") }, get placeholder() { return uiText('断点命中时记录的消息。{} 内的表达式将被替换。按 "Enter" 键确认，"Escape" 键取消。', "Message logged when the breakpoint is hit. Expressions inside {} are substituted. Enter confirms; Escape cancels.", "Сообщение при срабатывании точки останова. Выражения внутри {} подставляются. Enter подтверждает; Escape отменяет.") } },
+  { mode: BP_MODE.WAIT, get label() { return uiText('等待断点', "Wait for breakpoint", "Ожидать точку останова") }, get placeholder() { return uiText('选择此断点命中前必须先命中的断点。', "Select the breakpoint that must be hit before this one.", "Выберите точку останова, которая должна сработать первой.") } },
 ]
 /** 模式清单（调试面板行内编辑器同源复用：标签与占位文案一致）。 */
 export { MODES }
@@ -83,7 +84,7 @@ export function createBpWidget(editor: unknown, input: BpWidgetInput): BpWidgetH
   // 左侧模式下拉
   const select = document.createElement('select')
   select.className = 'edrv-bpwidget-mode'
-  select.title = '断点类型'
+  select.title = uiText('断点类型', "Breakpoint type", "Тип точки останова")
   for (const item of MODES) {
     const opt = document.createElement('option')
     opt.value = String(item.mode)

@@ -7,13 +7,17 @@
  * SVN 组显隐（managed/svnCli/tortoise × 文件/目录/根）与 P2 CLI 三项的状态矩阵。
  * 作者 ddj 2026-09-03 / 2026-09-16 / 2026年09月22号
  */
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDefaultFileMenuItems } from '../src/client/sidebar/menuItems.js'
 import type { TreeMenuItem, TreeMenuTarget } from '../src/client/sidebar/contextMenu.js'
 import type { SidebarCtx } from '../src/client/sidebar/types.js'
 import type { SvnChangeEntry, SvnStatusPayload } from '../src/shared/svn.js'
 import { clearFileClip, fileClipOf, setFileClip } from '../src/client/fileClipboard.js'
 import { rpcResponse } from './fixtures/rpcResponse.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** 按 id 索引内置菜单项。 */
 const byId = (): Record<string, TreeMenuItem> =>

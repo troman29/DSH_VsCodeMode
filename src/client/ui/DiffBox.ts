@@ -1,3 +1,4 @@
+import { uiText } from '../uiLocale.js'
 // @ts-nocheck
 /**
  * dsh-vscode-mode client — DiffBox：差异条入口，按数据源选栏。
@@ -26,7 +27,7 @@ export function DiffBox(props) {
         React.createElement('button', {
           type: 'button',
           className: 'edrv-diffbar-dock-button',
-          title: '切换到下一个差异文件',
+          title: uiText("切换到下一个差异文件", "Next changed file", "Следующий изменённый файл"),
           'aria-label': diffDockText(fileTotal),
           onClick: onOpenNextFile,
         }, diffDockText(fileTotal))))

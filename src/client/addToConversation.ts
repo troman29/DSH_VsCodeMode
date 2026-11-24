@@ -6,6 +6,7 @@
  * 作者 ddj 2026-08-25
  */
 
+import { uiText } from './uiLocale.js'
 import { appUrl } from '../shared/appUrl.js'
 
 /** 文件引用可选的行区间（选中内容用）。 */
@@ -28,9 +29,9 @@ export type RefAppearance = 'file' | 'folder'
  */
 export function statusOfAdd(outcome: AddOutcome, okText: string): string {
   if (outcome === 'ok') return okText
-  if (outcome === 'busy') return okText + '（已降级纯文本）'
-  if (outcome === 'failed') return '添加引用失败（输入框忙或未就绪，请重试）'
-  return '无法添加到对话（无会话或输入框不可用）'
+  if (outcome === 'busy') return okText + uiText('（已降级纯文本）', " (fell back to plain text)", " (использован обычный текст)")
+  if (outcome === 'failed') return uiText('添加引用失败（输入框忙或未就绪，请重试）', "Failed to add reference (input busy or not ready; retry)", "Не удалось добавить ссылку (поле ввода занято или не готово; повторите)")
+  return uiText('无法添加到对话（无会话或输入框不可用）', "Cannot add to conversation (no session or input unavailable)", "Нельзя добавить в диалог (нет сессии или поле ввода недоступно)")
 }
 
 /** DSH reference source 名（dsh-client-ui-reference 注册的 @file/@session 统一源）。 */

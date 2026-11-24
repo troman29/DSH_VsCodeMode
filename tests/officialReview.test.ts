@@ -1,7 +1,11 @@
 /** 官方审阅扩展位测试：注册降级 / React 组件渲染 / 注解源接线。作者 ddj 2026年11月23号 */
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { installOfficialReview } from '../src/client/officialReview.js'
 import type { ReviewDeps, ReviewHost } from '../src/client/officialReview.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** 契约固定的 slot 名。 */
 const TOOLBAR_SLOT = 'forge.changes.toolbar'

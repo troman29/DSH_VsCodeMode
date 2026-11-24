@@ -1,3 +1,4 @@
+import { uiText } from './uiLocale.js'
 /**
  * dsh-vscode-mode client — SVN 动作**执行器**表（与 shared/svnActions.ts 的元数据表配对）。
  *
@@ -73,26 +74,26 @@ function afterWrite(ctx: SvnActionRunCtx, promise: Promise<{ ok: boolean; messag
  */
 export const SVN_ACTION_RUNNERS: Record<string, SvnActionRunner> = {
   update: (ctx) => {
-    if (!ctx.openSvnUpdate) { ctx.notify?.('SVN 更新窗口不可用'); return }
+    if (!ctx.openSvnUpdate) { ctx.notify?.(uiText("SVN 更新窗口不可用", "SVN update window is unavailable", "Окно обновления SVN недоступно")); return }
     ctx.openSvnUpdate(ctx.path ?? '')
   },
   'refresh-changes': (ctx) => {
     ctx.refreshChanges?.()
-    ctx.notify?.('已刷新 SVN 变更')
+    ctx.notify?.(uiText("已刷新 SVN 变更", "SVN changes refreshed", "Изменения SVN обновлены"))
   },
   'diff-base': (ctx) => {
-    if (!ctx.path) { ctx.notify?.('无活动文件'); return }
+    if (!ctx.path) { ctx.notify?.(uiText("无活动文件", "No active file", "Нет активного файла")); return }
     ctx.openSvnDiff?.(ctx.path)
   },
   add: (ctx) => {
-    if (!ctx.path) { ctx.notify?.('无目标路径'); return }
+    if (!ctx.path) { ctx.notify?.(uiText("无目标路径", "No target path", "Не указан целевой путь")); return }
     afterWrite(ctx, svnAdd(ctx.sessionId, [ctx.path]))
   },
   // 键必须与 shared/svnActions.ts 的动作 id 完全一致（不一致会静默不执行，故有单测守护）
   'revert-cli': (ctx) => {
-    if (!ctx.path) { ctx.notify?.('无目标路径'); return }
+    if (!ctx.path) { ctx.notify?.(uiText("无目标路径", "No target path", "Не указан целевой путь")); return }
     // 破坏性动作的确认唯一入口（各调用方不得绕过）
-    const ok = askConfirm(ctx, '确认还原「' + ctx.path + '」的本地改动？新增（A）文件在磁盘上会保留，仅取消登记。')
+    const ok = askConfirm(ctx, uiText("确认还原「", "Revert local changes in “", "Отменить локальные изменения в «") + ctx.path + uiText("」的本地改动？新增（A）文件在磁盘上会保留，仅取消登记。", "”? Added (A) files remain on disk; only their version-control registration is removed.", "»? Добавленные файлы (A) останутся на диске; отменится только регистрация в системе версий."))
     if (!ok) return
     afterWrite(ctx, svnRevert(ctx.sessionId, [ctx.path]))
   },  log: (ctx) => {
@@ -100,7 +101,7 @@ export const SVN_ACTION_RUNNERS: Record<string, SvnActionRunner> = {
   },
   // W2-1：补丁生成（只读，仅生成不落盘应用）；RPC 后把载荷交给 UI 对话框
   'create-patch': (ctx) => {
-    if (!ctx.path) { ctx.notify?.('无活动文件'); return }
+    if (!ctx.path) { ctx.notify?.(uiText("无活动文件", "No active file", "Нет активного файла")); return }
     const target = ctx.path
     void svnPatchText(ctx.sessionId, target).then((outcome) => {
       if (!outcome.ok || typeof outcome.text !== 'string') { ctx.notify?.(outcome.message); return }
@@ -115,15 +116,15 @@ export const SVN_ACTION_RUNNERS: Record<string, SvnActionRunner> = {
     const options = ctx.cleanupOptions ?? {}
     const destructive = options.removeUnversioned === true || options.removeIgnored === true
     if (destructive) {
-      const scopeText = options.removeUnversioned ? '未纳入版本控制的文件与目录' : '被忽略的文件'
-      const ok = askConfirm(ctx, '确认删除工作副本中的' + scopeText + '？该操作会从磁盘真实删除，且无法通过 SVN 恢复。')
+      const scopeText = options.removeUnversioned ? uiText("未纳入版本控制的文件与目录", "unversioned files and directories", "файлы и каталоги вне системы версий") : uiText("被忽略的文件", "ignored files", "игнорируемые файлы")
+      const ok = askConfirm(ctx, uiText("确认删除工作副本中的", "Delete from the working copy: ", "Удалить из рабочей копии: ") + scopeText + uiText("？该操作会从磁盘真实删除，且无法通过 SVN 恢复。", "? This permanently deletes files from disk; SVN cannot restore them.", "? Файлы будут удалены с диска без возможности восстановления через SVN."))
       if (!ok) return
     }
     afterWrite(ctx, svnCleanup(ctx.sessionId, options))
   },
   // 原生提交：打出对话框，提交范围与信息由人确认（动作只负责打开，不直接提交）
   commit: (ctx) => {
-    if (!ctx.openCommitDialog) { ctx.notify?.('提交对话框不可用（请刷新页面）'); return }
+    if (!ctx.openCommitDialog) { ctx.notify?.(uiText("提交对话框不可用（请刷新页面）", "Commit dialog is unavailable (reload the page)", "Окно коммита недоступно (обнови страницу)")); return }
     ctx.openCommitDialog(ctx.path ? { paths: [ctx.path] } : {})
   },
   // Tortoise 组：统一由 svnTortoise 发射（action 由 id 后缀解析）
@@ -138,7 +139,7 @@ export const SVN_ACTION_RUNNERS: Record<string, SvnActionRunner> = {
 function runTortoiseAction(ctx: SvnActionRunCtx, action: 'commit' | 'log' | 'diff' | 'blame' | 'revert'): void {
   if (action === 'log') { ctx.openSvnLog?.(ctx.path || undefined); return }
   const target = ctx.path ?? ''
-  if (!target && action !== 'commit') { ctx.notify?.('无活动文件'); return }
+  if (!target && action !== 'commit') { ctx.notify?.(uiText("无活动文件", "No active file", "Нет активного файла")); return }
   void svnTortoise(ctx.sessionId, action, target).then((outcome) => ctx.notify?.(outcome.message))
 }
 

@@ -1,3 +1,4 @@
+import { uiText } from './uiLocale.js'
 import type { MissingReview } from '../shared/types.js'
 import { splitLines } from '../shared/diff.js'
 
@@ -21,8 +22,8 @@ export function goneStateOf(failure: { error?: unknown; code?: unknown } | null 
   const code = failure?.code
   const official = code === 'official-covered'
   if (!official && code !== 'official-decided' && code !== 'no-records' && code !== 'no-evidence' && code !== 'too-large') return null
-  const message = String(failure?.error ?? '文件已在磁盘删除').replace(/^Error:\s*/, '')
-  return { title: official ? '文件已在磁盘删除 · 有官方待审改动' : '文件已在磁盘删除', message, official }
+  const message = String(failure?.error ?? uiText('文件已在磁盘删除', "File deleted from disk", "Файл удалён с диска")).replace(/^Error:\s*/, '')
+  return { title: official ? uiText('文件已在磁盘删除 · 有官方待审改动', "File deleted from disk · Built-in review pending", "Файл удалён с диска · Ожидается встроенная проверка изменений") : uiText('文件已在磁盘删除', "File deleted from disk", "Файл удалён с диска"), message, official }
 }
 
 /** @public @author ddj 2026年10月28号 @param review Frozen complete snapshot. @returns One whole-file deletion, including empty files; no invented current lines. */
@@ -56,7 +57,7 @@ export async function missingBatch(paths: string[], api: MissingBatchApi): Promi
   for (const review of candidates) {
     api.guard()
     const result = await api.decide(review, api.operation(review))
-    if (!result.ok) throw new Error(`已处理 ${completed.size} 个删除文件，其余未处理。${result.error}`)
+    if (!result.ok) throw new Error(uiText(`已处理 ${completed.size} 个删除文件，其余未处理。${result.error}`, `Processed ${completed.size} deleted files; remaining files were not processed. ${result.error}`, `Обработано удалённых файлов: ${completed.size}; остальные не обработаны. ${result.error}`))
     completed.add(review.path)
     api.committed(review, result.callIds)
   }

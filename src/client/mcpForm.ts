@@ -1,3 +1,4 @@
+import { uiText } from './uiLocale.js'
 import type { MpcConfig } from '../shared/mcp.js'
 
 export interface McpDraft {
@@ -23,9 +24,9 @@ export interface McpDraft {
 export function parseArgs(text: string): string[] {
   if (text.trimStart().startsWith('[')) {
     let value: unknown
-    try { value = JSON.parse(text) } catch { throw new Error('参数 JSON 无效，请输入 string[] 或每行一个参数') }
+    try { value = JSON.parse(text) } catch { throw new Error(uiText('参数 JSON 无效，请输入 string[] 或每行一个参数', "Invalid argument JSON. Enter string[] or one argument per line.", "Некорректный JSON аргументов. Введите string[] или по аргументу на строку.")) }
     if (!Array.isArray(value) || !value.every((item) => typeof item === 'string')) {
-      throw new Error('参数 JSON 必须是 string[]')
+      throw new Error(uiText('参数 JSON 必须是 string[]', "Argument JSON must be string[]", "JSON аргументов должен быть string[]"))
     }
     return value
   }
@@ -49,10 +50,10 @@ export function parsePairs(text: string): Record<string, string> {
     const key = raw.slice(0, separator).trim()
     const value = raw.slice(separator + 1).trim()
     if (separator < 1 || !/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(key) || /[\x00-\x08\x0a-\x1f\x7f]/.test(value)) {
-      throw new Error('请求头第 ' + (index + 1) + ' 行格式错误，应为有效 key=value')
+      throw new Error(uiText('请求头第 ', "Header line ", "Строка заголовка ") + (index + 1) + uiText(' 行格式错误，应为有效 key=value', " has invalid format; use valid key=value", " имеет неверный формат; используйте корректное key=value"))
     }
     const normalized = key.toLowerCase()
-    if (keys.has(normalized)) throw new Error('请求头重复：' + key)
+    if (keys.has(normalized)) throw new Error(uiText('请求头重复：', "Duplicate header: ", "Повторяющийся заголовок: ") + key)
     keys.add(normalized)
     pairs.push([key, value])
   }

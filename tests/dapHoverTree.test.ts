@@ -1,5 +1,5 @@
 /** DAP hover 变量树：成员全量直显/折叠判定/上限保护/转义 纯逻辑测试。作者 ddj 2026年09月21号 */
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import {
   applyAltToHovers,
   disposeHoverTree,
@@ -9,7 +9,7 @@ import {
   escapeHtml,
   hintText,
   initialHtml,
-  LSP_PLACEHOLDER_TEXT,
+  lspPlaceholderText,
   needsLspPlaceholder,
   rowAt,
   rowHtml,
@@ -22,6 +22,10 @@ import {
   VALUE_CLIP,
   type TreeNode,
 } from '../src/client/dap/hoverTree.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** 最小 DOM 行为桩，只实现本模块使用的查询与属性契约。 */
 class HoverElement {
@@ -343,6 +347,6 @@ describe('hoverTree 状态复用与 Alt 行计划', () => {
     expect(needsLspPlaceholder(true, false)).toBe(true)
     expect(needsLspPlaceholder(true, true)).toBe(false)
     expect(needsLspPlaceholder(false, false)).toBe(false)
-    expect(LSP_PLACEHOLDER_TEXT).toContain('LSP')
+    expect(lspPlaceholderText()).toContain('LSP')
   })
 })

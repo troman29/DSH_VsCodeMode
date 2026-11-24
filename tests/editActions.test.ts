@@ -1,8 +1,13 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { bindEditActions, runEditAction } from '../src/client/monaco/editActions.js'
 import { hasCodeFocus } from '../src/client/editorModelState.js'
 import { officialCommandOf } from '../src/client/shortcutsOfficial.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 afterEach(() => vi.unstubAllGlobals())
 

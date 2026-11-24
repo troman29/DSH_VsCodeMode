@@ -13,7 +13,7 @@ import { routeSideEditor } from './sidebarBridge.js'
 function selectEditorTab(): void {
   const tabs = Array.from(document.querySelectorAll('div[role="tablist"] button[role="tab"]'))
   for (const tab of tabs) {
-    if (tab.textContent && tab.textContent.includes('文件编辑')) {
+    if (tab.textContent && ['文件编辑', 'File editor', 'Редактор файлов'].some((label) => tab.textContent!.includes(label))) {
       (tab as HTMLButtonElement).click()
       break
     }

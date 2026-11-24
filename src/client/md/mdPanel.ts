@@ -11,6 +11,7 @@
  * 提示，绝不抛错白屏（与 pdf.js / Monaco 加载失败的降级口径一致）。
  * 作者 ddj 2026年09月18号
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import type { ComponentType, ReactNode } from 'react'
 import { MarkdownDelegateProvider, MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -22,8 +23,8 @@ import { isComponentType } from './componentType.js'
  * 参与缓存判定，每次渲染新建对象会让渲染缓存在流式场景反复失效。
  */
 const MD_LABELS: MarkdownLabels = {
-  code: { copyLabel: '复制', copiedLabel: '已复制' },
-  footnotes: '脚注',
+  code: { get copyLabel() { return uiText('复制', "Copy", "Копировать") }, get copiedLabel() { return uiText('已复制', "Copied", "Скопировано") } },
+  get footnotes() { return uiText('脚注', "Footnotes", "Сноски") },
 }
 
 /**
@@ -78,21 +79,21 @@ export function MarkdownPanel(props: MarkdownPanelProps) {
         openFile: typeof onOpenFile === 'function' ? onOpenFile : undefined,
       }, React.createElement(MdText, { text, streaming: false, labels: MD_LABELS, variant: 'body' }))
     : React.createElement('div', { className: 'edrv-mdview-fallback' },
-        React.createElement('div', null, '当前 DSH 版本不含 Markdown 渲染原语，已降级为纯文本预览。'),
+        React.createElement('div', null, uiText('当前 DSH 版本不含 Markdown 渲染原语，已降级为纯文本预览。', "This DSH version has no Markdown rendering primitive; showing plain text instead.", "В этой версии DSH нет компонента отображения Markdown; показан обычный текст.")),
         React.createElement('pre', { className: 'edrv-mdview-pre' }, text))
 
   return React.createElement('div', { className: 'edrv-mdview' },
     React.createElement('div', { className: 'edrv-mdview-bar' },
-      React.createElement('span', { className: 'edrv-mdview-meta' }, lines + ' 行 · ' + chars + ' 字符'),
+      React.createElement('span', { className: 'edrv-mdview-meta' }, lines + uiText(' 行 · ', " lines · ", " строк · ") + chars + uiText(' 字符', " characters", " символов")),
       React.createElement('span', { style: { flex: 1 } }),
       React.createElement('button', {
-        className: 'edrv-pill edrv-pill-ghost', title: '切回源码编辑',
+        className: 'edrv-pill edrv-pill-ghost', get title() { return uiText('切回源码编辑', "Switch to source editing", "Перейти к редактированию исходника") },
         onClick: () => onToggleSource?.(),
-      }, '以源码打开'),
+      }, uiText('以源码打开', "Open as source", "Открыть исходник")),
       React.createElement('button', {
-        className: 'edrv-pill edrv-pill-ghost', title: '重新读取文件',
+        className: 'edrv-pill edrv-pill-ghost', get title() { return uiText('重新读取文件', "Reload file", "Перечитать файл") },
         onClick: () => onReload?.(),
-      }, '⟳ 刷新')),
+      }, uiText('⟳ 刷新', "⟳ Refresh", "⟳ Обновить"))),
     React.createElement('div', { className: 'edrv-mdview-stage' },
       React.createElement('div', { className: 'edrv-mdview-doc' }, body)))
 }

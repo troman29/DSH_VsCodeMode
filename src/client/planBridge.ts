@@ -1,4 +1,5 @@
 /** Optional DSH plan integration; no provider or approval UI replacement. @author ddj 2026年10月08号 */
+import { uiText } from './uiLocale.js'
 import React from 'react'
 import { requestOpen } from './openReceipt.js'
 import { createPlanFeed, clearPlanState, isPlanAddress, planDocument, type PlanWindow, type PlanOpen } from './planState.js'
@@ -84,8 +85,8 @@ function planRouter(ctx: PlanContext, official: OfficialSidebar, native: (addres
     }, [key, plan?.markdown, props.sessionId])
     const unavailable = failed || (!plan && ['none', 'failed'].includes(resource.status))
     return React.createElement('div', { className: 'edrv-empty' },
-      React.createElement('div', null, unavailable ? '计划暂未能在文件编辑器打开' : '正在打开计划预览…'),
-      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: openNative }, '在官方计划查看器打开'))
+      React.createElement('div', null, unavailable ? uiText('计划暂未能在文件编辑器打开', "Plan could not be opened in the file editor", "Не удалось открыть план в файловом редакторе") : uiText('正在打开计划预览…', "Opening plan preview…", "Открытие предпросмотра плана…")),
+      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: openNative }, uiText('在官方计划查看器打开', "Open in built-in plan viewer", "Открыть во встроенном просмотрщике плана")))
   }
   return { body: PlanRouter, dispose: () => { offScope(); cancel(true) } }
 }
@@ -94,7 +95,7 @@ function registerPlan(ctx: PlanContext, official: OfficialSidebar): () => void {
   const offType = official.tabs.register({
     id: CLAIM_ID, kind: CLAIM_KIND, priority: 'extension',
     patterns: ['dsh-resource://plan/**', 'dsh-resource://plan-review/**'],
-    canOpen: isPlanAddress, title: () => '计划预览',
+    canOpen: isPlanAddress, title: () => uiText('计划预览', "Plan preview", "Предпросмотр плана"),
   })
   const direct = installPlanDirect(ctx, official.service)
   const router = planRouter(ctx, official, direct.native)

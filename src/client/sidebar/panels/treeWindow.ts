@@ -1,4 +1,5 @@
 /** File explorer fixed-height row model. @author ddj 2026年10月22号 */
+import { uiText } from '../../uiLocale.js'
 import type { TreeEntry } from '../../../shared/rpc.js'
 import { updateRange } from '../../ui/svnUpdateModel.js'
 
@@ -62,7 +63,7 @@ export function flattenTree(entriesOf: (rel: string) => TreeEntry[] | null,
     const entries = entriesOf(current.rel)
     if (!entries) {
       rows.push({ key: current.rel + ':loading', depth: current.depth,
-        text: loading[current.rel] ? '加载中…' : '无法加载' })
+        text: loading[current.rel] ? uiText('加载中…', "Loading…", "Загрузка…") : uiText('无法加载', "Unable to load", "Не удалось загрузить") })
       continue
     }
     // Stack reverses insertion order; push backwards to preserve host sorting.

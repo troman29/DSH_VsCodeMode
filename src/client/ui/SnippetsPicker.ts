@@ -14,6 +14,7 @@
  * 漏挂会导致样式整块失效、内容以裸流形式铺在页面底部。
  * 作者 ddj 2026年09月10号
  */
+import { sharedDisplay } from '../sharedDisplay.js'
 import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { rpc } from '../rpc.js'
@@ -28,7 +29,7 @@ import '../styles/mcp.css'
 
 /** 片段文件行的第二行摘要：语言 + 条目数 + 相对路径。 */
 export function fileMeta(info) {
-  return languageLabelOf(info.language) + ' · ' + info.count + uiText(' 条 · [', " entries · [", " элементов · [") + info.relHint + info.file + ']'
+  return sharedDisplay(languageLabelOf(info.language)) + ' · ' + info.count + uiText(' 条 · [', " entries · [", " элементов · [") + info.relHint + info.file + ']'
 }
 
 /**
@@ -45,7 +46,7 @@ export function languageOptions(languages) {
     const id = String(raw ?? '').trim().toLowerCase()
     if (!id || seen.has(id)) continue
     seen.add(id)
-    out.push({ id, label: languageLabelOf(id) })
+    out.push({ id, label: sharedDisplay(languageLabelOf(id)) })
   }
   return out
 }
@@ -229,7 +230,7 @@ export function SnippetsPicker(props) {
     currentLanguage
       ? React.createElement(React.Fragment, null,
           uiText('当前文件语言：', "Current file language: ", "Язык текущего файла: "),
-          React.createElement('b', null, languageLabelOf(currentLanguage)),
+          React.createElement('b', null, sharedDisplay(languageLabelOf(currentLanguage))),
           uiText('（', " (", " (") + currentLanguage + uiText('）', ")", ")"))
       : uiText('当前没有打开文件：可新建全语言片段，或先打开文件再新建对应语言的片段', "No file open. Create an all-language snippet, or open a file to create language-specific snippets.", "Файл не открыт. Создайте фрагмент для всех языков или откройте файл для создания фрагмента его языка."))
 
@@ -261,7 +262,7 @@ export function SnippetsPicker(props) {
             disabled: busy || !currentLanguage,
             title: currentLanguage ? '' : uiText('请先打开一个文件，或改用「新建全语言片段…」', "Open a file first, or use “New all-language snippets…”", "Сначала откройте файл или выберите «Новые фрагменты для всех языков…»"),
             onClick: () => openDraft('user', currentLanguage),
-          }, currentLanguage ? uiText('新建 ', "New ", "Создать ") + languageLabelOf(currentLanguage) + uiText(' 片段文件…', " snippet file…", " — файл фрагментов…") : uiText('新建当前语言片段…', "New current-language snippets…", "Новые фрагменты текущего языка…")),
+          }, currentLanguage ? uiText('新建 ', "New ", "Создать ") + sharedDisplay(languageLabelOf(currentLanguage)) + uiText(' 片段文件…', " snippet file…", " — файл фрагментов…") : uiText('新建当前语言片段…', "New current-language snippets…", "Новые фрагменты текущего языка…")),
           React.createElement('button', {
             disabled: busy || !cwd,
             title: cwd ? '' : uiText('当前会话没有工作区', "No workspace in this session", "У текущего сеанса нет рабочего пространства"),
@@ -296,7 +297,7 @@ export function SnippetsPicker(props) {
           (draft.scope === 'project' ? uiText('将写入 ', "Will write to ", "Будет записано в ") + (cwd ?? '') + '/.dsh/snippets/' : uiText('将写入 ~/.dsh/snippets/', "Will write to ~/.dsh/snippets/", "Будет записано в ~/.dsh/snippets/"))
           + normalizeSnippetFileName(draft.fileName)
           + (draft.language
-              ? uiText('（仅对 ', " (only for ", " (только для ") + languageLabelOf(draft.language) + uiText(' 文件生效）', " files)", " файлов)")
+              ? uiText('（仅对 ', " (only for ", " (только для ") + sharedDisplay(languageLabelOf(draft.language)) + uiText(' 文件生效）', " files)", " файлов)")
               : uiText('（对所有文件生效）', " (applies to all files)", " (для всех файлов)"))),
         error ? React.createElement('div', { className: 'vsm-mcp-error vsm-mcp-banner' }, error) : null,
         React.createElement('div', { className: 'vsm-mcp-dialog-actions' },

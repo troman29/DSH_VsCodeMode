@@ -13,6 +13,7 @@
  * 纯逻辑与依赖注入分离，`createUiStateMirror` 可在 node 环境单测。
  * 作者 ddj 2026-09-28
  */
+import { uiText } from '../uiLocale.js'
 import { CACHE_KEY } from '../paths.js'
 import { dbg, rpc } from '../rpc.js'
 import { readSessionScope } from '../sessionScope.js'
@@ -282,7 +283,7 @@ export function createUiStateMirror(deps: UiStateMirrorDeps): UiStateMirror {
 
   /** @private @author ddj 2026年10月12号 @returns Durable refresh snapshot. @throws When state is unreadable, unsettled or rejected by Host. @sideEffects Resends current local state after waiting for inflight writes. */
   async function flushStrict(): Promise<void> {
-    if (disposed || !settleDone || !installed) throw new Error('界面状态镜像尚未就绪')
+    if (disposed || !settleDone || !installed) throw new Error(uiText('界面状态镜像尚未就绪', "UI state mirror is not ready", "Зеркало состояния интерфейса ещё не готово"))
     if (inflight) await inflight
     // Read directly: the lenient key scanner intentionally hides storage errors.
     for (let index = 0; index < storage.length; index++) {
@@ -290,7 +291,7 @@ export function createUiStateMirror(deps: UiStateMirrorDeps): UiStateMirror {
       if (key && isMirroredKey(key)) queue(key, storage.getItem(key))
     }
     const lost = await flush()
-    if (lost > 0) throw new Error('界面状态保存失败（' + lost + ' 个键）：' + lastError)
+    if (lost > 0) throw new Error(uiText('界面状态保存失败（', "Failed to save UI state (", "Не удалось сохранить состояние интерфейса (") + lost + uiText(' 个键）：', " keys): ", " ключей): ") + lastError)
   }
 
   /** 回填本地缺失键（本地已有值一律保留）。 */
@@ -639,7 +640,7 @@ export async function flushUiState(): Promise<void> {
 
 /** @public @author ddj 2026年10月12号 @returns Durable page state. @throws If the mirror is unavailable or cannot persist. */
 export async function flushPageState(): Promise<void> {
-  if (!singleton) throw new Error('界面状态镜像不可用')
+  if (!singleton) throw new Error(uiText('界面状态镜像不可用', "UI state mirror unavailable", "Зеркало состояния интерфейса недоступно"))
   await singleton.flushStrict()
 }
 // --endregion

@@ -1,4 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
 import { excelState, editExcel, exportExcel, allowClose, releaseExcel, renameExcel, loadExcel } from '../src/client/excel/controller.js'
 import { setExcelCodec } from '../src/client/excel/codecLoader.js'
 import { LocaleType } from '@univerjs/presets'

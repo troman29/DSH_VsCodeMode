@@ -6,6 +6,7 @@
  * 必须显式区分，否则用户会误判为插件未升级。
  * 作者 ddj 2026年10月27号
  */
+import { uiText } from './uiLocale.js'
 import { sessionErrorText } from './sessionError.js'
 import type { ReviewDetail } from '../shared/review.js'
 
@@ -73,18 +74,18 @@ function safeCount(value: unknown): number {
 /** @private @author ddj 2026年10月28号 @param stale 无法定位块数。 @param ambiguous 多命中块数。 @param noBlocks 是否无行级块。 @returns 导航原因与准确的失效叙事。 */
 function staleMessage(stale: number, ambiguous: number, noBlocks: boolean): { reason: string; notice: string } {
   if (noBlocks) {
-    const reason = '该记录的官方补丁没有可定位的行级差异块'
-    return { reason, notice: `${reason}，无法行内跳转；可展开详情核对官方记录。` }
+    const reason = uiText('该记录的官方补丁没有可定位的行级差异块', "This record's official patch has no locatable line-level change blocks", "В стандартном патче записи нет определяемых построчных блоков изменений")
+    return { reason, notice: uiText(`${reason}，无法行内跳转；可展开详情核对官方记录。`, `${reason}; inline navigation unavailable. Expand details to inspect the official record.`, `${reason}; переход по строкам недоступен. Откройте подробности для проверки записи.`) }
   }
   if (ambiguous === 0) {
-    return { reason: '该记录的改动已不在当前文件中，无可跳转差异',
-      notice: `本记录 ${stale} 处改动均已不在当前文件中（被后续编辑覆盖或已撤销）；可点 Keep 结案（只标记已采纳，不改写磁盘），或展开详情核对原始增删。` }
+    return { reason: uiText('该记录的改动已不在当前文件中，无可跳转差异', "This record's changes are no longer in the current file; no changes to navigate", "Изменений записи больше нет в текущем файле; переход недоступен"),
+      notice: uiText(`本记录 ${stale} 处改动均已不在当前文件中（被后续编辑覆盖或已撤销）；可点 Keep 结案（只标记已采纳，不改写磁盘），或展开详情核对原始增删。`, `All ${stale} changes are absent from the current file (overwritten or undone). Keep closes the record as accepted without disk writes; expand details to inspect original changes.`, `Все ${stale} изменений отсутствуют в текущем файле (перезаписаны или отменены). Keep отмечает принятие без записи на диск; подробности показывают исходные изменения.`) }
   }
 
-  const reason = '同一段上下文在当前文件出现多次，无法唯一定位'
-  if (ambiguous === stale) return { reason, notice: `${reason}（可能存在重复代码块），可展开详情核对原始增删。` }
-  return { reason: '部分改动缺失，其余上下文存在多处匹配，无法唯一定位',
-    notice: `${stale - ambiguous} 处改动未在当前文件中找到，${ambiguous} 处上下文出现多次、无法唯一定位；可展开详情核对原始增删。` }
+  const reason = uiText('同一段上下文在当前文件出现多次，无法唯一定位', "The same context appears multiple times; location is ambiguous", "Контекст встречается несколько раз; положение неоднозначно")
+  if (ambiguous === stale) return { reason, notice: uiText(`${reason}（可能存在重复代码块），可展开详情核对原始增删。`, `${reason} (possibly duplicate code blocks). Expand details to inspect original changes.`, `${reason} (возможны повторяющиеся блоки кода). Откройте подробности для проверки исходных изменений.`) }
+  return { reason: uiText('部分改动缺失，其余上下文存在多处匹配，无法唯一定位', "Some changes are missing; remaining context matches multiple locations", "Часть изменений отсутствует; оставшийся контекст совпадает в нескольких местах"),
+    notice: uiText(`${stale - ambiguous} 处改动未在当前文件中找到，${ambiguous} 处上下文出现多次、无法唯一定位；可展开详情核对原始增删。`, `${stale - ambiguous} changes are missing; ${ambiguous} contexts match multiple locations. Expand details to inspect original changes.`, `${stale - ambiguous} изменений не найдены; ${ambiguous} контекстов совпадают в нескольких местах. Откройте подробности для проверки исходных изменений.`) }
 }
 
 /**
@@ -98,55 +99,55 @@ export function reviewBarView(input: ReviewBarInput): ReviewBarView {
   const jumps = safeCount(input.jumps)
   const stale = safeCount(input.stale)
   const index = safeCount(input.index)
-  const pendingTitle = `${safeCount(input.pendingRecords)} 条官方待审记录` + (input.ready ? `，本文件可跳转 ${jumps} 处` : '')
+  const pendingTitle = uiText(`${safeCount(input.pendingRecords)} 条官方待审记录`, `${safeCount(input.pendingRecords)} official records awaiting review`, `${safeCount(input.pendingRecords)} стандартных записей ожидают проверки`) + (input.ready ? uiText(`，本文件可跳转 ${jumps} 处`, `; ${jumps} navigation targets in this file`, `; ${jumps} целей перехода в файле`) : '')
   const ambiguous = Math.min(stale, safeCount(input.staleAmbiguous))
   const missing = Math.min(stale - ambiguous, safeCount(input.staleMissing ?? stale - ambiguous))
-  let keepHint = '保留当前记录的未处理修改'
+  let keepHint = uiText('保留当前记录的未处理修改', "Keep pending changes in the current record", "Сохранить ожидающие изменения текущей записи")
   if (input.ready === true && jumps === 0 && input.canKeep && (stale > 0 || input.noBlocks)) {
-    keepHint = '保留该记录的全部改动并结案：只标记已采纳，不改写磁盘'
+    keepHint = uiText('保留该记录的全部改动并结案：只标记已采纳，不改写磁盘', "Keep all changes and close the record: mark accepted only, without writing to disk", "Сохранить все изменения и закрыть запись: только отметить принятие, без записи на диск")
     if (!input.noBlocks && ambiguous === 0 && missing === stale) {
-      keepHint = '保留该记录的全部改动并结案：这些改动已不在文件中，记录将被标记为已采纳（不改写磁盘）'
+      keepHint = uiText('保留该记录的全部改动并结案：这些改动已不在文件中，记录将被标记为已采纳（不改写磁盘）', "Close this record as accepted: its changes are no longer in the file; no disk writes", "Закрыть запись как принятую: изменений больше нет в файле; без записи на диск")
     }
   }
 
   // 载入期所有块天然 stale，此时只能报告进度，不能断言改动已失效。
   if (input.ready !== true) {
-    return { position: '载入中', navPrevTitle: '文件载入中', navNextTitle: '文件载入中', notice: '', noticeTone: 'info', keepHint, pendingTitle }
+    return { position: uiText('载入中', "Loading", "Загрузка"), navPrevTitle: uiText('文件载入中', "File is loading", "Файл загружается"), navNextTitle: uiText('文件载入中', "File is loading", "Файл загружается"), notice: '', noticeTone: 'info', keepHint, pendingTitle }
   }
 
   if (jumps > 0) {
     const at = Math.min(index + 1, jumps)
-    const notice = stale > 0 ? `${stale} 处历史差异无法定位（其余 ${jumps} 处可跳转），展开详情查看原始增删。` : ''
-    return { position: `${at} / ${jumps}`, navPrevTitle: '上一个差异', navNextTitle: '下一个差异', notice, noticeTone: 'info', keepHint, pendingTitle }
+    const notice = stale > 0 ? uiText(`${stale} 处历史差异无法定位（其余 ${jumps} 处可跳转），展开详情查看原始增删。`, `${stale} historical changes cannot be located (${jumps} remain navigable). Expand details for original changes.`, `${stale} исторических изменений не определены (${jumps} доступны для перехода). Подробности содержат исходные изменения.`) : ''
+    return { position: `${at} / ${jumps}`, navPrevTitle: uiText('上一个差异', "Previous change", "Предыдущее изменение"), navNextTitle: uiText('下一个差异', "Next change", "Следующее изменение"), notice, noticeTone: 'info', keepHint, pendingTitle }
   }
 
   if (stale > 0) {
     const { reason, notice } = staleMessage(stale, ambiguous, input.noBlocks === true)
-    return { position: '无可跳转', navPrevTitle: reason, navNextTitle: reason, notice, noticeTone: 'warn', keepHint, pendingTitle }
+    return { position: uiText('无可跳转', "No navigation target", "Нет цели перехода"), navPrevTitle: reason, navNextTitle: reason, notice, noticeTone: 'warn', keepHint, pendingTitle }
   }
 
-  const notice = safeCount(input.pendingRecords) > 0 ? '该记录的官方补丁没有可定位的行级差异块' : ''
-  const reason = notice || '当前文件没有可定位差异'
+  const notice = safeCount(input.pendingRecords) > 0 ? uiText('该记录的官方补丁没有可定位的行级差异块', "This record's official patch has no locatable line-level change blocks", "В стандартном патче записи нет определяемых построчных блоков изменений") : ''
+  const reason = notice || uiText('当前文件没有可定位差异', "No locatable changes in the current file", "В текущем файле нет определяемых изменений")
   return { position: '—', navPrevTitle: reason, navNextTitle: reason, notice, noticeTone: 'info', keepHint, pendingTitle }
 }
 
 /** 非官方栏标识：没有官方待审记录时回落的那套栏必须自述来源，避免被当成旧版插件。 */
-export const SIDECAR_LABEL = '历史改动'
+export const sidecarLabel = (): string => uiText('历史改动', "Historical changes", "Исторические изменения")
 
 /** 非官方栏标识的悬停说明：讲清这些改动为何不在官方列表里。 */
-export const SIDECAR_LABEL_TITLE = '这些改动没有进入官方审查列表，是插件早期版本自动保存的改动留痕。Keep 只标记为已看过，不改文件；Undo 会校验后写回文件。'
+export const sidecarLabelTitle = (): string => uiText('这些改动没有进入官方审查列表，是插件早期版本自动保存的改动留痕。Keep 只标记为已看过，不改文件；Undo 会校验后写回文件。', "These changes are records saved by an earlier plugin version, outside the official review list. Keep only marks them reviewed; Undo validates and writes the file.", "Эти изменения сохранены ранней версией плагина вне стандартного списка проверки. Keep только отмечает просмотр; Undo проверяет и записывает файл.")
 
 /** 非官方 Keep 的作用域说明：只标记记录，不写磁盘。 */
-export const SIDECAR_KEEP_TITLE = '标记这些历史改动为已看过：只改记录，不改写磁盘文件，也不影响官方审查。'
+export const sidecarKeepTitle = (): string => uiText('标记这些历史改动为已看过：只改记录，不改写磁盘文件，也不影响官方审查。', "Mark these historical changes reviewed: updates the record only, without disk writes or official review changes.", "Отметить исторические изменения просмотренными: меняется только запись, без записи файла и влияния на стандартную проверку.")
 
 /** 非官方 Undo 的作用域说明：走原有回滚校验写回磁盘，但不影响官方记录。 */
-export const SIDECAR_UNDO_TITLE = '撤销这些历史改动（写回受回滚校验保护）：只影响这份历史记录，不影响官方审查。'
+export const sidecarUndoTitle = (): string => uiText('撤销这些历史改动（写回受回滚校验保护）：只影响这份历史记录，不影响官方审查。', "Undo these historical changes with rollback validation; affects only this historical record, not official reviews.", "Отменить исторические изменения с проверкой отката; влияет только на эту запись, не на стандартную проверку.")
 
 /** 非官方 Keep 之后的完成态：该通道 Keep 不写盘，不能沿用「已采纳」这种会让人以为改过文件的措辞。 */
-export const SIDECAR_KEEP_DONE = '已标记为看过（未改动文件）'
+export const sidecarKeepDone = (): string => uiText('已标记为看过（未改动文件）', "Marked reviewed (file unchanged)", "Отмечено как просмотренное (файл не изменён)")
 
 /** 当前端没有该会话时，差异栏里给中性说明而不是红色报错。 */
-export const SESSION_DOWN_NOTICE = '这个会话没在当前端激活，官方审查数据暂时读不到；下面的历史改动仍可查看、Keep、Undo。'
+export const sessionDownNotice = (): string => uiText('这个会话没在当前端激活，官方审查数据暂时读不到；下面的历史改动仍可查看、Keep、Undo。', "This session is not active on this client; official review data is temporarily unavailable. Historical changes below remain available for viewing, Keep, and Undo.", "Сеанс не активен в этом клиенте; данные стандартной проверки временно недоступны. Исторические изменения ниже доступны для просмотра, Keep и Undo.")
 
 /** 官方链路不可用提示；null 表示官方元数据正常，不需要提示。 */
 export interface OfficialDownView {
@@ -167,6 +168,6 @@ export function officialDownView(error: unknown): OfficialDownView | null {
   const reason = sessionErrorText(error).trim()
   if (!reason) return null
 
-  return { text: `官方差异不可用：${reason}`, retryLabel: '重试' }
+  return { text: uiText(`官方差异不可用：${reason}`, `Official changes unavailable: ${reason}`, `Стандартные изменения недоступны: ${reason}`), retryLabel: uiText('重试', "Retry", "Повторить") }
 }
 

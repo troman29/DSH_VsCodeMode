@@ -1,9 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import ExcelJS from 'exceljs'
 import { zipSync, strToU8 } from 'fflate/browser'
 import { decodeExcel, encodeExcel, inspectZip, rawGate } from '../src/client/excel/codec.js'
 import { basicFormula, isExcelPath } from '../src/client/excel/model.js'
 import { xmlGate } from '../src/client/excel/xmlGate.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** @private @author ddj 2026年10月28号 @returns In-memory basic fixture; no workspace or original-file writes. */
 async function fixture() {

@@ -6,6 +6,7 @@
  * MCP 管理 Tab 下含三个子页签：我的 MCP（profile 全局）/ 项目 MCP（各项目 .mcp.json）/ MCP 市场（占位）。
  * 作者 ddj 2026年08月22号 / 2026年08月26号 / 2026年08月27号 / 2026年10月
  */
+import { sharedDisplay } from '../sharedDisplay.js'
 import React from 'react'
 import { uiText } from '../uiLocale.js'
 import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -43,7 +44,7 @@ function ServerCard({ server, busy, onRefresh, onToggle, onRemove, onConnect, on
         React.createElement('button', { disabled: !!busy, className: 'vsm-switch ' + (server.enabled ? 'on' : ''), onClick: () => onToggle(server), title: uiText('配置启用不代表连接在线', "Enabled configuration does not mean connected", "Включённая конфигурация не означает подключение"), 'aria-label': server.enabled ? uiText('禁用配置（不代表在线）', "Disable configuration (not connection status)", "Отключить конфигурацию (не статус подключения)") : uiText('启用配置（不代表在线）', "Enable configuration (not connection status)", "Включить конфигурацию (не статус подключения)"), 'aria-pressed': !!server.enabled }, server.enabled ? '●' : '○'),
       ),
     ),
-    React.createElement('div', { className: 'vsm-mcp-meta' }, statusOf(server), ' · ', server.toolCount, uiText(' 个工具 · ', " tools · ", " инструментов · "), server.transport,
+    React.createElement('div', { className: 'vsm-mcp-meta' }, sharedDisplay(statusOf(server)), ' · ', server.toolCount, uiText(' 个工具 · ', " tools · ", " инструментов · "), server.transport,
       server.instanceCount !== undefined ? ' · ' + server.instanceCount + uiText(' 个连接实例', " connection instances", " экземпляров подключения") : '',
       server.sessionCount !== undefined ? ' · ' + server.sessionCount + uiText(' 个会话使用', " sessions using it", " использующих сеансов") : ''),
     server.policy && React.createElement(ProjectPolicy, { server, busy, onConnect, onPolicy }),

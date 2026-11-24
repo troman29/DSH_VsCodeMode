@@ -1,5 +1,5 @@
 /** Real FileExplorer render projection with a minimal React commit harness. @author ddj 2026年10月22号 */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { flattenTree, treeAnchorTop, treeRevealTop, treeWindow, TREE_ROW_HEIGHT } from '../src/client/sidebar/panels/treeWindow.js'
 import type { TreeEntry } from '../src/shared/rpc.js'
 
@@ -39,6 +39,11 @@ vi.mock('../src/client/sidebar/panels/useExplorerSvn.js', () => ({ useExplorerSv
 import { FileExplorer } from '../src/client/sidebar/panels/FileExplorer.js'
 import { rpc } from '../src/client/rpc.js'
 import { explorerLoad, explorerSave } from '../src/client/state/explorerCache.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** @private @author ddj 2026年10月22号 @param factory Memo calculation. @param deps Dependencies. @returns Stable memo value. */
 function memoSlot(factory: any, deps: any[]) {

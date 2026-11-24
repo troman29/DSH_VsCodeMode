@@ -5,6 +5,7 @@
  * 选中即调用该打开器 open()；复用 ModalShell 视觉，Esc/遮罩/取消 = 不打开。
  * 作者 ddj 2026年09月22号
  */
+import { uiText } from './uiLocale.js'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { availableOpeners, isAvailable } from './fileOpeners.js'
@@ -19,7 +20,7 @@ const ITEM_STYLE = {
 /** 打开器选择卡片（ModalShell 内容）。 */
 function OpenWithCard({ openers, onPick, onCancel }) {
   return React.createElement(React.Fragment, null,
-    React.createElement('h3', null, '打开方式…'),
+    React.createElement('h3', null, uiText('打开方式…', "Open with…", "Открыть с помощью…")),
     openers.map((opener) => React.createElement('button', {
       key: opener.id,
       style: ITEM_STYLE,
@@ -29,7 +30,7 @@ function OpenWithCard({ openers, onPick, onCancel }) {
       React.createElement('span', null, opener.label),
       opener.description ? React.createElement('span', { style: { fontSize: 12, opacity: 0.7 } }, opener.description) : null)),
     React.createElement('div', { className: 'vsm-mcp-dialog-actions' },
-      React.createElement('button', { onClick: onCancel }, '取消')))
+      React.createElement('button', { onClick: onCancel }, uiText('取消', "Cancel", "Отмена"))))
 }
 
 /**

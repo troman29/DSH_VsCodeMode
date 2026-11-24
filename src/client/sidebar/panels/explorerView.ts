@@ -1,4 +1,5 @@
 /** Compact explorer lifecycle, independently testable without browser/React. @author ddj 2026年10月10号 */
+import { uiText } from '../../uiLocale.js'
 import type { SvnRefreshReason, SvnViewMark, SvnViewPayload, SvnViewRequest, SvnViewRow } from '../../../shared/svnExplorer.js'
 
 export interface ExplorerNotice { scope?: string; paths?: string[]; eventId?: string; kind?: 'text' | 'structure' | 'svn' | 'unknown' }
@@ -115,12 +116,12 @@ export class ExplorerViewClient {
           revision: snapshot?.revision, generation: snapshot?.generation }, signal)
         if (!out.ok) throw new Error(out.error)
         if (out.mismatch) { snapshot = null; break }
-        if (snapshot && snapshot.scopeId !== out.scopeId) throw new Error('SVN 工作区范围发生变化')
+        if (snapshot && snapshot.scopeId !== out.scopeId) throw new Error(uiText('SVN 工作区范围发生变化', "SVN workspace scope changed", "Область рабочего пространства SVN изменилась"))
         snapshot = out; rows.push(...out.rows)
       }
       if (snapshot) return { ...snapshot, rows }
     }
-    throw new Error('SVN 状态正在变化，稍后重新投影')
+    throw new Error(uiText('SVN 状态正在变化，稍后重新投影', "SVN status is changing; refresh the projection shortly", "Состояние SVN меняется; повторите отображение позже"))
   }
   /** @private @author ddj 2026年10月10号 Apply compact results; notices during fetch retain dirtiness and receive one follow-up request. */
   private async read(): Promise<void> {

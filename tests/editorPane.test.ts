@@ -1,5 +1,6 @@
 import React from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { bindUiLocale, uiText } from '../src/client/uiLocale.js'
 import { EditorPane, GroupPathbar, bindPaneView, type PaneProps } from '../src/client/ui/EditorPane.js'
 import { buildTabMenu } from '../src/client/tabMenu.js'
 import { readFileSync } from 'node:fs'
@@ -8,6 +9,10 @@ import { isExcelPath } from '../src/client/excel/model.js'
 import { createDocStore } from '../src/client/state/documentStore.js'
 import { createLayout, moveTab, syncTabs, ownerOf } from '../src/client/state/editorLayout.js'
 import { applyClose, closeAll, closeOthers, closeRight, closeSaved } from '../src/client/tabActions.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** @private @author ddj 2026年10月14号 @param node React element. @returns Flattened element descendants for callback-level tests. */
 function descendants(node: any): any[] {
@@ -106,7 +111,7 @@ function adapter(name: string, scope: Record<string, unknown>): (...args: any[])
   if (!text) throw new Error('Missing workbench adapter: ' + name)
   // Preserve the production Excel guard when executing a detached adapter.
   // useOffice 是 v0.30.0 起 EditorView 的 Office 路由判定：本测试只关心保存语义，按「非 Office」注入
-  const dependencies = { isExcelPath, useOffice: () => false, missingRef: { current: new Map() }, ...scope }
+  const dependencies = { uiText, isExcelPath, useOffice: () => false, missingRef: { current: new Map() }, ...scope }
   return new Function(...Object.keys(dependencies), text + '; return ' + name)(...Object.values(dependencies))
 }
 
@@ -139,7 +144,7 @@ describe('actual workbench adapters', () => {
     const drop = adapter('dropTab', { ownerOf: (current: any, path: string) => current.groups.find((group: any) => group.tabs.some((tab: any) => tab.path === path)), benchRef: { current: layout }, addRefToChat, acceptLayout, moveTab })
     drop('external-text', { kind: 'reference' })
     drop('a', { kind: 'reference' })
-    expect(addRefToChat).toHaveBeenCalledExactlyOnceWith('a')
+    expect(addRefToChat.mock.calls).toEqual([['a']])
     expect(acceptLayout).not.toHaveBeenCalled()
     expect(layout.groups[0].tabs).toEqual([{ path: 'a' }])
   })
@@ -148,7 +153,7 @@ describe('actual workbench adapters', () => {
     const store = createDocStore({ save })
     const saveDocument = adapter('saveDocument', { modelsRef: { current: new Map([['b', model]]) }, documents: () => store, revRef: { current: { b: 'old' } }, dirtyRef: { current: { b: true } }, readSync: () => null, scope: 'workspace' })
     await saveDocument('b', false)
-    expect(save).toHaveBeenCalledExactlyOnceWith({ path: 'b', content: 'dirty B', rev: 'old' })
+    expect(save.mock.calls).toEqual([[{ path: 'b', content: 'dirty B', rev: 'old' }]])
     expect(store.state('b').dirty).toBe(false)
     store.dispose()
   })

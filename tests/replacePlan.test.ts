@@ -2,7 +2,7 @@
  * 全局替换纯逻辑测试：模式编译、空匹配拒绝、逐行替换、行尾/BOM 保真、候选路径归一。
  * @author ddj 2026年11月15号
  */
-import { describe, expect, it } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it } from 'vitest'
 import {
   MAX_PATTERN_LENGTH,
   compileReplace,
@@ -14,6 +14,11 @@ import {
 } from '../src/search/replacePlan.js'
 import { describeFailure, isBom, matchedFilesArgv, relativeCandidate } from '../src/search/replaceRun.js'
 import { replaceSummary } from '../src/client/sidebar/panels/SearchPanel.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 describe('模式编译', () => {
   it('字面量模式转义正则元字符', () => {

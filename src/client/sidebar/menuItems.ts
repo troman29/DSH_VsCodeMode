@@ -9,6 +9,7 @@
  * 反馈统一走 ctx.notify（由 EditorView 提供，落到编辑区路径栏状态）。
  * 作者 ddj 2026-08-27 / 2026-09-03 / 2026-09-16 / 2026年09月22号
  */
+import { sharedDisplay } from '../sharedDisplay.js'
 import { uiText } from '../uiLocale.js'
 import { isSvnDiffable } from '../../shared/svn.js'
 import { canImportOffice } from '../../shared/univer.js'
@@ -174,7 +175,7 @@ async function createEntry(target: TreeMenuTarget, ctx: SidebarCtx, kind: 'file'
   if (name === null) return
   const bad = checkNewName(name)
   if (bad) {
-    ctx.notify?.(bad)
+    ctx.notify?.(sharedDisplay(bad))
     return
   }
   const path = joinRelPath(target.path, name)
@@ -204,7 +205,7 @@ async function renameEntry(target: TreeMenuTarget, ctx: SidebarCtx): Promise<voi
   if (name === null || name === baseNameOf(from)) return
   const bad = checkRenameName(name)
   if (bad) {
-    ctx.notify?.(bad)
+    ctx.notify?.(sharedDisplay(bad))
     return
   }
   const res = await fsCall('edrv.fsRename', { sessionId: ctx.sessionId, path: from, newName: name })
@@ -567,7 +568,7 @@ function svnMenuItems(): TreeMenuItem[] {
     if (action.separator === true) group += 1
     items.push({
       id: 'svn-' + action.id,
-      label: action.label,
+      label: sharedDisplay(action.label),
       order: SVN_ORDER_BASE + action.order,
       group,
       danger: action.danger === true,

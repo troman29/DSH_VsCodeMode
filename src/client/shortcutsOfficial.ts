@@ -7,6 +7,7 @@
  * 设置一次性迁移进官方存储。
  * 作者 ddj 2026年10月
  */
+import { uiText } from './uiLocale.js'
 import { bindingToChord, chordToBinding, defaultKeybindings, normalizeKeybindings } from '../shared/keybindings.js'
 import { applyKeyAria, matchEvent, parseChords } from './keybindings.js'
 import type { OfficialBinding, ShortcutProfileKey } from '../shared/keybindings.js'
@@ -328,9 +329,9 @@ export function bindCatalogChords(service: ShortcutsServiceLike, onChange: (chor
  * @returns 空串 = 已成功唤起；否则为给用户看的失败说明
  */
 export function openOfficialShortcuts(service: ShortcutsServiceLike | null): string {
-  const manual = '可按 Ctrl+/ 或到 DSH 设置 → 通用 → 快捷键 打开'
+  const manual = uiText('可按 Ctrl+/ 或到 DSH 设置 → 通用 → 快捷键 打开', "Press Ctrl+/ or open DSH Settings → General → Keyboard shortcuts", "Нажмите Ctrl+/ или откройте настройки DSH → Общие → Сочетания клавиш")
   if (!service || !service.registry || typeof service.registry.invoke !== 'function') {
-    return '官方快捷键弹窗入口不可用（当前 DSH 版本或外壳未提供）：' + manual
+    return uiText('官方快捷键弹窗入口不可用（当前 DSH 版本或外壳未提供）：', "Official shortcut dialog unavailable in this DSH version or shell: ", "Стандартный диалог сочетаний клавиш недоступен в этой версии DSH или оболочке: ") + manual
   }
   try {
     service.registry.invoke('shortcuts.open', {
@@ -340,8 +341,8 @@ export function openOfficialShortcuts(service: ShortcutsServiceLike | null): str
     })
     return ''
   } catch (error) {
-    bridgeLog.warn('打开官方快捷键弹窗失败：' + String(error))
-    return '打开官方快捷键弹窗失败：' + String(error) + '；' + manual
+    bridgeLog.warn(uiText('打开官方快捷键弹窗失败：', "Failed to open official shortcut dialog: ", "Ошибка открытия диалога сочетаний клавиш: ") + String(error))
+    return uiText('打开官方快捷键弹窗失败：', "Failed to open official shortcut dialog: ", "Ошибка открытия диалога сочетаний клавиш: ") + String(error) + uiText('；', "; ", "; ") + manual
   }
 }
 

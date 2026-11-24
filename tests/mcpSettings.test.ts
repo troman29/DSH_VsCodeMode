@@ -41,6 +41,10 @@ vi.mock('react', async (original) => {
   return { ...real, default: React }
 })
 import { McpSettings } from '../src/client/ui/McpSettings.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** @author ddj 2026年10月08号 @param component Hook component. @param props Props. @returns Element tree with effects flushed. */
 function render(component: any, props: any = {}) {

@@ -8,6 +8,7 @@
  * 作者 ddj 2026年09月21号
  */
 
+import { uiText } from '../uiLocale.js'
 /** 菜单动作 id。 */
 export type BpRowMenuAction =
   | 'edit'
@@ -41,13 +42,13 @@ export interface BpRowMenuState {
 export function buildBpRowMenu(state: BpRowMenuState): BpRowMenuEntry[] {
   const enabled = state.enabled !== false
   return [
-    { id: 'edit', label: '编辑断点…' },
-    { id: 'edit-condition', label: '编辑条件…' },
-    { id: 'edit-hit-count', label: '编辑命中次数…' },
-    { id: 'edit-logpoint', label: '编辑记录点…' },
+    { id: 'edit', label: uiText('编辑断点…', "Edit breakpoint…", "Изменить точку останова…") },
+    { id: 'edit-condition', label: uiText('编辑条件…', "Edit condition…", "Изменить условие…") },
+    { id: 'edit-hit-count', label: uiText('编辑命中次数…', "Edit hit count…", "Изменить число срабатываний…") },
+    { id: 'edit-logpoint', label: uiText('编辑记录点…', "Edit logpoint…", "Изменить точку журнала…") },
     enabled
-      ? { id: 'disable', label: '禁用断点', separator: true }
-      : { id: 'enable', label: '启用断点', separator: true },
-    { id: 'remove', label: '删除断点' },
+      ? { id: 'disable', label: uiText('禁用断点', "Disable breakpoint", "Отключить точку останова"), separator: true }
+      : { id: 'enable', label: uiText('启用断点', "Enable breakpoint", "Включить точку останова"), separator: true },
+    { id: 'remove', label: uiText('删除断点', "Delete breakpoint", "Удалить точку останова") },
   ]
 }

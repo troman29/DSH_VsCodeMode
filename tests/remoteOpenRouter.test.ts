@@ -1,7 +1,12 @@
 /** remote.session 文件链接路由测试（DSH 0.1.3+）：补丁拦截 / 透传回退 / 恢复。作者 ddj 2026年09月08号 */
-import { describe, expect, it } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it } from 'vitest'
 import { createFileOpenerRegistry } from '../src/client/fileOpeners.js'
 import { openOriginal, patchRemoteOpen, probeRemoteOpen } from '../src/client/remoteOpenRouter.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 /** 复刻 DSH 0.1.3+ remote.session 形态：openWorkspacePath 为 getter-only accessor。 */
 function makeRemoteService(originalLogs) {

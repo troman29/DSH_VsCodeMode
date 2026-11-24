@@ -152,13 +152,13 @@ describe('buildTabMenu 禁用规则', () => {
 
 describe('buildTabMenu 固定态标签', () => {
   it('未固定时显示「固定」，固定后显示「取消固定」', () => {
-    expect(entry({}, 'toggle-pinned').label).toBe('固定')
+    expect(entry({}, 'toggle-pinned').label).toBe('Pin')
     const tabs = [{ path: 'src/a.ts', pinned: true }, { path: 'src/b.ts' }]
-    expect(entry({ tabs, active: 'src/a.ts' }, 'toggle-pinned').label).toBe('取消固定')
+    expect(entry({ tabs, active: 'src/a.ts' }, 'toggle-pinned').label).toBe('Unpin')
   })
 
   it('右键目标不存在于页签表（竞态）时按未固定处理，不抛错', () => {
-    expect(entry({ path: 'ghost.ts' }, 'toggle-pinned').label).toBe('固定')
+    expect(entry({ path: 'ghost.ts' }, 'toggle-pinned').label).toBe('Pin')
   })
 })
 

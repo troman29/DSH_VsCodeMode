@@ -42,7 +42,7 @@ import { SettingsContext } from './settingsContext.js'
 import { SIDEBAR_PLUGIN, registerSlotSafely, settingsBridge } from './compat.js'
 import { clientSummary } from './compatSummary.js'
 import { detectSidebarService, hasSideRoute, installSideEditor, routeSideEditor, setEnsureSideEditor, SIDEBAR_INSTALL_CMD } from './sidebarBridge.js'
-import { detectOfficial, installOfficial, registerOfficialFileClaim, OFFICIAL_TAB_KIND, OFFICIAL_TAB_TITLE, isEditorTabActive, markEditorActive, restoreEditorTab, buildFileAddress, readSavedTab, setEditorTabScope } from './officialSidebar.js'
+import { detectOfficial, installOfficial, registerOfficialFileClaim, OFFICIAL_TAB_KIND, isEditorTabActive, markEditorActive, restoreEditorTab, buildFileAddress, readSavedTab, setEditorTabScope } from './officialSidebar.js'
 import { setNativeCsv, setNativeOpenHandler, resetNativeOpen } from './nativeOpenStore.js'
 import { hasOfficialHtmlPreview, installHtmlPreviewProbe, isHtmlPath } from './htmlPreview.js'
 import { installHtmlPlanActions } from './htmlPlan/planActions.js'
@@ -414,7 +414,7 @@ export async function apply(ctx: any): Promise<void> {
     const scope = readSessionScope(ctx)
     if (scope.sessionId) return { id: scope.sessionId }
     const draft = await addToConversation.startDraftSession(scope.cwd)
-    if (!draft.ok || !draft.id) return { error: '当前没有可用会话，新建会话也失败了' }
+    if (!draft.ok || !draft.id) return { error: uiText('当前没有可用会话，新建会话也失败了', "No session available, and creating a new session failed", "Нет доступной сессии; создать новую сессию не удалось") }
     return { id: draft.id }
   }
 
@@ -428,7 +428,7 @@ export async function apply(ctx: any): Promise<void> {
     const session = await ensureSession()
     if ('error' in session) return { ok: false, message: session.error }
     const sent = await addToConversation.sendTask(session.id, text)
-    return sent ? { ok: true } : { ok: false, message: '发送被拒绝（会话可能正忙，稍后再点）' }
+    return sent ? { ok: true } : { ok: false, message: uiText('发送被拒绝（会话可能正忙，稍后再点）', "Send rejected (session may be busy; retry shortly)", "Отправка отклонена (сессия может быть занята; повторите позже)") }
   }
 
   /**
@@ -442,7 +442,7 @@ export async function apply(ctx: any): Promise<void> {
     if ('error' in session) return { ok: false, message: session.error }
     const outcome = await addToConversation.appendText(session.id, text)
     if (outcome === 'ok' || outcome === 'busy') return { ok: true }
-    return { ok: false, message: '写入输入框失败（' + outcome + '），请重试' }
+    return { ok: false, message: uiText('写入输入框失败（', "Failed to fill input (", "Не удалось заполнить поле ввода (") + outcome + uiText('），请重试', "); retry", "); повторите") }
   }
 
   /** 快捷菜单宿主桥接：菜单组件不直接摸 ctx，规则/技能/发送/工作区都从这里注入。 */
@@ -540,7 +540,7 @@ export async function apply(ctx: any): Promise<void> {
   ctx.effect(() => outlineSources.register(createLspOutlineSource()), 'vscode-mode: outline lsp source')
   ctx.effect(() => sidebarPanels.register(createOutlinePanel()), 'vscode-mode: sidebar panel outline')
   ctx.effect(() => registry.register({
-    id: 'system', label: '系统默认应用', priority: 0,
+    id: 'system', label: uiText('系统默认应用', "System default application", "Системное приложение по умолчанию"), priority: 0,
     open: async (path: string) => { await openOriginal({ path }) },
   }), 'vscode-mode: system file opener')
   ctx.effect(() => {
@@ -931,7 +931,7 @@ export async function apply(ctx: any): Promise<void> {
       name: 'shell.overlay',
       id: 'edrv-quick-menu',
       order: 120,
-      label: '快捷菜单',
+      label: uiText('快捷菜单', "Quick menu", "Быстрое меню"),
     }, () => React.createElement(QuickMenuLauncher, { host: quickMenuHost }))
     return () => {
       dispose?.()

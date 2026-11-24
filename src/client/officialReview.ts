@@ -7,6 +7,7 @@
  * 约束：官方 slot 的组件契约是返回 ReactNode，这里一律用 React.createElement 造元素。
  * 作者 ddj 2026年11月23号
  */
+import { uiText } from './uiLocale.js'
 import React from 'react'
 import { ANNOTATION_ID, annotationSource, type AnnotationSource } from './officialAnnotations.js'
 
@@ -198,8 +199,8 @@ function spanOf(place: unknown): string | undefined {
   if (!place || typeof place !== 'object') return undefined
   const range = place as { side?: unknown; startLine?: unknown; endLine?: unknown }
   if (typeof range.startLine !== 'number' || typeof range.endLine !== 'number') return undefined
-  const side = range.side === 'L' ? '旧侧' : '新侧'
-  return side + ' ' + range.startLine + '–' + range.endLine + ' 行待审'
+  const side = range.side === 'L' ? uiText('旧侧', "Old side", "Старая сторона") : uiText('新侧', "New side", "Новая сторона")
+  return side + ' ' + range.startLine + '–' + range.endLine + uiText(' 行待审', " lines awaiting review", " строк ожидают проверки")
 }
 
 /**
@@ -310,7 +311,7 @@ function disposeAll(disposers: Array<() => void>, warn: Warn): void {
     try {
       dispose()
     } catch (error) {
-      warn('官方 slot 卸载失败（' + String(error) + '）')
+      warn('官方 slot 卸载失败（' + String(error) + uiText('）', ")", ")"))
     }
   }
 }

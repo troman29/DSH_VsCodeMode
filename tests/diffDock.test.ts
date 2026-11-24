@@ -2,9 +2,14 @@
  * client diffDock 纯函数测试（不触 DOM/RPC）。
  * 作者 ddj 2026-08-26
  */
-import { describe, expect, it } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it } from 'vitest'
 import { canDecideFile, diffDockText, displayDiffTotal, editorDockMode, nextDiffPath } from '../src/client/diffDock.js'
 import { clearDiffDock, dockInLayout, publishDiffDock, readDiffDock, subscribeDiffDock } from '../src/client/diffDockStore.js'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
+
 
 describe('nextDiffPath', () => {
   it('空列表返回 null', () => {

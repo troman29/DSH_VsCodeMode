@@ -1,3 +1,7 @@
+import { beforeEach, afterEach } from 'vitest'
+import { bindUiLocale } from '../src/client/uiLocale.js'
+beforeEach(() => bindUiLocale({ getLocale: () => ({ active: 'zh' }) }))
+afterEach(() => bindUiLocale(undefined))
 // @ts-nocheck
 /**
  * 提交对话框纯投影单测（22-agent-tools-and-commit）。

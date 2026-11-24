@@ -8,6 +8,7 @@
  * 作者 ddj 2026-08-20
  */
 import React from 'react'
+import { uiText } from '../uiLocale.js'
 import { createPortal } from 'react-dom'
 import { createRoot } from 'react-dom/client'
 import { EditorPane, EditorSplit, PassiveEditor, GroupPathbar } from './EditorPane.js'
@@ -149,7 +150,7 @@ import { clampToolbarPosition, loadToolbarPosition, saveToolbarPosition } from '
 import { editorModelPathOf } from '../dap/modelPath.js'
 import { dapTrace } from '../dap/trace.js'
 import { isSessionMissingError, sessionErrorText, sessionMissingDetail, sessionMissingTitle } from '../sessionError.js'
-import { emptyTextReview, officialDownView, SESSION_DOWN_NOTICE, SIDECAR_KEEP_DONE } from '../reviewBar.js'
+import { emptyTextReview, officialDownView, sessionDownNotice, sidecarKeepDone } from '../reviewBar.js'
 
 /** 官方差异读取失败前缀：仅用于清理同源陈旧错误，不吞并保存类错误。@author ddj 2026年10月27号 */
 const REVIEW_LOAD_ERROR = '官方差异读取失败：'
@@ -174,7 +175,6 @@ function syncTypeSuggest(ed, monaco) {
 /** 日志弹窗每次加载条数（「加载更多」按此步长递增；上限由 host 的 SVN_LOG_SHOW_ALL_CAP 约束）。 */
 const SVN_LOG_PAGE = 100
 /** Stable Markdown chrome for virtual plans; content stays in session-local memory. */
-const PLAN_MD_LABELS = { code: { copyLabel: '复制', copiedLabel: '已复制' }, footnotes: '脚注' }
 
 /**
  * 日志弹窗状态 → 取数选项（P1-4/P1-5/P1-6：soc/mrg/range 与状态层键保持同源）。
@@ -246,6 +246,7 @@ function snippetLanguageIds(monaco) {
  * @param props.sideHint 旧页签形态下显示侧边栏引导（安装命令）
  */
 export function EditorView(props) {
+  const PLAN_MD_LABELS = { code: { copyLabel: uiText('复制', "Copy", "Копировать"), copiedLabel: uiText('已复制', "Copied", "Скопировано") }, footnotes: uiText('脚注', "Footnotes", "Сноски") }
   const sessionId = props?.sessionId
   const schedule = props.schedule
   const addToConversation = props.addToConversation
@@ -377,7 +378,7 @@ export function EditorView(props) {
   const [pageChanged, setPageChanged] = React.useState(null)
   const pageIdentity = JSON.stringify([scope, sessionId, active])
   const paging = pagedFile === pageIdentity
-  const [loadStage, setLoadStage] = React.useState({ progress: 0, message: '准备加载编辑器…' })
+  const [loadStage, setLoadStage] = React.useState({ progress: 0, message: uiText('准备加载编辑器…', "Preparing editor…", "Подготовка редактора…") })
   const [openInput, setOpenInput] = React.useState(false)
   const [pathDraft, setPathDraft] = React.useState('')
   const [cursor, setCursor] = React.useState('')
@@ -647,8 +648,8 @@ export function EditorView(props) {
         setOfficialRecords((previous) => JSON.stringify(previous) === JSON.stringify(page.page.items) ? previous : page.page.items)
         setOfficialDetail((previous) => JSON.stringify(previous) === JSON.stringify(result.detail) ? previous : result.detail)
         // 读取成功后清除同源陈旧错误，避免会话恢复后仍挂着上一次失败提示。
-        setError((previous) => (typeof previous === 'string' && previous.startsWith(REVIEW_LOAD_ERROR) ? null : previous))
-      } catch (cause) { if (!controller.signal.aborted) setError(REVIEW_LOAD_ERROR + String(cause)) }
+        setError((previous) => (typeof previous === 'string' && [REVIEW_LOAD_ERROR, 'Built-in diff read failed: ', 'Ошибка чтения встроенных различий: '].some((prefix) => previous.startsWith(prefix)) ? null : previous))
+      } catch (cause) { if (!controller.signal.aborted) setError(uiText(REVIEW_LOAD_ERROR, 'Built-in diff read failed: ', 'Ошибка чтения встроенных различий: ') + String(cause)) }
     }
     void loadReview()
     return () => controller.abort()
@@ -790,14 +791,14 @@ export function EditorView(props) {
   React.useEffect(() => {
     /** @private @author ddj 2026年10月12号 @returns Unsafe editor state without saving or discarding file content. */
     function checkReload() {
-      if (unsafeExcel()) return '存在未导出的 Excel 编辑（不会自动保存原件）'
-      if (Object.values(dirtyRef.current).some(Boolean)) return '存在未保存文件'
-      if (saveTimerRef.current.isPending() || savingRef.current.size || docRef.current?.unsafe()) return '文件正在等待保存或保存中'
+      if (unsafeExcel()) return uiText('存在未导出的 Excel 编辑（不会自动保存原件）', "Excel has unexported edits (the original is not saved automatically)", "В Excel есть неэкспортированные изменения (оригинал не сохраняется автоматически)")
+      if (Object.values(dirtyRef.current).some(Boolean)) return uiText('存在未保存文件', "There are unsaved files", "Есть несохранённые файлы")
+      if (saveTimerRef.current.isPending() || savingRef.current.size || docRef.current?.unsafe()) return uiText('文件正在等待保存或保存中', "Files are waiting to save or being saved", "Файлы ожидают сохранения или сохраняются")
       for (const ctl of pdfCtlRef.current.values()) {
-        if (ctl.isDirty?.()) return '存在未保存 PDF'
+        if (ctl.isDirty?.()) return uiText('存在未保存 PDF', "There are unsaved PDFs", "Есть несохранённые PDF")
       }
       for (const path of tabPathsRef.current) {
-        if (readSync(scope, path)) return '存在外部文件冲突'
+        if (readSync(scope, path)) return uiText('存在外部文件冲突', "There are external file conflicts", "Есть конфликты с внешними изменениями файлов")
       }
       return null
     }
@@ -974,11 +975,11 @@ export function EditorView(props) {
     if (approvals.some(({ state, revision, path }) => state.released || state.path !== path || state.editRevision !== revision)) return
     flushSave()
     const closing = tabsRef.current.filter((tab) => targets.has(tab.path))
-    if (!closing.length) { setStatus('无可关闭的页签'); return }
+    if (!closing.length) { setStatus(uiText('无可关闭的页签', "No tabs to close", "Нет вкладок для закрытия")); return }
     persistDirty(closing.map((t) => t.path))
     for (const tab of closing) releaseTab(tab.path)
     commitClose(applyClose(tabsRef.current, new Set(closing.map((tab) => tab.path)), activeRef.current))
-    setStatus(label + '（' + closing.length + ' 个）')
+    setStatus(label + '（' + closing.length + uiText(' 个）', " items)", " шт.)"))
   }
 
   /**
@@ -991,7 +992,7 @@ export function EditorView(props) {
     const doomed = tabsRef.current.filter((t) => t.path === path || t.path.startsWith(path + '/'))
     if (!doomed.length) return
     const retained = doomed.filter((tab) => isExcelPath(tab.path) && excelState(excelScope, tab.path).dirty)
-    for (const tab of retained) { const state = excelState(excelScope, tab.path); state.notice = '原件已删除，未导出编辑保留。请导出副本或明确关闭放弃。'; notifyExcel(state) }
+    for (const tab of retained) { const state = excelState(excelScope, tab.path); state.notice = uiText('原件已删除，未导出编辑保留。请导出副本或明确关闭放弃。', "The original was deleted. Unexported edits are retained. Export a copy or close explicitly to discard them.", "Оригинал удалён. Неэкспортированные изменения сохранены. Экспортируйте копию или закройте файл с отказом от изменений."); notifyExcel(state) }
     const removable = doomed.filter((tab) => !retained.includes(tab))
     for (const tab of removable) releaseTab(tab.path)
     commitClose(applyClose(tabsRef.current, new Set(removable.map((t) => t.path)), activeRef.current))
@@ -1156,7 +1157,7 @@ export function EditorView(props) {
     stampLoad(path, sid, sequence, message)
     setLoadError(message)
     setError(message)
-    setStatus('读取失败')
+    setStatus(uiText('读取失败', "Read failed", "Ошибка чтения"))
   }
 
   /**
@@ -1198,7 +1199,7 @@ export function EditorView(props) {
       if (res.content === before) return
       saveViewState(path)
       setContent(res.content)
-      setStatus('已加载')
+      setStatus(uiText('已加载', "Loaded", "Загружено"))
     }
     rpc('edrv.read', { sessionId: sid, path }).then(accept).catch(() => {})
   }
@@ -1227,13 +1228,13 @@ export function EditorView(props) {
     if (!loadCurrent(path, seq)) return
     const error = failure && typeof failure === 'object' ? failure : { error: failure }
     const gone = goneStateOf(error)
-      ?? (error.deleted === true ? { title: '文件已在磁盘删除', official: false, message: String(error.error ?? '') } : null)
+      ?? (error.deleted === true ? { title: uiText('文件已在磁盘删除', "File deleted from disk", "Файл удалён с диска"), official: false, message: String(error.error ?? '') } : null)
     if (!gone) { failLoad(path, sid, seq, String(error.error ?? error)); return }
     stampLoad(path, sid, seq, gone.message)
     setLoadError(null)
     setError(null)
     setGoneFile({ ...gone, path, sessionId: sid })
-    setStatus(gone.official ? '文件已删除 · 差异栏可 Keep 结案' : '文件已删除')
+    setStatus(gone.official ? uiText('文件已删除 · 差异栏可 Keep 结案', "File deleted · Use Keep in the diff bar to resolve", "Файл удалён · Нажмите Keep на панели различий для завершения") : uiText('文件已删除', "File deleted", "Файл удалён"))
   }
 
   /** @private @author ddj 2026年10月28号 / 2026年10月31号 @param path Missing text file. @param sid Owning session. @param seq Loader generation. @sideEffects Loads deletion evidence without creating or saving the file. */
@@ -1248,11 +1249,11 @@ export function EditorView(props) {
         const attempts = (missingReadRef.current.get(path) ?? 0) + 1
         missingReadRef.current.set(path, attempts)
         if (attempts <= 2) { loadContent(path, sid, true); return }
-        settleGone(path, sid, seq, { deleted: true, error: '文件状态在磁盘上反复变化，请稍后重试，或关闭该标签页' })
+        settleGone(path, sid, seq, { deleted: true, error: uiText('文件状态在磁盘上反复变化，请稍后重试，或关闭该标签页', "The file keeps changing on disk. Retry later or close this tab.", "Файл постоянно меняется на диске. Повторите позже или закройте вкладку.") })
         return
       }
       missingReadRef.current.delete(path)
-      if (dirtyRef.current[path] || savingRef.current.has(path)) { failLoad(path, sid, seq, '文件已删除，但有未保存编辑；请先处理本地缓冲'); return }
+      if (dirtyRef.current[path] || savingRef.current.has(path)) { failLoad(path, sid, seq, uiText('文件已删除，但有未保存编辑；请先处理本地缓冲', "The file was deleted but has unsaved edits. Resolve the local buffer first.", "Файл удалён, но есть несохранённые изменения. Сначала обработайте локальный буфер.")); return }
       const preview = { ...result.review, sessionId: sid, keepId: crypto.randomUUID(), undoId: crypto.randomUUID() }
       missingRef.current.set(path, preview)
       setMissingPreview(preview)
@@ -1262,8 +1263,8 @@ export function EditorView(props) {
       setLoadError(null)
       setError(null)
       stampLoad(path, sid, seq)
-      setLoadStage({ progress: 100, message: '文件已删除 · 展示最后记录快照' })
-      setStatus('文件已删除 · 展示最后记录快照（只读）')
+      setLoadStage({ progress: 100, message: uiText('文件已删除 · 展示最后记录快照', "File deleted · Showing the last recorded snapshot", "Файл удалён · Показан последний записанный снимок") })
+      setStatus(uiText('文件已删除 · 展示最后记录快照（只读）', "File deleted · Showing the last recorded snapshot (read-only)", "Файл удалён · Показан последний записанный снимок (только чтение)"))
     } catch (cause) { if (loadCurrent(path, seq)) failLoad(path, sid, seq, String(cause)) }
   }
 
@@ -1285,7 +1286,7 @@ export function EditorView(props) {
       const decodable = probed.state.verdict.kind !== 'binary'
       setCompatView(decodable)
       setCompat(probed.state)
-      setStatus('文件不是 UTF-8 · 已按 ' + probed.state.verdict.kind + ' 只读打开')
+      setStatus(uiText('文件不是 UTF-8 · 已按 ', "File is not UTF-8 · Opened as ", "Файл не в UTF-8 · Открыт в кодировке ") + probed.state.verdict.kind + uiText(' 只读打开', " (read-only)", " (только чтение)"))
     }, (error) => { if (loadCurrent(path, seq)) failLoad(path, sid, seq, String(error)) })
   }
 
@@ -1300,7 +1301,7 @@ export function EditorView(props) {
     void repairText(target.sessionId, target.path, target.version).then((result) => {
       if (!result.ok) { patchCompat(target, { busy: false, error: result.error }); return }
       setCompat({ ...target, busy: false, error: null, preview: null, backup: result.backup, repairedVersion: result.version })
-      setStatus('已转为 UTF-8 · 备份 ' + result.backup)
+      setStatus(uiText('已转为 UTF-8 · 备份 ', "Converted to UTF-8 · Backup ", "Преобразовано в UTF-8 · Резервная копия ") + result.backup)
     })
   }
 
@@ -1312,7 +1313,7 @@ export function EditorView(props) {
       if (!result.ok) { patchCompat(target, { busy: false, error: result.error }); return }
       setCompatView(false)
       setCompat(null)
-      setStatus('已撤销修复 · 原字节已还原')
+      setStatus(uiText('已撤销修复 · 原字节已还原', "Repair undone · Original bytes restored", "Исправление отменено · Исходные байты восстановлены"))
       loadContent(target.path, target.sessionId, true)
     })
   }
@@ -1321,8 +1322,8 @@ export function EditorView(props) {
   function cancelCompat(target) {
     setCompatView(false)
     setCompat(null)
-    setLoadError('文件不是 UTF-8（' + target.verdict.kind + '），已暂不处理')
-    setStatus('文件不是 UTF-8 · 已暂不处理')
+    setLoadError(uiText('文件不是 UTF-8（', "File is not UTF-8 (", "Файл не в UTF-8 (") + target.verdict.kind + uiText('），已暂不处理', "), left unchanged", "), оставлен без изменений"))
+    setStatus(uiText('文件不是 UTF-8 · 已暂不处理', "File is not UTF-8 · Left unchanged", "Файл не в UTF-8 · Оставлен без изменений"))
   }
 
   const loadContent = (path, sid, force, version) => {
@@ -1348,14 +1349,14 @@ export function EditorView(props) {
       setContent('')
       setContentPath(path)
       stampLoad(path, sid, seq)
-      setStatus('Univer 文档 · 查看与审阅')
+      setStatus(uiText('Univer 文档 · 查看与审阅', "Univer document · View and review", "Документ Univer · Просмотр и проверка"))
       return
     }
     if (isExcelPath(path)) {
       const state = excelState(excelScope, path)
       void loadExcel(state, async () => {
         const result = await readBinaryPreview(rpc, { sessionId: sid, path })
-        if (!result.ok) throw new Error(result.error || '读取 Excel 失败')
+        if (!result.ok) throw new Error(result.error || uiText('读取 Excel 失败', "Failed to read Excel", "Не удалось прочитать Excel"))
         const bytes = result.via === 'binary' ? result.bytes : base64ToBytes(result.content)
         return { bytes, version: result.version }
       }, force === true).then(() => {
@@ -1364,13 +1365,13 @@ export function EditorView(props) {
         setContent('')
         setContentPath(path)
         stampLoad(path, sid, seq)
-        setLoadStage({ progress: 100, message: 'Excel 已就绪' })
-        setStatus(state.notice || 'Excel 基础编辑 · 仅导出副本')
+        setLoadStage({ progress: 100, message: uiText('Excel 已就绪', "Excel ready", "Excel готов") })
+        setStatus(state.notice || uiText('Excel 基础编辑 · 仅导出副本', "Basic Excel editing · Export copies only", "Базовое редактирование Excel · Только экспорт копии"))
       }).catch((error) => { if (loadCurrent(path, seq)) failLoad(path, sid, seq, String(error)) })
       return
     }
     if (isOfficePath(path)) {
-      failLoad(path, sid, seq, 'Office 二进制文件不能作为文本读取；请使用其他打开方式')
+      failLoad(path, sid, seq, uiText('Office 二进制文件不能作为文本读取；请使用其他打开方式', "Binary Office files cannot be read as text. Use another opener.", "Двоичные файлы Office нельзя читать как текст. Выберите другой способ открытия."))
       return
     }
     // 图片文件走专用通道：base64 → data URL 预览，不建 Monaco model、不进文本/差异流程
@@ -1388,13 +1389,13 @@ export function EditorView(props) {
       // model 命中：直接显示其内容（切 tab 零等待），后台静默校验
       setContent(cachedModel.getValue())
       setContentPath(path)
-      setLoadStage((prev) => ({ progress: Math.max(84, prev.progress), message: '文件已读取，准备创建编辑器…' }))
-      setStatus('已加载')
+      setLoadStage((prev) => ({ progress: Math.max(84, prev.progress), message: uiText('文件已读取，准备创建编辑器…', "File read. Preparing editor…", "Файл прочитан. Подготовка редактора…") }))
+      setStatus(uiText('已加载', "Loaded", "Загружено"))
       stampLoad(path, sid, seq)
       checkCached(cachedModel, path, sid, seq, mark)
       return
     }
-    setLoadStage({ progress: monaco ? 72 : 12, message: '读取文件内容…' })
+    setLoadStage({ progress: monaco ? 72 : 12, message: uiText('读取文件内容…', "Reading file contents…", "Чтение содержимого файла…") })
     // #region debug log
     const readStart = isDebug() ? performance.now() : 0
     // #endregion
@@ -1412,13 +1413,13 @@ export function EditorView(props) {
         setContent(res.content)
         setContentPath(path)
         stampLoad(path, sid, seq)
-        setLoadStage((prev) => ({ progress: Math.max(84, prev.progress), message: '文件已读取，准备创建编辑器…' }))
-        setStatus('已加载')
+        setLoadStage((prev) => ({ progress: Math.max(84, prev.progress), message: uiText('文件已读取，准备创建编辑器…', "File read. Preparing editor…", "Файл прочитан. Подготовка редактора…") }))
+        setStatus(uiText('已加载', "Loaded", "Загружено"))
       } else {
         if (res?.code === 'file-missing') { void loadMissing(path, sid, seq); return }
         if (res?.code === 'invalid-utf8') { openCompat(path, sid, seq); return }
         if (res?.code === 'file-too-large') setLargeCandidate(JSON.stringify([scope, sid, path]))
-        const base = res?.error ? String(res.error) : '读取失败'
+        const base = res?.error ? String(res.error) : uiText('读取失败', "Read failed", "Ошибка чтения")
         dapTrace('read-failed', { path, error: base, resolvedPath: res?.resolvedPath, cwd })
         // 带出 host 解析后的真实路径：跳转失败时一眼看出是路径解析错还是目标不存在
         const message = res?.resolvedPath ? base + '：' + relativeOf(String(res.resolvedPath), cwd) : base
@@ -1426,7 +1427,7 @@ export function EditorView(props) {
       }
     }).catch((e) => {
       if (!loadCurrent(path, seq)) return
-      const message = 'read异常:' + String(e)
+      const message = uiText('read异常:', "Read error: ", "Ошибка чтения: ") + String(e)
       failLoad(path, sid, seq, message)
     })
   }
@@ -1443,7 +1444,7 @@ export function EditorView(props) {
     setImageSrc(null)
     setImgSize(null)
     setImgBroken(false)
-    setLoadStage({ progress: monaco ? 72 : 12, message: '读取图片…' })
+    setLoadStage({ progress: monaco ? 72 : 12, message: uiText('读取图片…', "Reading image…", "Чтение изображения…") })
     readBinaryPreview(rpc, { sessionId: sid, path }).then((out) => {
       if (!loadCurrent(path, seq)) return
       if (out.ok && out.via === 'binary') {
@@ -1452,14 +1453,14 @@ export function EditorView(props) {
         clearReadVersion(scope, path) // 刚读过内容：已读版本台账失效，下一轮按新版本比对
         setImageSrc(dataUrlOf(bytesToBase64(out.bytes), out.mime))
         stampLoad(path, sid, seq)
-        setLoadStage({ progress: 100, message: '图片已就绪' })
-        setStatus('已加载')
+        setLoadStage({ progress: 100, message: uiText('图片已就绪', "Image ready", "Изображение готово") })
+        setStatus(uiText('已加载', "Loaded", "Загружено"))
         return
       }
       noteBinFallback(sid, out)
       if (out.ok && out.via === 'base64') {
         if (!out.mime) {
-          failLoad(path, sid, seq, 'host 版本过旧：图片响应缺少 mime')
+          failLoad(path, sid, seq, uiText('host 版本过旧：图片响应缺少 mime', "Host version is too old: image response has no MIME type", "Версия хоста устарела: ответ с изображением не содержит MIME-тип"))
           return
         }
         const imgVersion = out.version ?? version
@@ -1467,17 +1468,17 @@ export function EditorView(props) {
         clearReadVersion(scope, path) // 刚读过内容：已读版本台账失效，下一轮按新版本比对
         setImageSrc(dataUrlOf(out.content, out.mime))
         stampLoad(path, sid, seq)
-        setLoadStage({ progress: 100, message: '图片已就绪' })
-        setStatus('已加载')
+        setLoadStage({ progress: 100, message: uiText('图片已就绪', "Image ready", "Изображение готово") })
+        setStatus(uiText('已加载', "Loaded", "Загружено"))
         return
       }
-      const base = out.error ? String(out.error) : '读取失败'
+      const base = out.error ? String(out.error) : uiText('读取失败', "Read failed", "Ошибка чтения")
       // 带出 host 解析后的真实路径：跳转失败时一眼看出是路径解析错还是目标不存在
       const message = out.resolvedPath ? base + '：' + String(out.resolvedPath) : base
       failLoad(path, sid, seq, message)
     }).catch((e) => {
       if (!loadCurrent(path, seq)) return
-      const message = 'read异常:' + String(e)
+      const message = uiText('read异常:', "Read error: ", "Ошибка чтения: ") + String(e)
       failLoad(path, sid, seq, message)
     })
   }
@@ -1493,9 +1494,9 @@ export function EditorView(props) {
    * @param version 已知磁盘版本（外部改动轮询触发时带入）
    */
   const loadPdf = (path, sid, seq, force, version) => {
-    if (force && pdfCtlRef.current.get(path)?.isDirty()) { setStatus('PDF 含未保存批注，未覆盖'); return }
+    if (force && pdfCtlRef.current.get(path)?.isDirty()) { setStatus(uiText('PDF 含未保存批注，未覆盖', "PDF has unsaved annotations; it was not overwritten", "В PDF есть несохранённые аннотации; файл не перезаписан")); return }
     setPdfBytes(null)
-    setLoadStage({ progress: monaco ? 72 : 12, message: '读取 PDF…' })
+    setLoadStage({ progress: monaco ? 72 : 12, message: uiText('读取 PDF…', "Reading PDF…", "Чтение PDF…") })
     const cache = pdfB64CacheRef.current
     if (force && pdfCtlRef.current.has(path)) {
       const controller = pdfCtlRef.current.get(path)
@@ -1510,8 +1511,8 @@ export function EditorView(props) {
       cache.set(path, hit)
       setPdfBytes(base64ToBytes(hit))
       stampLoad(path, sid, seq)
-      setLoadStage({ progress: 100, message: 'PDF 已就绪' })
-      setStatus('已加载')
+      setLoadStage({ progress: 100, message: uiText('PDF 已就绪', "PDF ready", "PDF готов") })
+      setStatus(uiText('已加载', "Loaded", "Загружено"))
       return
     }
     readBinaryPreview(rpc, { sessionId: sid, path }).then((out) => {
@@ -1525,8 +1526,8 @@ export function EditorView(props) {
         while (cache.size > 6) cache.delete(cache.keys().next().value)
         setPdfBytes(out.bytes)
         stampLoad(path, sid, seq)
-        setLoadStage({ progress: 100, message: 'PDF 已就绪' })
-        setStatus('已加载')
+        setLoadStage({ progress: 100, message: uiText('PDF 已就绪', "PDF ready", "PDF готов") })
+        setStatus(uiText('已加载', "Loaded", "Загружено"))
         return
       }
       noteBinFallback(sid, out)
@@ -1538,16 +1539,16 @@ export function EditorView(props) {
         while (cache.size > 6) cache.delete(cache.keys().next().value)
         setPdfBytes(base64ToBytes(out.content))
         stampLoad(path, sid, seq)
-        setLoadStage({ progress: 100, message: 'PDF 已就绪' })
-        setStatus('已加载')
+        setLoadStage({ progress: 100, message: uiText('PDF 已就绪', "PDF ready", "PDF готов") })
+        setStatus(uiText('已加载', "Loaded", "Загружено"))
         return
       }
-      const base = out.error ? String(out.error) : '读取失败'
+      const base = out.error ? String(out.error) : uiText('读取失败', "Read failed", "Ошибка чтения")
       const message = out.resolvedPath ? base + '：' + String(out.resolvedPath) : base
       failLoad(path, sid, seq, message)
     }).catch((e) => {
       if (!loadCurrent(path, seq)) return
-      const message = 'read异常:' + String(e)
+      const message = uiText('read异常:', "Read error: ", "Ошибка чтения: ") + String(e)
       failLoad(path, sid, seq, message)
     })
   }
@@ -1556,7 +1557,7 @@ export function EditorView(props) {
   React.useEffect(() => {
     if (!sessionId || props.visible === false) return undefined
     const offRecords = subscribeRecords(sessionId, applyRecords)
-    const offErrors = subscribeErrors(sessionId, (message) => setError('list异常:' + message))
+    const offErrors = subscribeErrors(sessionId, (message) => setError(uiText('list异常:', "List error: ", "Ошибка списка: ") + message))
     refreshRecords()
     return () => { offRecords(); offErrors() }
   }, [sessionId, props.visible])
@@ -1580,7 +1581,7 @@ export function EditorView(props) {
     if (!change || !change.path) return
     if (isExcelPath(change.path)) {
       const state = excelState(excelScope, change.path)
-      state.notice = state.dirty ? '原件发生外部修改或删除，编辑已保留；不会覆盖原件。' : '原件已变化，请点击重新读取；不会自动覆盖当前视图。'
+      state.notice = state.dirty ? uiText('原件发生外部修改或删除，编辑已保留；不会覆盖原件。', "The original was changed or deleted externally. Edits are retained; the original will not be overwritten.", "Оригинал изменён или удалён извне. Изменения сохранены; оригинал не будет перезаписан.") : uiText('原件已变化，请点击重新读取；不会自动覆盖当前视图。', "The original changed. Click Reread; the current view will not be overwritten automatically.", "Оригинал изменился. Нажмите «Прочитать заново»; текущее представление не перезаписывается автоматически.")
       notifyExcel(state)
       markDiskFlag({ path: change.path, kind: change.kind === 'deleted' ? 'deleted' : 'conflict', at: Date.now() })
       return
@@ -1607,7 +1608,7 @@ export function EditorView(props) {
       // Invalidates the old page cursor immediately; retain an identity-scoped notice until explicit reread.
       loadContent(change.path, sessionId, true)
       setPageChanged(pageIdentity)
-      setStatus('文件已变化，请重新读取')
+      setStatus(uiText('文件已变化，请重新读取', "File changed. Read it again.", "Файл изменился. Прочитайте его заново."))
       emitRefresh({ scope, paths: [change.path], kind: 'text', eventId })
       return
     }
@@ -1616,7 +1617,7 @@ export function EditorView(props) {
       loadContent(change.path, sessionId, true)
       clearSync(scope, change.path)
       setDiskFlag((prev) => (prev && prev.path === change.path ? null : prev))
-      setStatus('已同步外部修改 ' + new Date().toTimeString().slice(0, 8))
+      setStatus(uiText('已同步外部修改 ', "External changes synchronized ", "Внешние изменения синхронизированы ") + new Date().toTimeString().slice(0, 8))
       emitRefresh({ scope, paths: [change.path], kind: 'text', eventId })
       return
     }
@@ -1625,7 +1626,7 @@ export function EditorView(props) {
     }
     const kind = change.kind === 'deleted' ? 'deleted' : 'conflict'
     markDiskFlag(readSync(scope, change.path) ?? { path: change.path, kind, at: Date.now() })
-    setStatus(kind === 'deleted' ? '文件已被外部删除' : '外部已修改（未保存的编辑保留）')
+    setStatus(kind === 'deleted' ? uiText('文件已被外部删除', "File deleted externally", "Файл удалён извне") : uiText('外部已修改（未保存的编辑保留）', "Changed externally (unsaved edits retained)", "Изменён извне (несохранённые изменения сохранены)"))
   }
   diskChangeRef.current = onDiskChange
 
@@ -1990,7 +1991,7 @@ export function EditorView(props) {
     const plan = evictPlan(tabsRef.current, tabLimit, { active: activeRef.current, used: tabUseRef.current.used })
       .filter((path) => !protectedPaths.has(path) && !dirtyRef.current[path] && !savingRef.current.has(path))
     if (!plan.length) return
-    closeTabs(applyClose(tabsRef.current, new Set(plan), activeRef.current), '已关闭最久未使用的页签')
+    closeTabs(applyClose(tabsRef.current, new Set(plan), activeRef.current), uiText('已关闭最久未使用的页签', "Closed least recently used tabs", "Закрыты давно неиспользуемые вкладки"))
   }, [tabs, tabLimit, active])
 
   // 侧边栏状态：恢复（显隐/宽度/激活面板）；侧栏形态独立键（默认收起，不共享页签形态偏好）
@@ -2151,7 +2152,7 @@ export function EditorView(props) {
       ['edrv.command.toggleSidebar', () => setSidebarOn((v) => !v)],
       ['edrv.command.toggleMarkdownPreview', () => {
         const path = activeRef.current
-        if (!isMarkdownPath(path)) { setStatus('当前文件不是 Markdown'); return }
+        if (!isMarkdownPath(path)) { setStatus(uiText('当前文件不是 Markdown', "The current file is not Markdown", "Текущий файл не является Markdown")); return }
         toggleMdPreviewRef.current?.(path)
       }],
       ['edrv.command.previewHtml', () => { previewHtmlOf(activeRef.current) }],
@@ -2167,7 +2168,7 @@ export function EditorView(props) {
       ['edrv.command.triggerAi', () => editorRef.current?.trigger?.('edrv-ai', 'editor.action.inlineSuggest.trigger', null)],
       ['edrv.command.openInExplorer', () => {
         const path = activeRef.current
-        if (!path) { setStatus('无活动文件'); return }
+        if (!path) { setStatus(uiText('无活动文件', "No active file", "Нет активного файла")); return }
         menuHandlersRef.current?.openInExplorer?.(path)
       }],
       // 代码片段：配置（选择器）与插入（当前语言条目）；选区引用（Ctrl+U）。
@@ -2179,14 +2180,14 @@ export function EditorView(props) {
         const ed = editorRef.current
         const sel = ed?.getSelection?.()
         const path = activeRef.current
-        if (!path) { setStatus('无活动文件'); return }
+        if (!path) { setStatus(uiText('无活动文件', "No active file", "Нет активного файла")); return }
         if (!sel || (sel.startLineNumber === sel.endLineNumber && sel.startColumn === sel.endColumn)) {
-          setStatus('请先选中内容再添加引用')
+          setStatus(uiText('请先选中内容再添加引用', "Select content before adding a reference", "Сначала выделите содержимое для добавления ссылки"))
           return
         }
         const range = { startLine: sel.startLineNumber, endLine: sel.endLineNumber }
-        if (!addToConversation) { setStatus('添加到对话不可用'); return }
-        addToConversation.appendReference(sessionId, path, range).then((o) => setStatus(statusOfAdd(o, '已添加选中内容为引用')))
+        if (!addToConversation) { setStatus(uiText('添加到对话不可用', "Add to conversation is unavailable", "Добавление в диалог недоступно")); return }
+        addToConversation.appendReference(sessionId, path, range).then((o) => setStatus(statusOfAdd(o, uiText('已添加选中内容为引用', "Selection added as a reference", "Выделенный текст добавлен как ссылка"))))
       }],
       // SVN：命令面板动作（活动文件；无活动文件时 update/commit 用工作区根，其余提示）
       ['edrv.command.svnUpdate', () => runSvnUpdate(activeRef.current ?? '')],
@@ -2236,7 +2237,7 @@ export function EditorView(props) {
     const onCommand = (event) => {
       const action = byName.get(event.type)
       if (!action) return
-      try { action(event) } catch (error) { dbg(sessionId, '指令 ' + event.type + ' 失败：' + String(error)) }
+      try { action(event) } catch (error) { dbg(sessionId, uiText('指令 ', "Command ", "Команда ") + event.type + uiText(' 失败：', " failed: ", " завершилась с ошибкой: ") + String(error)) }
     }
     for (const [eventName] of handlers) window.addEventListener(eventName, onCommand)
     return () => {
@@ -2287,8 +2288,8 @@ export function EditorView(props) {
     setImgBroken(false)
     setPdfBytes(null)
     setLoadError(null)
-    setLoadStage({ progress: 10, message: '准备读取文件…' })
-    setStatus('加载中…')
+    setLoadStage({ progress: 10, message: uiText('准备读取文件…', "Preparing to read file…", "Подготовка к чтению файла…") })
+    setStatus(uiText('加载中…', "Loading…", "Загрузка…"))
     loadContent(active, sessionId)
   }, [active, sessionId, isUniverActive])
 
@@ -2308,14 +2309,14 @@ export function EditorView(props) {
     if (cached) {
       setContent(cached.getValue())
       setContentPath(nextPath)
-      setLoadStage((prev) => ({ progress: Math.max(prev.progress, 84), message: '文件已读取，准备创建编辑器…' }))
-      setStatus('已加载')
+      setLoadStage((prev) => ({ progress: Math.max(prev.progress, 84), message: uiText('文件已读取，准备创建编辑器…', "File read. Preparing editor…", "Файл прочитан. Подготовка редактора…") }))
+      setStatus(uiText('已加载', "Loaded", "Загружено"))
       return
     }
     setContent(null)
     setContentPath(null)
-    setLoadStage({ progress: 10, message: '准备读取文件…' })
-    setStatus('加载中…')
+    setLoadStage({ progress: 10, message: uiText('准备读取文件…', "Preparing to read file…", "Подготовка к чтению файла…") })
+    setStatus(uiText('加载中…', "Loading…", "Загрузка…"))
     setImageSrc(null)
     setImgSize(null)
     setImgBroken(false)
@@ -2345,7 +2346,7 @@ export function EditorView(props) {
     }).catch((e) => {
       if (alive) {
         setMonacoErr(String(e?.message ?? e))
-        setStatus('Monaco 不可用')
+        setStatus(uiText('Monaco 不可用', "Monaco unavailable", "Monaco недоступен"))
       }
     })
     return () => { alive = false }
@@ -2594,7 +2595,7 @@ export function EditorView(props) {
     if (activeRef.current !== path) return
     setContent(text)
     setContentPath(path)
-    setStatus('已保存 ' + new Date().toTimeString().slice(0, 8))
+    setStatus(uiText('已保存 ', "Saved ", "Сохранено ") + new Date().toTimeString().slice(0, 8))
     setDiskFlag((prev) => (prev && prev.path === path ? null : prev))
   }
 
@@ -2636,7 +2637,7 @@ export function EditorView(props) {
     },
     failed: (path, result) => {
       if (result.conflict) markDiskFlag({ path, kind: 'conflict', at: Date.now() })
-      setStatus(result.conflict ? '保存被拒：文件已被外部修改' : '保存失败')
+      setStatus(result.conflict ? uiText('保存被拒：文件已被外部修改', "Save rejected: file changed externally", "Сохранение отклонено: файл изменён извне") : uiText('保存失败', "Save failed", "Ошибка сохранения"))
       if (result.error) setError(result.error)
     },
   }
@@ -2644,7 +2645,7 @@ export function EditorView(props) {
   function saveDocument(path, manual) {
     if (isExcelPath(path)) return Promise.resolve({ ok: false })
     if (useOffice(path)) return Promise.resolve({ ok: false })
-    if (missingRef.current.has(path)) { setStatus('删除预览只读；请使用 Keep / Undo'); return Promise.resolve({ ok: false }) }
+    if (missingRef.current.has(path)) { setStatus(uiText('删除预览只读；请使用 Keep / Undo', "Deletion preview is read-only. Use Keep / Undo.", "Предпросмотр удаления доступен только для чтения. Используйте Keep / Undo.")); return Promise.resolve({ ok: false }) }
     const model = modelsRef.current.get(path)
     if (!model) return Promise.resolve({ ok: false })
     const store = documents()
@@ -2656,21 +2657,21 @@ export function EditorView(props) {
 
   const doSave = (silent) => {
     if (!active) return
-    if (useOffice(active)) { if (!silent) setStatus('Univer 文档请在文档内编辑与审阅；不会作为文本保存'); return }
-    if (isExcelPath(active)) { if (!silent) setStatus('Excel 不写原件；请使用「基础 · 导出副本」'); return }
+    if (useOffice(active)) { if (!silent) setStatus(uiText('Univer 文档请在文档内编辑与审阅；不会作为文本保存', "Edit and review Univer documents in the document view; they are not saved as text", "Редактируйте и проверяйте документы Univer в представлении документа; они не сохраняются как текст")); return }
+    if (isExcelPath(active)) { if (!silent) setStatus(uiText('Excel 不写原件；请使用「基础 · 导出副本」', "Excel does not write the original. Use Basic · Export copy.", "Excel не изменяет оригинал. Используйте «Базовый режим · Экспорт копии».")); return }
     // 外部改动待处理：自动保存（silent）直接放弃，避免陈旧缓冲覆盖磁盘；
     // 手工保存（Ctrl+S / 命令栏）继续走版本守卫，由 host 判定并给冲突提示。
-    if (silent && readSync(scope, active)) { setStatus('外部已修改（未保存的编辑保留）'); return }
+    if (silent && readSync(scope, active)) { setStatus(uiText('外部已修改（未保存的编辑保留）', "Changed externally (unsaved edits retained)", "Изменён извне (несохранённые изменения сохранены)")); return }
     // PDF tab：保存委托给面板控制器（saveDocument → base64 → edrv.saveBinary）
     if (isPdfPath(active)) {
       const ctl = pdfCtlRef.current.get(active)
-      if (!ctl) { if (!silent) setStatus('PDF 未就绪'); return }
-      if (!ctl.isDirty()) { if (!silent) setStatus('PDF 无未保存修改'); return }
+      if (!ctl) { if (!silent) setStatus(uiText('PDF 未就绪', "PDF not ready", "PDF не готов")); return }
+      if (!ctl.isDirty()) { if (!silent) setStatus(uiText('PDF 无未保存修改', "PDF has no unsaved changes", "В PDF нет несохранённых изменений")); return }
       void ctl.savePdf()
       return
     }
-    if (isImageActive) { setStatus('图片只读预览'); return }
-    if (!silent) setStatus('保存中…')
+    if (isImageActive) { setStatus(uiText('图片只读预览', "Read-only image preview", "Предпросмотр изображения только для чтения")); return }
+    if (!silent) setStatus(uiText('保存中…', "Saving…", "Сохранение…"))
     void saveDocument(active, !silent)
   }
   doSaveRef.current = doSave
@@ -2692,7 +2693,7 @@ export function EditorView(props) {
       if (useOffice(path)) continue
       if (!dirtyRef.current[path]) continue
       // 外部改动未处理：不落盘（避免覆盖），脏内容仍保留在 model 中
-      if (readSync(scope, path)) { setStatus('未落盘（外部已修改）：' + baseNameOf(path)); continue }
+      if (readSync(scope, path)) { setStatus(uiText('未落盘（外部已修改）：', "Not saved to disk (changed externally): ", "Не сохранено на диск (изменено извне): ") + baseNameOf(path)); continue }
       // 已有在途保存（flushSave 刚提交的防抖保存）：同一 tick 内容必然一致，跳过重复提交
       if (savingRef.current.has(path)) continue
       const pdfCtl = pdfCtlRef.current.get(path)
@@ -2710,13 +2711,13 @@ export function EditorView(props) {
     // 编辑即「使用」：需求 2 的淘汰口径是「最近没有改动」，故有改动时刷新 LRU 序号，
     // 使长时间只在某文件里编辑的页签不会被其它文件的打开动作挤出。
     touchTab(path)
-    setStatus('编辑中…')
+    setStatus(uiText('编辑中…', "Editing…", "Редактирование…"))
     // 外部改动尚未处理（冲突/文件被删）：抑制自动保存，避免用陈旧缓冲反复覆盖磁盘；
     // 手工 Ctrl+S 不受抑制（doSave 会走版本守卫并给冲突提示）。
     const store = documents()
     store.bind(path, model, revRef.current[path])
     store.edit(path)
-    if (readSync(scope, path)) setStatus('外部已修改（未保存的编辑保留）')
+    if (readSync(scope, path)) setStatus(uiText('外部已修改（未保存的编辑保留）', "Changed externally (unsaved edits retained)", "Изменён извне (несохранённые изменения сохранены)"))
   }
   // @author ddj 2026年09月09号 空依赖监听只持有首帧 onEdit（active 恒 null→提前返回，星号与自动保存从未生效）：每次渲染同步最新闭包
   onEditRef.current = onEdit
@@ -2734,7 +2735,7 @@ export function EditorView(props) {
     const model = getModel(active, content)
     viewKeeperRef.current?.bind(String(scope), active, model, findKeyOf(scope, focusedGroupOf(active)))
     syncTypeSuggest(ed, monaco)
-    setLoadStage((prev) => ({ progress: Math.max(96, prev.progress), message: '创建编辑器视图…' }))
+    setLoadStage((prev) => ({ progress: Math.max(96, prev.progress), message: uiText('创建编辑器视图…', "Creating editor view…", "Создание представления редактора…") }))
   }, [monaco, scope, active, content, contentReady, mdPreviewing, svnDiff])
 
   // PDF 面板外壳 ref 回调（div 仅在 PDF 分支渲染，refs 先于 effect 就绪）
@@ -2789,7 +2790,7 @@ export function EditorView(props) {
   React.useEffect(() => {
     if (!monaco || !editorRef.current || !active || content === null) return
     diffRendererRef.current.render(monaco, editorRef.current, pendingRegions, sessionId)
-    setLoadStage({ progress: 100, message: '编辑器已就绪' })
+    setLoadStage({ progress: 100, message: uiText('编辑器已就绪', "Editor ready", "Редактор готов") })
   }, [monaco, active, content, pendingRegions, mdPreviewing, svnDiff])
 
   React.useEffect(() => () => {
@@ -2885,12 +2886,12 @@ export function EditorView(props) {
       selKey.set(!!(s && (s.startLineNumber !== s.endLineNumber || s.startColumn !== s.endColumn)))
     })
     ed.addAction({
-      id: 'edrv.addFileRef', label: '添加文件到对话', contextMenuGroupId: '1_edrv',
+      id: 'edrv.addFileRef', label: uiText('添加文件到对话', "Add file to conversation", "Добавить файл в диалог"), contextMenuGroupId: '1_edrv',
       precondition: 'editorTextFocus',
       run: (edx) => menuHandlers()?.addRefToChat(pathOf(edx)),
     })
     ed.addAction({
-      id: 'edrv.addSelectionRef', label: '添加选中内容为引用', contextMenuGroupId: '1_edrv',
+      id: 'edrv.addSelectionRef', label: uiText('添加选中内容为引用', "Add selection as reference", "Добавить выделенное как ссылку"), contextMenuGroupId: '1_edrv',
       precondition: 'edrvSelection',
       run: (edx) => {
         const s = selectionOf(edx)
@@ -2900,19 +2901,19 @@ export function EditorView(props) {
     })
     // 在 OS 文件浏览器中打开/定位当前活动文件（与文件管理栏右键菜单同源能力）。
     ed.addAction({
-      id: 'edrv.revealInExplorer', label: '在文件浏览器中打开', contextMenuGroupId: '1_edrv',
+      id: 'edrv.revealInExplorer', label: uiText('在文件浏览器中打开', "Open in file browser", "Открыть в файловом менеджере"), contextMenuGroupId: '1_edrv',
       precondition: 'editorTextFocus',
       run: (edx) => menuHandlers()?.openInExplorer(pathOf(edx)),
     })
     // 语言智能（LSP）：转到定义 / 查找所有引用（右键 + F12/Shift+F12 键位）。
     ed.addAction({
-      id: 'edrv.goToDefinition', label: '转到定义', contextMenuGroupId: '1_edrv',
+      id: 'edrv.goToDefinition', label: uiText('转到定义', "Go to definition", "Перейти к определению"), contextMenuGroupId: '1_edrv',
       keybindings: m.KeyMod.CtrlCmd | m.KeyCode.F12,
       precondition: 'editorTextFocus',
       run: (edx) => { void runGoToDefinition(edx) },
     })
     ed.addAction({
-      id: 'edrv.findReferences', label: '查找所有引用', contextMenuGroupId: '1_edrv',
+      id: 'edrv.findReferences', label: uiText('查找所有引用', "Find all references", "Найти все ссылки"), contextMenuGroupId: '1_edrv',
       keybindings: m.KeyMod.Shift | m.KeyCode.F12,
       precondition: 'editorTextFocus',
       run: (edx) => { void runFindReferences(edx) },
@@ -2921,15 +2922,15 @@ export function EditorView(props) {
     // 整行上下移动 + 命令栏：只登记 Monaco 右键菜单入口（不绑键位）。
     // 键位由指令桥统一 capture 派发 `edrv.command.*`，此处再绑一次会双执行。
     ed.addAction({
-      id: 'edrv.prevEditorRow', label: '上一编辑行', contextMenuGroupId: '1_edrv',
+      id: 'edrv.prevEditorRow', label: uiText('上一编辑行', "Previous edited line", "Предыдущая изменённая строка"), contextMenuGroupId: '1_edrv',
       run: () => window.dispatchEvent(new CustomEvent('edrv.command.prevEditorRow')),
     })
     ed.addAction({
-      id: 'edrv.nextEditorRow', label: '下一编辑行', contextMenuGroupId: '1_edrv',
+      id: 'edrv.nextEditorRow', label: uiText('下一编辑行', "Next edited line", "Следующая изменённая строка"), contextMenuGroupId: '1_edrv',
       run: () => window.dispatchEvent(new CustomEvent('edrv.command.nextEditorRow')),
     })
     ed.addAction({
-      id: 'edrv.showCommands', label: '显示所有命令', contextMenuGroupId: '1_edrv',
+      id: 'edrv.showCommands', label: uiText('显示所有命令', "Show all commands", "Показать все команды"), contextMenuGroupId: '1_edrv',
       run: () => window.dispatchEvent(new CustomEvent('edrv.command.showCommands')),
     })
     // SVN 组按创建时的最新状态注册（此后由 [monaco, svnStatus] effect 随状态增减）
@@ -3240,7 +3241,7 @@ export function EditorView(props) {
   const overwriteDisk = () => {
     const path = diskFlag?.path
     const model = path ? modelsRef.current.get(path) : null
-    if (!path || !model) { setStatus('无法覆盖：文件未打开'); return }
+    if (!path || !model) { setStatus(uiText('无法覆盖：文件未打开', "Cannot overwrite: file is not open", "Нельзя перезаписать: файл не открыт")); return }
     rpc('edrv.save', { sessionId, path, content: model.getValue() }).then((res) => {
       if (res && res.ok) {
         if (res.rev) revRef.current[path] = res.rev
@@ -3249,13 +3250,13 @@ export function EditorView(props) {
         clearSync(scope, path)
         setDirtyMap((d) => Object.assign({}, d, { [path]: false }))
         setDiskFlag((prev) => (prev && prev.path === path ? null : prev))
-        setStatus('已覆盖磁盘')
+        setStatus(uiText('已覆盖磁盘', "Disk overwritten", "Файл на диске перезаписан"))
         emitRefresh({ scope, paths: [path], kind: 'text' })
         return
       }
-      setStatus('覆盖失败')
-      setError(res?.error ? String(res.error) : '覆盖失败')
-    }).catch((e) => setError('覆盖异常:' + String(e)))
+      setStatus(uiText('覆盖失败', "Overwrite failed", "Ошибка перезаписи"))
+      setError(res?.error ? String(res.error) : uiText('覆盖失败', "Overwrite failed", "Ошибка перезаписи"))
+    }).catch((e) => setError(uiText('覆盖异常:', "Overwrite error: ", "Ошибка перезаписи: ") + String(e)))
   }
 
   /**
@@ -3277,7 +3278,7 @@ export function EditorView(props) {
       }
       clearSync(scope, path)
       setDiskFlag((prev) => (prev && prev.path === path ? null : prev))
-      setStatus('已保留本地编辑（磁盘内容未取用）')
+      setStatus(uiText('已保留本地编辑（磁盘内容未取用）', "Local edits retained (disk contents not loaded)", "Локальные изменения сохранены (содержимое диска не загружено)"))
     }).catch(() => {
       clearSync(scope, path)
       setDiskFlag(null)
@@ -3300,7 +3301,7 @@ export function EditorView(props) {
     setImgSize(null)
     setImgBroken(false)
     setLoadError(null)
-    setStatus(next.has(path) ? '已切换为文本模式' : '已切换为图片预览')
+    setStatus(next.has(path) ? uiText('已切换为文本模式', "Switched to text mode", "Включён текстовый режим") : uiText('已切换为图片预览', "Switched to image preview", "Включён предпросмотр изображения"))
     loadContent(path, sessionId, true)
   }
 
@@ -3334,7 +3335,7 @@ export function EditorView(props) {
     mdPreviewRef.current = next
     // 预览态按作用域落 localStorage（镜像层写穿 host）：刷新/重启后仍以预览打开
     mdPreviewSave(String(scope), next)
-    setStatus(entering ? '已切换为 Markdown 预览' : '已切换为源码编辑')
+    setStatus(entering ? uiText('已切换为 Markdown 预览', "Switched to Markdown preview", "Включён предпросмотр Markdown") : uiText('已切换为源码编辑', "Switched to source editing", "Включено редактирование исходного текста"))
   }
   toggleMdPreviewRef.current = toggleMdPreview
 
@@ -3348,13 +3349,13 @@ export function EditorView(props) {
    * @param path 当前文件路径
    */
   function previewHtmlOf(path) {
-    if (!isHtmlPath(path)) { setStatus('当前文件不是 HTML'); return }
-    if (!hasOfficialHtmlPreview()) { setStatus('当前 DSH 不支持 HTML 渲染预览'); return }
+    if (!isHtmlPath(path)) { setStatus(uiText('当前文件不是 HTML', "The current file is not HTML", "Текущий файл не является HTML")); return }
+    if (!hasOfficialHtmlPreview()) { setStatus(uiText('当前 DSH 不支持 HTML 渲染预览', "This DSH version does not support HTML preview", "Эта версия DSH не поддерживает предпросмотр HTML")); return }
 
     flushSave()
     saveViewState(path)
-    if (!tryNativeOpen(path)) { setStatus('打开官方 HTML 预览失败，请在对话中打开该文件'); return }
-    setStatus('已在官方查看器打开网页预览')
+    if (!tryNativeOpen(path)) { setStatus(uiText('打开官方 HTML 预览失败，请在对话中打开该文件', "Failed to open the built-in HTML preview. Open this file in the conversation.", "Не удалось открыть встроенный предпросмотр HTML. Откройте файл в диалоге.")); return }
+    setStatus(uiText('已在官方查看器打开网页预览', "Web preview opened in the built-in viewer", "Предпросмотр страницы открыт во встроенном просмотрщике"))
   }
   /** 当前图片的会话+路径级缩放记忆键（页签切换回来保留同一缩放）。 */
   const imgZoomKey = zoomKeyOf(sessionId, active)
@@ -3391,7 +3392,7 @@ export function EditorView(props) {
   function imageFailed() {
     if (!receiptLoad || !loadCurrent(receiptLoad.path, receiptLoad.sequence)) return
     setImgBroken(true)
-    renderLoadFail(receiptLoad.path, receiptLoad.sessionId, receiptLoad.sequence, '图片解码失败')
+    renderLoadFail(receiptLoad.path, receiptLoad.sessionId, receiptLoad.sequence, uiText('图片解码失败', "Image decoding failed", "Ошибка декодирования изображения"))
   }
 
   /**
@@ -3402,32 +3403,32 @@ export function EditorView(props) {
   const imagePanel = () => React.createElement('div', { className: 'edrv-imgview' },
     React.createElement('div', { className: 'edrv-imgview-bar' },
       React.createElement('span', { className: 'edrv-imgview-meta' },
-        imgBroken ? '图片无法显示' : (imgSize ? imgSize.w + '×' + imgSize.h : '…')),
+        imgBroken ? uiText('图片无法显示', "Cannot display image", "Не удалось показать изображение") : (imgSize ? imgSize.w + '×' + imgSize.h : '…')),
       React.createElement('span', { style: { flex: 1 } }),
       React.createElement('span', { className: 'edrv-pdf-page' },
-        imgZoom === null ? '适应' : Math.round(imgZoom * 100) + '%'),
+        imgZoom === null ? uiText('适应', "Fit", "Вписать") : Math.round(imgZoom * 100) + '%'),
       React.createElement('button', {
-        className: 'edrv-pill edrv-pill-ghost edrv-pdf-zoom', title: '缩小（10%/档）',
+        className: 'edrv-pill edrv-pill-ghost edrv-pdf-zoom', title: uiText('缩小（10%/档）', "Zoom out (10% per step)", "Уменьшить (шаг 10%)"),
         onClick: () => stepImgZoom(-1),
       }, '−'),
       React.createElement('button', {
-        className: 'edrv-pill edrv-pill-ghost edrv-pdf-zoom', title: '放大（10%/档）',
+        className: 'edrv-pill edrv-pill-ghost edrv-pdf-zoom', title: uiText('放大（10%/档）', "Zoom in (10% per step)", "Увеличить (шаг 10%)"),
         onClick: () => stepImgZoom(1),
       }, '＋'),
       React.createElement('button', {
-        className: 'edrv-pill edrv-pill-ghost', title: '恢复适应宽度',
+        className: 'edrv-pill edrv-pill-ghost', title: uiText('恢复适应宽度', "Reset to fit width", "Сбросить до ширины окна"),
         disabled: imgZoom === null, onClick: () => applyImgZoom(null),
-      }, '适应宽度'),
+      }, uiText('适应宽度', "Fit width", "По ширине окна")),
       (isSvgPath(active) ? React.createElement('button', {
-        className: 'edrv-pill edrv-pill-ghost', title: '以文本方式查看/编辑（SVG 为文本格式）',
+        className: 'edrv-pill edrv-pill-ghost', title: uiText('以文本方式查看/编辑（SVG 为文本格式）', "View/edit as text (SVG is a text format)", "Просмотреть/изменить как текст (SVG — текстовый формат)"),
         onClick: () => toggleSvgText(active),
-      }, '以文本打开') : null),
-      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', title: '重新加载图片', onClick: () => reloadFile() }, '⟳ 刷新')),
+      }, uiText('以文本打开', "Open as text", "Открыть как текст")) : null),
+      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', title: uiText('重新加载图片', "Reload image", "Перезагрузить изображение"), onClick: () => reloadFile() }, uiText('⟳ 刷新', "⟳ Refresh", "⟳ Обновить"))),
     React.createElement('div', { className: 'edrv-imgview-stage' },
       (imgBroken
         ? React.createElement('div', { className: 'edrv-imgview-broken' },
-            React.createElement('div', null, '图片解码失败，文件可能已损坏'),
-            React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: () => reloadFile() }, '重试'))
+            React.createElement('div', null, uiText('图片解码失败，文件可能已损坏', "Image decoding failed. The file may be corrupted.", "Не удалось декодировать изображение. Возможно, файл повреждён.")),
+            React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: () => reloadFile() }, uiText('重试', "Retry", "Повторить")))
         : React.createElement('img', {
             className: 'edrv-imgview-img',
             ref: imgElRef,
@@ -3486,10 +3487,10 @@ export function EditorView(props) {
         if (!silent) { reloadFile(); emitRefresh({ scope, paths: [res.record?.path || active], kind: 'structure' }) }
         return true
       }
-      if (!silent) setError(res?.error ? String(res.error) : '操作失败')
+      if (!silent) setError(res?.error ? String(res.error) : uiText('操作失败', "Operation failed", "Ошибка операции"))
       return false
     }).catch((e) => {
-      if (!silent) setError('操作异常:' + String(e))
+      if (!silent) setError(uiText('操作异常:', "Operation error: ", "Ошибка операции: ") + String(e))
       return false
     })
   }
@@ -3519,7 +3520,7 @@ export function EditorView(props) {
       }
       // #endregion
       if (!res || !res.ok || !Array.isArray(res.results)) {
-        const failure = res?.error ? String(res.error) : '批量处理失败'
+        const failure = res?.error ? String(res.error) : uiText('批量处理失败', "Batch operation failed", "Ошибка пакетной операции")
         setError(failure)
         // 真实原因要一路带到调用处：调用方按计数兜底会把 Host 原文盖掉，用户只看得到泛化文案
         return { ok: 0, fail: items.length, stale: 0, error: failure }
@@ -3542,7 +3543,7 @@ export function EditorView(props) {
       if (Object.keys(next).length) setRecords((prev) => Object.assign({}, prev, next))
       return { ok, fail, stale }
     }).catch((e) => {
-      const failure = '批量处理异常:' + String(e)
+      const failure = uiText('批量处理异常:', "Batch operation error: ", "Ошибка пакетной операции: ") + String(e)
       setError(failure)
       return { ok: 0, fail: items.length, stale: 0, error: failure }
     })
@@ -3556,8 +3557,8 @@ export function EditorView(props) {
    * @returns 状态栏文案
    */
   const decideStatus = (prefix, result) => {
-    const text = prefix + result.ok + ' 处差异' + (result.fail ? '，' + result.fail + ' 处失败' : '')
-    return result.stale ? text + '（其中 ' + result.stale + ' 处已不存在于文件，未改动）' : text
+    const text = prefix + result.ok + uiText(' 处差异', " changes", " изменений") + (result.fail ? '，' + result.fail + uiText(' 处失败', " failed", " ошибок") : '')
+    return result.stale ? text + uiText('（其中 ', " (including ", " (из них ") + result.stale + uiText(' 处已不存在于文件，未改动）', " no longer in the file; unchanged)", " уже отсутствуют в файле; не изменены)") : text
   }
 
   /**
@@ -3582,8 +3583,8 @@ export function EditorView(props) {
     const source = detail.item
     // 撤销白名单：非 agent 来源（编辑器保存 / 版本库基线 / 外部写入）先确认一次再写盘
     if (reject && detail.capability?.confirmUndo && !window.confirm(
-      `「${source.display || source.path}」的改动来自 ${source.sourceLabel || '外部来源'}，不是本会话工具写的。\n确认撤销并写回修改前内容？`)) {
-      throw new Error('已取消撤销')
+      uiText(`「${source.display || source.path}」的改动来自 ${source.sourceLabel || uiText('外部来源', "external source", "внешнего источника")}，不是本会话工具写的。\n确认撤销并写回修改前内容？`, `Changes to “${source.display || source.path}” came from ${source.sourceLabel || uiText('外部来源', "external source", "внешнего источника")}, not this session’s tools.\nUndo and restore the previous contents?`, `Изменения в «${source.display || source.path}» получены из ${source.sourceLabel || uiText('外部来源', "external source", "внешнего источника")}, а не от инструментов этой сессии.\nОтменить изменения и восстановить прежнее содержимое?`))) {
+      throw new Error(uiText('已取消撤销', "Undo cancelled", "Отмена изменений отменена"))
     }
     const opKey = JSON.stringify([sessionId, source.id, source.seq, source.revision, blockId, reject])
     let operationId = reviewOpsRef.current.get(opKey)
@@ -3629,11 +3630,11 @@ export function EditorView(props) {
       + ` busy=${batchBusyRef.current ? 1 : 0} active=${active ?? '(null)'}`)
     if (!officialDetail || batchBusyRef.current) {
       // 详情缺失时按钮仍可点（能力位来自列表数据），必须给可读原因而不是静默返回
-      if (!officialDetail && !batchBusyRef.current) setError('官方差异详情尚未加载完成，请稍后重试；若一直如此，请切换文件或刷新页面。')
+      if (!officialDetail && !batchBusyRef.current) setError(uiText('官方差异详情尚未加载完成，请稍后重试；若一直如此，请切换文件或刷新页面。', "Built-in diff details are still loading. Retry shortly; if this persists, switch files or refresh the page.", "Детали встроенного сравнения ещё загружаются. Повторите позже; если проблема остаётся, смените файл или обновите страницу."))
       return false
     }
     if (reject && (dirtyRef.current[active] || savingRef.current.has(active) || saveTimerRef.current.isPending())) {
-      setError('存在未保存或正在保存的修改，请等待完成后重试'); return false
+      setError(uiText('存在未保存或正在保存的修改，请等待完成后重试', "Changes are unsaved or being saved. Wait for completion and retry.", "Есть несохранённые или сохраняемые изменения. Дождитесь завершения и повторите.")); return false
     }
     batchBusyRef.current = true
     const detail = officialDetail
@@ -3644,9 +3645,9 @@ export function EditorView(props) {
       await submitOfficialDecision(detail, reject, blockId)
       if (reject && activeRef.current === undoPath && !dirtyRef.current[undoPath]
         && !savingRef.current.has(undoPath) && undoModel?.getVersionId?.() === undoVersion) reloadFile(true)
-      else if (reject) setError('Undo 已完成，编辑器在等待期间变化；未覆盖当前缓冲区，请核对磁盘后刷新')
+      else if (reject) setError(uiText('Undo 已完成，编辑器在等待期间变化；未覆盖当前缓冲区，请核对磁盘后刷新', "Undo completed, but the editor changed while waiting. The current buffer was not overwritten. Check disk contents before refreshing.", "Undo завершён, но редактор изменился во время ожидания. Текущий буфер не перезаписан. Проверьте содержимое диска перед обновлением."))
       refreshReview(sessionId)
-      setStatus(reject ? '已 Undo 选中差异' : '已 Keep 选中差异')
+      setStatus(reject ? uiText('已 Undo 选中差异', "Selected changes undone", "Выбранные изменения отменены") : uiText('已 Keep 选中差异', "Selected changes kept", "Выбранные изменения сохранены"))
       return true
     } catch (cause) {
       dbg(sessionId, `[DEBUG decideOfficialFail] id=${detail.item.id} reject=${reject ? 1 : 0} err=${String(cause).slice(0, 160)}`)
@@ -3675,7 +3676,7 @@ export function EditorView(props) {
       }
       refreshRecords()
       emitRefresh({ scope, paths: [preview.path], kind: 'structure' })
-      setStatus(reject ? '已恢复展示的完整历史快照' : '已保留文件删除')
+      setStatus(reject ? uiText('已恢复展示的完整历史快照', "The complete displayed historical snapshot was restored", "Показанный полный исторический снимок восстановлен") : uiText('已保留文件删除', "File deletion kept", "Удаление файла сохранено"))
       setError(null)
       return true
     } catch (cause) { if (lifetime?.live) setError(String(cause)); return false }
@@ -3692,7 +3693,7 @@ export function EditorView(props) {
     if (!result.error) return batchFailText(result)
     // 会话没在当前端激活：写类 RPC 一律被 requireSession 拒绝（冷读列表却正常），
     // 只把「会话不存在」原文丢给用户会像新故障，这里改说清「没执行、记录没动、怎么恢复」。
-    if (isSessionMissingError(result.error)) return '这个会话没在当前端激活，Keep/Undo 没有执行（记录未改动）；在会话里发一条消息激活后重试'
+    if (isSessionMissingError(result.error)) return uiText('这个会话没在当前端激活，Keep/Undo 没有执行（记录未改动）；在会话里发一条消息激活后重试', "This session is not active on this client. Keep/Undo did not run (records unchanged). Send a message in the session to activate it and retry.", "Сессия не активна в этом клиенте. Keep/Undo не выполнены (записи не изменены). Отправьте сообщение в сессии для активации и повторите.")
     return result.error
   }
 
@@ -3705,8 +3706,8 @@ export function EditorView(props) {
   const batchFailText = (result) => {
     if (!result.fail) return null
     return result.stale
-      ? `${result.fail} 处未处理（其中 ${result.stale} 处已不在文件中，只更新了记录），可刷新后重试`
-      : `${result.fail} 处未处理，可刷新后重试`
+      ? uiText(`${result.fail} 处未处理（其中 ${result.stale} 处已不在文件中，只更新了记录），可刷新后重试`, `${result.fail} changes unprocessed (${result.stale} no longer in the file; only records updated). Refresh and retry.`, `Не обработано изменений: ${result.fail} (из них ${result.stale} уже отсутствуют в файле; обновлены только записи). Обновите и повторите.`)
+      : uiText(`${result.fail} 处未处理，可刷新后重试`, `${result.fail} changes unprocessed. Refresh and retry.`, `Не обработано изменений: ${result.fail}. Обновите и повторите.`)
   }
 
   const acceptFile = () => {
@@ -3720,7 +3721,7 @@ export function EditorView(props) {
       emitRefresh({ scope, paths: active ? [active] : undefined, kind: 'structure' })
       // 能走到这里的都是「历史改动」通道：Keep 只把记录标成已看过，不写盘，
       // 用「已采纳」会让人以为文件被改过，这里必须换成准确措辞
-      setStatus(result.ok ? `${SIDECAR_KEEP_DONE}（${result.ok} 处）` : decideStatus('已采纳 ', result))
+      setStatus(result.ok ? uiText(`${sidecarKeepDone()}（${result.ok} 处）`, `${sidecarKeepDone()} (${result.ok} changes)`, `${sidecarKeepDone()} (изменений: ${result.ok})`) : decideStatus(uiText('已采纳 ', "Accepted ", "Принято "), result))
       const message = batchError(result)
       if (message) setError(message)
     }).catch(() => { batchBusyRef.current = false })
@@ -3734,7 +3735,7 @@ export function EditorView(props) {
       batchBusyRef.current = false
       reloadFile(true)
       emitRefresh({ scope, paths: active ? [active] : undefined, kind: 'structure' })
-      setStatus(decideStatus('已不采纳 ', result))
+      setStatus(decideStatus(uiText('已不采纳 ', "Rejected ", "Отклонено "), result))
       const message = batchError(result)
       if (message) setError(message)
     }).catch(() => { batchBusyRef.current = false })
@@ -3797,7 +3798,7 @@ export function EditorView(props) {
       if (!lifetime?.live) return
       if (reject || !missingNow) reloadFile(true)
       emitRefresh({ scope, paths, kind: 'structure' })
-      setStatus(decideStatus(reject ? '已不采纳 ' : '已采纳 ', result) + `；删除文件 ${handled.size} 个`)
+      setStatus(decideStatus(reject ? uiText('已不采纳 ', "Rejected ", "Отклонено ") : uiText('已采纳 ', "Accepted ", "Принято "), result) + uiText(`；删除文件 ${handled.size} 个`, `; deleted files: ${handled.size}`, `; удалённых файлов: ${handled.size}`))
       const message = batchError(result)
       if (message) setError(message)
     } catch (cause) { if (lifetime?.live) setError(String(cause)) }
@@ -3805,9 +3806,9 @@ export function EditorView(props) {
   }
   /** @private @author ddj 2026年10月27号 @param reject Undo requires every local buffer to be saved. @param token Starting session lifetime. @returns Throws before the next mutation when unsafe. */
   function guardReviewAll(reject, token) {
-    if (!token?.live) throw new Error('编辑器或会话已切换，批量操作已停止')
+    if (!token?.live) throw new Error(uiText('编辑器或会话已切换，批量操作已停止', "Editor or session changed; batch operation stopped", "Редактор или сессия сменились; пакетная операция остановлена"))
     if (reject && (Object.values(dirtyRef.current).some(Boolean) || savingRef.current.size || saveTimerRef.current.isPending())) {
-      throw new Error('存在未保存或正在保存的文件，未执行下一项 Undo，请保存后重试')
+      throw new Error(uiText('存在未保存或正在保存的文件，未执行下一项 Undo，请保存后重试', "Files are unsaved or being saved. The next Undo was not run. Save and retry.", "Есть несохранённые или сохраняемые файлы. Следующий Undo не выполнен. Сохраните файлы и повторите."))
     }
   }
 
@@ -3832,7 +3833,7 @@ export function EditorView(props) {
     if (review.page?.overview) return true
 
     refreshReview(sessionId)
-    setStatus(`官方待审列表正在载入，载入完成后请再次点击${action}`)
+    setStatus(uiText(`官方待审列表正在载入，载入完成后请再次点击${action}`, `The built-in review list is loading. Click ${action} again when loading completes.`, `Встроенный список проверки загружается. После загрузки нажмите ${action} ещё раз.`))
     return false
   }
 
@@ -3850,7 +3851,7 @@ export function EditorView(props) {
       detail: async (id) => { const res = await rpc('edrv.review.detail', { sessionId, id }); if (!res.ok) throw new Error(res.error); return res.detail },
       decide: (detail, undo, operationId) => rpc('edrv.review.decide', { sessionId, id: detail.item.id, seq: detail.item.seq, revision: detail.item.revision, operationId, scope: 'file', decision: undo ? 'rejected' : 'accepted' }),
       confirmExternal: (details) => window.confirm(
-        `这批修改里有 ${details.length} 条不是本会话工具写入的来源（例如编辑器保存、版本库基线或外部脚本）。\n确认整批撤销并写回修改前内容？`),
+        uiText(`这批修改里有 ${details.length} 条不是本会话工具写入的来源（例如编辑器保存、版本库基线或外部脚本）。\n确认整批撤销并写回修改前内容？`, `${details.length} changes in this batch came from sources other than this session’s tools (for example editor saves, repository baselines, or external scripts).\nUndo the entire batch and restore the previous contents?`, `В этой группе ${details.length} изменений получены не от инструментов этой сессии (например, сохранения редактора, базовые версии репозитория или внешние скрипты).\nОтменить всю группу и восстановить прежнее содержимое?`)),
       guard: () => guardReviewAll(true, token), operation: batchOperation,
     }, true)
   }
@@ -3882,14 +3883,14 @@ export function EditorView(props) {
     if (reject) {
       if (result.paths.some((path) => sameFile(path, undoPath)) && activeRef.current === undoPath
         && !dirtyRef.current[undoPath] && !savingRef.current.has(undoPath) && undoModel?.getVersionId?.() === undoVersion) reloadFile(true)
-      setStatus(`Undo All：官方记录已完成 ${result.completed} / ${result.total}`)
-      if (result.error) setError(`批量已停止，已完成 ${result.completed} 项，其余未处理。${result.error}`)
+      setStatus(uiText(`Undo All：官方记录已完成 ${result.completed} / ${result.total}`, `Undo All: built-in records completed ${result.completed} / ${result.total}`, `Undo All: обработано встроенных записей ${result.completed} / ${result.total}`))
+      if (result.error) setError(uiText(`批量已停止，已完成 ${result.completed} 项，其余未处理。${result.error}`, `Batch stopped after ${result.completed} items; remaining items were not processed. ${result.error}`, `Пакетная операция остановлена после ${result.completed} записей; остальные не обработаны. ${result.error}`))
       return !result.error
     }
 
     const skipped = result.skipped ?? []
-    setStatus(`Keep All：已保留 ${result.completed} / ${result.total}` + (skipped.length ? `，跳过 ${skipped.length} 条` : ''))
-    if (result.error) setError(`Keep All 未全部完成：${result.error}`)
+    setStatus(uiText(`Keep All：已保留 ${result.completed} / ${result.total}`, `Keep All: kept ${result.completed} / ${result.total}`, `Keep All: сохранено ${result.completed} / ${result.total}`) + (skipped.length ? uiText(`，跳过 ${skipped.length} 条`, `, skipped ${skipped.length} items`, `, пропущено записей: ${skipped.length}`) : ''))
+    if (result.error) setError(uiText(`Keep All 未全部完成：${result.error}`, `Keep All did not complete: ${result.error}`, `Keep All выполнен не полностью: ${result.error}`))
     if (skipped.length) toastDom(skippedTip(skipped))
     return !result.error
   }
@@ -3897,7 +3898,7 @@ export function EditorView(props) {
   /** @private @author ddj 2026年11月03号 @param skipped 被跳过的条目 @returns 最多 3 条、余量汇总的提示文案 */
   function skippedTip(skipped) {
     const head = skipped.slice(0, 3).map((item) => `${item.display}：${item.reason}`).join('；')
-    return skipped.length > 3 ? `${head}；等 ${skipped.length} 条` : head
+    return skipped.length > 3 ? uiText(`${head}；等 ${skipped.length} 条`, `${head}; ${skipped.length} items in total`, `${head}; всего записей: ${skipped.length}`) : head
   }
 
   /** @private @author ddj 2026年10月27号 @param reject Undo or Keep all workspace pending records, including previous rounds. @returns Explicit partial results; legacy proceeds only when official stage fully succeeds. */
@@ -3910,7 +3911,7 @@ export function EditorView(props) {
     const undoModel = editorRef.current?.getModel?.()
     const undoVersion = undoModel?.getVersionId?.()
     batchBusyRef.current = true; setReviewBatchBusy(true)
-    setStatus(reject ? '正在检查并 Undo 全部待审记录…' : '正在 Keep 全部待审记录…')
+    setStatus(reject ? uiText('正在检查并 Undo 全部待审记录…', "Checking and undoing all pending records…", "Проверка и отмена всех ожидающих записей…") : uiText('正在 Keep 全部待审记录…', "Keeping all pending records…", "Сохранение всех ожидающих записей…"))
     try {
       const result = reject ? await undoAllBatch(token) : await keepAllBatch(token)
       if (!token?.live) return
@@ -3945,13 +3946,13 @@ export function EditorView(props) {
   const undoAllFiles = () => askReviewAll(true)
   const rollbackFile = () => {
     if (!active) return
-    if (!window.confirm('回滚当前文件到修改前状态？（相关差异将归档）')) return
+    if (!window.confirm(uiText('回滚当前文件到修改前状态？（相关差异将归档）', "Revert the current file to its previous state? (Related diffs will be archived.)", "Вернуть текущий файл к состоянию до изменений? (Связанные различия будут архивированы.)"))) return
     rpc('edrv.rollback', { sessionId, path: active }).then((res) => {
       if (res && res.ok) {
-        setStatus('已回滚'); reloadFile()
+        setStatus(uiText('已回滚', "Reverted", "Восстановлено")); reloadFile()
         emitRefresh({ scope, paths: [active], kind: 'structure' })
-      } else setError(res?.error ? String(res.error) : '回滚失败')
-    }).catch((e) => setError('回滚异常:' + String(e)))
+      } else setError(res?.error ? String(res.error) : uiText('回滚失败', "Revert failed", "Ошибка восстановления"))
+    }).catch((e) => setError(uiText('回滚异常:', "Revert error: ", "Ошибка восстановления: ") + String(e)))
   }
 
   /**
@@ -3964,9 +3965,9 @@ export function EditorView(props) {
 
   /** 添加文件/选中区引用到对话（异步，状态栏反馈；状态文案走共享 statusOfAdd）。 */
   const addRefToChat = (path, range) => {
-    if (!path) { setStatus('无活动文件'); return }
-    if (!addToConversation) { setStatus('添加到对话不可用'); return }
-    addToConversation.appendReference(sessionId, path, range).then((o) => setStatus(statusOfAdd(o, '已添加文件引用')))
+    if (!path) { setStatus(uiText('无活动文件', "No active file", "Нет активного файла")); return }
+    if (!addToConversation) { setStatus(uiText('添加到对话不可用', "Add to conversation is unavailable", "Добавление в диалог недоступно")); return }
+    addToConversation.appendReference(sessionId, path, range).then((o) => setStatus(statusOfAdd(o, uiText('已添加文件引用', "File reference added", "Ссылка на файл добавлена"))))
   }
 
   /**
@@ -3975,11 +3976,11 @@ export function EditorView(props) {
    * @param path 工作区相对路径（可能为 null）
    */
   const openInExplorer = (path) => {
-    if (!path) { setStatus('无活动文件'); return }
-    if (!sessionId) { setStatus('无活动会话'); return }
-    setStatus('正在打开文件浏览器…')
+    if (!path) { setStatus(uiText('无活动文件', "No active file", "Нет активного файла")); return }
+    if (!sessionId) { setStatus(uiText('无活动会话', "No active session", "Нет активной сессии")); return }
+    setStatus(uiText('正在打开文件浏览器…', "Opening file browser…", "Открытие файлового менеджера…"))
     revealPathInExplorer(sessionId, path).then((outcome) => {
-      setStatus(outcome.ok ? '已在文件浏览器中打开' : '打开失败')
+      setStatus(outcome.ok ? uiText('已在文件浏览器中打开', "Opened in file browser", "Открыто в файловом менеджере") : uiText('打开失败', "Open failed", "Ошибка открытия"))
       if (!outcome.ok && outcome.error) setError(outcome.error)
     })
   }
@@ -3999,7 +4000,7 @@ export function EditorView(props) {
   /** 强制重查 SVN 变更清单（命令栏「SVN 刷新变更」）。 */
   const runSvnReload = () => {
     refreshSvnChanges(sessionId, scope)
-    setStatus('已刷新 SVN 变更')
+    setStatus(uiText('已刷新 SVN 变更', "SVN changes refreshed", "Изменения SVN обновлены"))
   }
 
   /**
@@ -4009,8 +4010,8 @@ export function EditorView(props) {
    * @param relPath 目标工作区相对路径
    */
   const runSvnDiffBase = (relPath) => {
-    if (!relPath) { setStatus('无活动文件'); return }
-    setStatus('读取基线…')
+    if (!relPath) { setStatus(uiText('无活动文件', "No active file", "Нет активного файла")); return }
+    setStatus(uiText('读取基线…', "Reading baseline…", "Чтение базовой версии…"))
     void svnDiffBase(sessionId, relPath).then((outcome) => {
       if (!outcome.ok) { setStatus(outcome.message); return }
       setSvnDiff({
@@ -4020,7 +4021,7 @@ export function EditorView(props) {
         reason: outcome.reason,
         message: outcome.base === null ? '' : outcome.message,
         leftLabel: 'BASE',
-        rightLabel: '工作区',
+        rightLabel: uiText('工作区', "Workspace", "Рабочая область"),
         scheme: 'edrv-svn-base',
         binary: outcome.binary === true,
         encodingHint: outcome.encodingHint === true,
@@ -4038,17 +4039,17 @@ export function EditorView(props) {
    * @param logTarget 来自日志弹窗时的日志目标（不传 = 非日志入口）
    */
   const runSvnDiffRev = (relPath, revision, logTarget) => {
-    if (!relPath) { setStatus('无目标文件'); return }
-    setStatus('读取 r' + revision + ' 差异…')
+    if (!relPath) { setStatus(uiText('无目标文件', "No target file", "Нет целевого файла")); return }
+    setStatus(uiText('读取 r', "Reading r", "Чтение r") + revision + uiText(' 差异…', " diff…", " — сравнение…"))
     void svnDiffRev(sessionId, relPath, revision).then((outcome) => {
-      if (!outcome.ok) { setStatus('读取版本差异失败：' + (outcome.error ?? '未知错误')); return }
+      if (!outcome.ok) { setStatus(uiText('读取版本差异失败：', "Failed to read revision diff: ", "Не удалось прочитать различия ревизий: ") + (outcome.error ?? uiText('未知错误', "Unknown error", "Неизвестная ошибка"))); return }
       const isAdd = outcome.left === null
       setSvnDiff({
         path: relPath,
         base: outcome.left,
         working: outcome.right,
         reason: outcome.reason,
-        message: isAdd ? '该版本新增此文件（无上一版可比）' : '',
+        message: isAdd ? uiText('该版本新增此文件（无上一版可比）', "File added in this revision (no previous version to compare)", "Файл добавлен в этой ревизии (нет предыдущей версии для сравнения)") : '',
         leftLabel: 'r' + Math.max(1, revision - 1),
         rightLabel: 'r' + revision,
         scheme: 'edrv-svn-rev' + revision,
@@ -4056,7 +4057,7 @@ export function EditorView(props) {
         encodingHint: outcome.encodingHint === true,
         logTarget,
       })
-      setStatus('已打开 r' + revision + ' 差异')
+      setStatus(uiText('已打开 r', "Opened r", "Открыто сравнение r") + revision + uiText(' 差异', " diff", " — различия"))
     })
   }
 
@@ -4070,13 +4071,13 @@ export function EditorView(props) {
    * @param logTarget 来自日志弹窗时的日志目标（不传 = 非日志入口）
    */
   const runSvnDiffPair = (relPath, revA, revB, logTarget) => {
-    if (!relPath) { setStatus('仅文件目标支持比较两个修订'); return }
-    setStatus('读取 r' + revA + ' ↔ r' + revB + ' 差异…')
+    if (!relPath) { setStatus(uiText('仅文件目标支持比较两个修订', "Comparing two revisions is supported only for files", "Сравнение двух ревизий доступно только для файлов")); return }
+    setStatus(uiText('读取 r', "Reading r", "Чтение r") + revA + ' ↔ r' + revB + uiText(' 差异…', " diff…", " — сравнение…"))
     void svnDiffPair(sessionId, relPath, revA, revB).then((outcome) => {
-      if (!outcome.ok) { setStatus('读取版本差异失败：' + (outcome.error ?? '未知错误')); return }
+      if (!outcome.ok) { setStatus(uiText('读取版本差异失败：', "Failed to read revision diff: ", "Не удалось прочитать различия ревизий: ") + (outcome.error ?? uiText('未知错误', "Unknown error", "Неизвестная ошибка"))); return }
       const notes = []
-      if (outcome.left === null) notes.push('r' + revA + ' 无此文件')
-      if (outcome.right === null) notes.push('r' + revB + ' 无此文件')
+      if (outcome.left === null) notes.push('r' + revA + uiText(' 无此文件', " does not contain this file", " не содержит этот файл"))
+      if (outcome.right === null) notes.push('r' + revB + uiText(' 无此文件', " does not contain this file", " не содержит этот файл"))
       setSvnDiff({
         path: relPath,
         base: outcome.left,
@@ -4090,7 +4091,7 @@ export function EditorView(props) {
         encodingHint: outcome.encodingHint === true,
         logTarget,
       })
-      setStatus('已打开 r' + revA + ' ↔ r' + revB + ' 差异')
+      setStatus(uiText('已打开 r', "Opened r", "Открыто сравнение r") + revA + ' ↔ r' + revB + uiText(' 差异', " diff", " — различия"))
     })
   }
 
@@ -4104,24 +4105,24 @@ export function EditorView(props) {
    * @param onOpened 差异视图成功打开后触发（更新结果返回用）
    */
   const runSvnDiffWorking = (relPath, revision, logTarget, onOpened) => {
-    if (!relPath) { setStatus('仅文件目标支持与工作副本比较'); return }
-    setStatus('读取 r' + revision + ' ↔ 工作副本 差异…')
+    if (!relPath) { setStatus(uiText('仅文件目标支持与工作副本比较', "Comparing with the working copy is supported only for files", "Сравнение с рабочей копией доступно только для файлов")); return }
+    setStatus(uiText('读取 r', "Reading r", "Чтение r") + revision + uiText(' ↔ 工作副本 差异…', " ↔ working copy diff…", " ↔ рабочая копия — сравнение…"))
     void svnDiffWorking(sessionId, relPath, revision).then((outcome) => {
-      if (!outcome.ok) { setStatus('读取工作副本差异失败：' + (outcome.error ?? '未知错误')); return }
+      if (!outcome.ok) { setStatus(uiText('读取工作副本差异失败：', "Failed to read working copy diff: ", "Не удалось прочитать различия рабочей копии: ") + (outcome.error ?? uiText('未知错误', "Unknown error", "Неизвестная ошибка"))); return }
       setSvnDiff({
         path: relPath,
         base: outcome.left,
         working: outcome.right,
         reason: outcome.reason,
-        message: outcome.left === null ? '该版本尚无此文件（右侧为工作副本内容）' : '',
+        message: outcome.left === null ? uiText('该版本尚无此文件（右侧为工作副本内容）', "This revision has no such file (working copy contents shown on the right)", "В этой ревизии файла ещё нет (справа показана рабочая копия)") : '',
         leftLabel: 'r' + revision,
-        rightLabel: '工作区',
+        rightLabel: uiText('工作区', "Workspace", "Рабочая область"),
         scheme: 'edrv-svn-work-' + revision,
         binary: outcome.binary === true,
         encodingHint: outcome.encodingHint === true,
         logTarget,
       })
-      setStatus('已打开 r' + revision + ' ↔ 工作副本 差异')
+      setStatus(uiText('已打开 r', "Opened r", "Открыто сравнение r") + revision + uiText(' ↔ 工作副本 差异', " ↔ working copy diff", " ↔ рабочая копия — различия"))
       onOpened?.()
     })
   }
@@ -4136,21 +4137,21 @@ export function EditorView(props) {
    * @param title 标题（冲突文件路径）
    */
   const runSvnDiffLocalPair = (left, right, leftLabel, rightLabel, title) => {
-    setStatus('读取冲突副本差异…')
+    setStatus(uiText('读取冲突副本差异…', "Reading conflict copy diff…", "Чтение различий конфликтующих копий…"))
     void svnDiffLocalPair(sessionId, left, right).then((outcome) => {
       if (!outcome.ok) { setStatus(outcome.message); return }
       setSvnDiff({
         path: title,
         base: outcome.leftText ?? null,
         working: outcome.rightText ?? '',
-        message: '解决后执行 svn resolve --accept working（本插件不自动执行）',
+        message: uiText('解决后执行 svn resolve --accept working（本插件不自动执行）', "After resolving, run svn resolve --accept working (not run automatically by this plugin)", "После разрешения конфликта выполните svn resolve --accept working (плагин не выполняет команду автоматически)"),
         leftLabel,
         rightLabel,
         scheme: 'edrv-svn-local',
         binary: outcome.binary === true,
         encodingHint: outcome.encodingHint === true,
       })
-      setStatus('已打开冲突副本对比')
+      setStatus(uiText('已打开冲突副本对比', "Conflict copy comparison opened", "Сравнение конфликтующих копий открыто"))
     })
   }
 
@@ -4191,7 +4192,7 @@ export function EditorView(props) {
 
   /** 加入版本控制（活动文件；未纳入版本控制的文件才有意义，host 侧会再校验）。 */
   const runSvnAdd = (relPath) => {
-    if (!relPath) { setStatus('无活动文件'); return }
+    if (!relPath) { setStatus(uiText('无活动文件', "No active file", "Нет активного файла")); return }
     void svnAdd(sessionId, [relPath]).then((o) => {
       setStatus(o.message)
       refreshSvnChanges(sessionId, scope)
@@ -4200,8 +4201,8 @@ export function EditorView(props) {
 
   /** 还原（活动文件，CLI）：confirm 守卫，避免误触丢弃本地改动。 */
   const runSvnRevertCli = (relPath) => {
-    if (!relPath) { setStatus('无活动文件'); return }
-    if (!window.confirm('确认还原「' + relPath + '」的本地改动？新增（A）文件在磁盘上会保留，仅取消登记。')) return
+    if (!relPath) { setStatus(uiText('无活动文件', "No active file", "Нет активного файла")); return }
+    if (!window.confirm(uiText('确认还原「', "Revert local changes to “", "Восстановить локальные изменения в «") + relPath + uiText('」的本地改动？新增（A）文件在磁盘上会保留，仅取消登记。', "”? Added (A) files stay on disk; only their registration is removed.", "»? Добавленные (A) файлы останутся на диске; отменится только их регистрация."))) return
     void svnRevert(sessionId, [relPath]).then((o) => {
       setStatus(o.message)
       refreshSvnChanges(sessionId, scope)
@@ -4212,7 +4213,7 @@ export function EditorView(props) {
 
   /** TortoiseSVN 动作（Windows）：需要文件/目录目标（编辑区右键无活动文件时提示）。 */
   const runSvnTortoise = (action: SvnAction, relPath) => {
-    if (!relPath) { setStatus('无活动文件'); return }
+    if (!relPath) { setStatus(uiText('无活动文件', "No active file", "Нет активного файла")); return }
     void svnTortoise(sessionId, action, relPath).then((o) => setStatus(o.message))
   }
 
@@ -4237,7 +4238,7 @@ export function EditorView(props) {
    */
   const copyText = (text, okText) => {
     const value = String(text ?? '')
-    if (!value) { setStatus('无可复制内容'); return }
+    if (!value) { setStatus(uiText('无可复制内容', "Nothing to copy", "Нет содержимого для копирования")); return }
     void copyClipText(value, okText + '：' + value, setStatus)
   }
 
@@ -4248,12 +4249,12 @@ export function EditorView(props) {
    * @param path 工作区相对路径
    */
   const revealTabInView = (path) => {
-    if (!isTreeRevealable(path)) { setStatus('该文件不在工作区内，无法在资源管理器中定位'); return }
+    if (!isTreeRevealable(path)) { setStatus(uiText('该文件不在工作区内，无法在资源管理器中定位', "This file is outside the workspace and cannot be revealed in Explorer", "Файл вне рабочей области, его нельзя показать в проводнике")); return }
     setSidebarOn(true)
     setActivePanel('explorer')
     // 面板可能刚展开（FileExplorer 尚未挂载），故用窗口事件而非直接调用
     window.dispatchEvent(new CustomEvent('edrv:reveal-path', { detail: { path } }))
-    setStatus('已在资源管理器中定位：' + baseNameOf(path))
+    setStatus(uiText('已在资源管理器中定位：', "Revealed in Explorer: ", "Показано в проводнике: ") + baseNameOf(path))
   }
 
   /**
@@ -4265,13 +4266,13 @@ export function EditorView(props) {
     const target = tabsRef.current.find((t) => t.path === path)
     if (!target) return
     setTabs((prev) => togglePin(prev, path))
-    setStatus(target.pinned ? '已取消固定：' + baseNameOf(path) : '已固定：' + baseNameOf(path))
+    setStatus(target.pinned ? uiText('已取消固定：', "Unpinned: ", "Откреплено: ") + baseNameOf(path) : uiText('已固定：', "Pinned: ", "Закреплено: ") + baseNameOf(path))
   }
 
   /** 关闭当前活动页签（Ctrl+F4 与菜单动作共用；无页签时提示）。 */
   const closeActiveTab = () => {
     if (planActiveRef.current) { closePlan(planActiveRef.current); return }
-    if (!activeRef.current) { setStatus('无打开的文件'); return }
+    if (!activeRef.current) { setStatus(uiText('无打开的文件', "No open files", "Нет открытых файлов")); return }
     closeTab(activeRef.current)
   }
 
@@ -4320,7 +4321,7 @@ export function EditorView(props) {
     if (!result) return
     const kept = new Set(result.tabs.map((tab) => tab.path))
     const closing = new Set(group.tabs.filter((tab) => !kept.has(tab.path)).map((tab) => tab.path))
-    closeTabs(applyClose(tabsRef.current, closing, activeRef.current), '已关闭编辑组页签')
+    closeTabs(applyClose(tabsRef.current, closing, activeRef.current), uiText('已关闭编辑组页签', "Editor group tabs closed", "Вкладки группы редактора закрыты"))
   }
   const tabMenuActions = (path) => ({
     'add-to-conversation': () => addRefToChat(path),
@@ -4337,8 +4338,8 @@ export function EditorView(props) {
     'close-right': () => closeInGroup(path, 'right'),
     'close-saved': () => closeInGroup(path, 'saved'),
     'close-all': () => closeInGroup(path, 'all'),
-    'copy-path': () => copyText(absoluteOf(path, cwd), '已复制路径'),
-    'copy-relative-path': () => copyText(relativeOf(path, cwd), '已复制相对路径'),
+    'copy-path': () => copyText(absoluteOf(path, cwd), uiText('已复制路径', "Path copied", "Путь скопирован")),
+    'copy-relative-path': () => copyText(relativeOf(path, cwd), uiText('已复制相对路径', "Relative path copied", "Относительный путь скопирован")),
     'reveal-in-os': () => openInExplorer(path),
     'reveal-in-view': () => revealTabInView(path),
     'toggle-pinned': () => toggleTabPin(path),
@@ -4383,16 +4384,16 @@ export function EditorView(props) {
    */
   const insertSnippetAtCursor = (entry) => {
     const ed = editorRef.current
-    if (!ed || !entry) { setStatus('无活动编辑器'); return }
+    if (!ed || !entry) { setStatus(uiText('无活动编辑器', "No active editor", "Нет активного редактора")); return }
     try {
       ed.focus()
       const controller = ed.getContribution?.('snippetController2')
       if (controller?.insert) controller.insert(String(entry.body ?? ''))
       else ed.executeEdits('edrv-snippet', [{ range: ed.getSelection(), text: String(entry.body ?? '') }])
-      setStatus('已插入代码片段：' + (entry.prefix || entry.key))
+      setStatus(uiText('已插入代码片段：', "Snippet inserted: ", "Фрагмент кода вставлен: ") + (entry.prefix || entry.key))
     } catch (error) {
-      setStatus('插入代码片段失败')
-      setError('插入代码片段失败：' + String(error))
+      setStatus(uiText('插入代码片段失败', "Failed to insert snippet", "Не удалось вставить фрагмент кода"))
+      setError(uiText('插入代码片段失败：', "Failed to insert snippet: ", "Не удалось вставить фрагмент кода: ") + String(error))
     }
   }
 
@@ -4456,7 +4457,7 @@ export function EditorView(props) {
     setPlanTabs((prev) => [...prev.filter((item) => item.address !== document.address), document].slice(-32))
     setPlanActive(document.address)
     setError(null)
-    setStatus('计划预览 · 只读')
+    setStatus(uiText('计划预览 · 只读', "Plan preview · Read-only", "Предпросмотр плана · Только чтение"))
   }
   /** @private @author ddj 2026年10月08号 @param address Virtual tab. @param event Optional close click. Removes only in-memory plan content. */
   function closePlan(address, event) {
@@ -4531,7 +4532,7 @@ export function EditorView(props) {
   }
   /** @private @author ddj 2026年09月28号 @param request Claimed target. @returns Only its current load/render error. */
   function receiptError(request) {
-    if (request.plan) return planDocument(request.plan.address, request.plan) ? null : '计划内容或资源地址无效'
+    if (request.plan) return planDocument(request.plan.address, request.plan) ? null : uiText('计划内容或资源地址无效', "Invalid plan content or resource address", "Некорректное содержимое плана или адрес ресурса")
     return receiptErrorFor(request, receiptView(request))
   }
   useOpenReceipt({ sessionId, open: openReceiptFile, ready: receiptReady, error: receiptError })
@@ -4545,7 +4546,7 @@ export function EditorView(props) {
       dapTrace('debug-stopped', detail)
       if (!detail?.file) {
         // 适配器只给了 chunkname 且工作区未定位到源文件：明确告知，不留静默无反应
-        setStatus('已暂停：未定位到源文件')
+        setStatus(uiText('已暂停：未定位到源文件', "Paused: source file not found", "Приостановлено: исходный файл не найден"))
         return
       }
       dapOpenRef.current?.(detail.file, detail.line, 1)
@@ -4555,7 +4556,7 @@ export function EditorView(props) {
       const path = modelPathOf(ed)
       const line = ed?.getPosition?.()?.lineNumber
       if (path && line) dapToggleRef.current?.(path, line)
-      else setStatus('无活动文件，无法切换断点')
+      else setStatus(uiText('无活动文件，无法切换断点', "No active file; cannot toggle breakpoint", "Нет активного файла; нельзя переключить точку останова"))
     }
     const onToggleEvt = () => onToggle()
     const onStart = () => dapStore.startOrContinue()
@@ -4588,17 +4589,17 @@ export function EditorView(props) {
     // 图片/PDF 文件跳过文本读探测（二进制会被 host 拒绝），直接进 tab 由专用预览接管
     if (isExcelPath(p) || isImagePath(p) || isPdfPath(p)) {
       openFile(p, false)
-      setOpenInput(false); setPathDraft(''); setStatus('已打开'); setError(null)
+      setOpenInput(false); setPathDraft(''); setStatus(uiText('已打开', "Opened", "Открыто")); setError(null)
       return
     }
-    setStatus('打开中…')
+    setStatus(uiText('打开中…', "Opening…", "Открытие…"))
     return rpc('edrv.read', { sessionId, path: p }).then((res) => {
       // Only the explicit size-limit response may bypass the probe; other failures must remain visible.
       if (res && (res.ok || res.code === 'file-too-large')) {
         openFile(p, false)
-        setOpenInput(false); setPathDraft(''); setStatus('已打开'); setError(null)
-      } else { setStatus('打开失败'); setError(res?.error ? String(res.error) : '打开失败') }
-    }).catch((e) => { setStatus('打开失败'); setError('打开异常:' + String(e)) })
+        setOpenInput(false); setPathDraft(''); setStatus(uiText('已打开', "Opened", "Открыто")); setError(null)
+      } else { setStatus(uiText('打开失败', "Open failed", "Ошибка открытия")); setError(res?.error ? String(res.error) : uiText('打开失败', "Open failed", "Ошибка открытия")) }
+    }).catch((e) => { setStatus(uiText('打开失败', "Open failed", "Ошибка открытия")); setError(uiText('打开异常:', "Open error: ", "Ошибка открытия: ") + String(e)) })
   }
 
   // --region Workbench drag and independent views
@@ -4762,18 +4763,18 @@ export function EditorView(props) {
     const focus = () => { const owner = ownerOf(benchRef.current, path); if (owner) selectGroup(owner.id, path) }
     host.addEventListener('pointerdown', focus)
     if (useOffice(path)) {
-      host.textContent = 'Univer · 点击此编辑组继续查看与审阅'
+      host.textContent = uiText('Univer · 点击此编辑组继续查看与审阅', "Univer · Click this editor group to continue viewing and reviewing", "Univer · Нажмите эту группу редактора для просмотра и проверки")
       return () => host.removeEventListener('pointerdown', focus)
     }
     if (isExcelPath(path)) {
-      host.textContent = 'Excel · 点击此编辑组继续查看和编辑（同一文件共享编辑状态）'
+      host.textContent = uiText('Excel · 点击此编辑组继续查看和编辑（同一文件共享编辑状态）', "Excel · Click this editor group to view and edit (edits are shared for the same file)", "Excel · Нажмите эту группу редактора для просмотра и правки (один файл имеет общее состояние изменений)")
       return () => host.removeEventListener('pointerdown', focus)
     }
     if (isPdfPath(path) && pdfNodes.current.has(path)) {
       host.appendChild(pdfNode(path))
       return () => host.removeEventListener('pointerdown', focus)
     }
-    host.textContent = '加载中…'
+    host.textContent = uiText('加载中…', "Loading…", "Загрузка…")
     const binary = isImagePath(path) || isPdfPath(path)
     const cached = modelsRef.current.get(path)
     const request = binary ? readBinaryPreview(rpc, { sessionId, path }) : cached ? Promise.resolve({ ok: true, content: cached.getValue() }) : rpc('edrv.read', { sessionId, path })
@@ -4781,10 +4782,10 @@ export function EditorView(props) {
       if (disposed) return
       host.textContent = ''
       if (!result?.ok) {
-        host.textContent = result?.error || '文件加载失败'
+        host.textContent = result?.error || uiText('文件加载失败', "File loading failed", "Не удалось загрузить файл")
         if (result?.code === 'file-too-large' && !binary) {
           const button = document.createElement('button')
-          button.textContent = '只读分段查看'
+          button.textContent = uiText('只读分段查看', "Read-only paged view", "Постраничный просмотр только для чтения")
           /** @author ddj 2026年10月22号 @param event Pointer event. @description Do not focus and unmount the passive group before click. */
           button.onpointerdown = (event) => event.stopPropagation()
           /** @author ddj 2026年10月22号 @description Keep partial text out of passive models, autosave and editing commands. */
@@ -4803,12 +4804,12 @@ export function EditorView(props) {
       }
       if (binary) {
         const image = document.createElement(isPdfPath(path) ? 'div' : 'img')
-        if (isPdfPath(path)) image.textContent = 'PDF · 点击此编辑组继续查看和编辑'
+        if (isPdfPath(path)) image.textContent = uiText('PDF · 点击此编辑组继续查看和编辑', "PDF · Click this editor group to continue viewing and editing", "PDF · Нажмите эту группу редактора для просмотра и правки")
         else { image.src = dataUrlOf(result.via === 'binary' ? bytesToBase64(result.bytes) : result.content, result.mime); image.alt = path; image.style.maxWidth = '100%' }
         host.appendChild(image)
         return
       }
-      if (!window.monaco) { host.textContent = '编辑器正在加载'; return }
+      if (!window.monaco) { host.textContent = uiText('编辑器正在加载', "Editor is loading", "Редактор загружается"); return }
       const model = cached || getModel(path, result.content)
       if (result.version) { revRef.current[path] = result.version; recordBaseline(scope, path, result.version) }
       const editor = window.monaco.editor.create(host, { model, automaticLayout: true, minimap: { enabled: false }, scrollBeyondLastLine: false, glyphMargin: true,
@@ -4824,7 +4825,7 @@ export function EditorView(props) {
       subscription = editor.onDidChangeModelContent(() => { if (!programmaticRef.current) store.edit(path) })
       observer = new ResizeObserver(() => editor.layout())
       observer.observe(host)
-    }).catch((failure) => { if (!disposed) host.textContent = '文件加载失败：' + String(failure) })
+    }).catch((failure) => { if (!disposed) host.textContent = uiText('文件加载失败：', "File loading failed: ", "Не удалось загрузить файл: ") + String(failure) })
     return () => { disposed = true; pageRoot?.unmount(); host.removeEventListener('pointerdown', focus); unbindGutter?.(); observer?.disconnect(); subscription?.dispose(); keeper?.dispose(); paneEditors.current.delete(path) }
   }
   const passiveOps = React.useRef(mountPassive)
@@ -4867,52 +4868,52 @@ export function EditorView(props) {
   const planTabExtras = planTabs.length
     ? planTabs.map((plan) => React.createElement('div', {
       key: plan.address, className: 'edrv-tab edrv-tab-plan' + (plan.address === planActive ? ' edrv-tab-active' : ''),
-      title: plan.title + '（计划预览 · 只读）', onClick: () => openPlanDoc(plan),
+      title: plan.title + uiText('（计划预览 · 只读）', " (Plan preview · Read-only)", " (Предпросмотр плана · Только чтение)"), onClick: () => openPlanDoc(plan),
     }, React.createElement('span', { className: 'edrv-group-tab-name' }, plan.title),
-    React.createElement('span', { className: 'edrv-tab-x', title: '关闭', onClick: (event) => closePlan(plan.address, event) }, '×')))
+    React.createElement('span', { className: 'edrv-tab-x', title: uiText('关闭', "Close", "Закрыть"), onClick: (event) => closePlan(plan.address, event) }, '×')))
     : null
   const openControl = openInput
-    ? React.createElement('input', { className: 'edrv-path-input', autoFocus: true, placeholder: '输入工作区相对/绝对路径，回车打开', value: pathDraft, onChange: (e) => setPathDraft(e.target.value), onKeyDown: (e) => { if (e.key === 'Enter') openPath(); if (e.key === 'Escape') setOpenInput(false) } })
-    : React.createElement('button', { className: 'edrv-tab-add', title: '打开文件（输入路径）', onClick: () => setOpenInput(true) }, '+')
+    ? React.createElement('input', { className: 'edrv-path-input', autoFocus: true, placeholder: uiText('输入工作区相对/绝对路径，回车打开', "Enter a workspace-relative or absolute path, then press Enter", "Введите путь относительно рабочей области или абсолютный путь и нажмите Enter"), value: pathDraft, onChange: (e) => setPathDraft(e.target.value), onKeyDown: (e) => { if (e.key === 'Enter') openPath(); if (e.key === 'Escape') setOpenInput(false) } })
+    : React.createElement('button', { className: 'edrv-tab-add', title: uiText('打开文件（输入路径）', "Open file (enter path)", "Открыть файл (ввести путь)"), onClick: () => setOpenInput(true) }, '+')
 
   const activePlan = planTabs.find((plan) => plan.address === planActive)
   const pathBar = activePlan ? React.createElement('div', { className: 'edrv-pathbar', title: activePlan.address },
     React.createElement('span', { className: 'edrv-pb-name' }, activePlan.title),
-    React.createElement('span', { className: 'edrv-pb-meta' }, '计划预览 · 只读 · 审批请使用对话中的官方控件'))
+    React.createElement('span', { className: 'edrv-pb-meta' }, uiText('计划预览 · 只读 · 审批请使用对话中的官方控件', "Plan preview · Read-only · Use the built-in conversation controls for approval", "Предпросмотр плана · Только чтение · Для утверждения используйте встроенные элементы диалога")))
     : React.createElement('div', { className: 'edrv-pathbar', title: active || '' },
-    React.createElement('span', { className: 'edrv-pb-name' }, active ? String(active).split(/[\\/]/).pop() : '未打开文件'),
-    React.createElement('span', { className: 'edrv-pb-full' }, active || '使用右上搜索框 (' + (chordOf('edrv.quickOpen') ?? 'Ctrl+P') + ') 打开文件'),
+    React.createElement('span', { className: 'edrv-pb-name' }, active ? String(active).split(/[\\/]/).pop() : uiText('未打开文件', "No file open", "Файл не открыт")),
+    React.createElement('span', { className: 'edrv-pb-full' }, active || uiText('使用右上搜索框 (', "Use the top-right search box (", "Используйте поле поиска справа вверху (") + (chordOf('edrv.quickOpen') ?? 'Ctrl+P') + uiText(') 打开文件', ") to open a file", "), чтобы открыть файл")),
     (recentUpdate && !svnUpdateDialog && sameUpdateOwner(recentUpdate, sessionId, scope)
       ? React.createElement('button', {
-          className: 'edrv-pb-update', type: 'button', title: '查看最近 SVN 更新结果（不重新更新）',
+          className: 'edrv-pb-update', type: 'button', title: uiText('查看最近 SVN 更新结果（不重新更新）', "View the last SVN update result (without running another update)", "Показать результат последнего обновления SVN (без повторного обновления)"),
           onClick: () => setSvnUpdateDialog(recentUpdate),
-        }, React.createElement(IconRefreshOutline16, { size: 14 }), '最近更新')
+        }, React.createElement(IconRefreshOutline16, { size: 14 }), uiText('最近更新', "Last update", "Последнее обновление"))
       : null),
     // Markdown 预览/源码切换（需求 4）：仅 .md 文件出现；命令栏与 Ctrl+Shift+V 为同一动作
     (isMdActive ? React.createElement('button', {
       className: 'edrv-pill edrv-pill-ghost edrv-pb-mdbtn',
-      title: (mdPreviewing ? '切回源码编辑' : '预览 Markdown') + '（' + (chordOf('edrv.toggleMarkdownPreview') ?? '未绑定') + '）',
+      title: (mdPreviewing ? uiText('切回源码编辑', "Switch to source editing", "Перейти к исходному тексту") : uiText('预览 Markdown', "Preview Markdown", "Предпросмотр Markdown")) + '（' + (chordOf('edrv.toggleMarkdownPreview') ?? uiText('未绑定', "Unbound", "Не назначено")) + '）',
       onClick: () => toggleMdPreview(active),
-    }, mdPreviewing ? '源码' : '预览') : null),
-    (mdPreviewing ? React.createElement('span', { className: 'edrv-pb-meta' }, '预览') : null),
+    }, mdPreviewing ? uiText('源码', "Source", "Исходный текст") : uiText('预览', "Preview", "Предпросмотр")) : null),
+    (mdPreviewing ? React.createElement('span', { className: 'edrv-pb-meta' }, uiText('预览', "Preview", "Предпросмотр")) : null),
     // HTML 网页预览：交给官方 HTML 渲染器；按钮在渲染器不可用时禁用并说明原因。
     (isHtmlActive ? React.createElement('button', {
       className: 'edrv-pill edrv-pill-ghost edrv-pb-mdbtn',
-      title: (hasOfficialHtmlPreview() ? '用官方渲染器预览网页' : '当前 DSH 不支持 HTML 渲染预览') + '（' + (chordOf('edrv.previewHtml') ?? '未绑定') + '）',
+      title: (hasOfficialHtmlPreview() ? uiText('用官方渲染器预览网页', "Preview webpage with the built-in renderer", "Предпросмотр страницы встроенным средством") : uiText('当前 DSH 不支持 HTML 渲染预览', "This DSH version does not support HTML preview", "Эта версия DSH не поддерживает предпросмотр HTML")) + '（' + (chordOf('edrv.previewHtml') ?? uiText('未绑定', "Unbound", "Не назначено")) + '）',
       disabled: !hasOfficialHtmlPreview(),
       onClick: () => previewHtmlOf(active),
-    }, '预览网页') : null),    (active && !isImageActive && langOf(active) ? React.createElement('span', { className: 'edrv-pb-meta' }, langOf(active)) : null),
+    }, uiText('预览网页', "Preview webpage", "Предпросмотр страницы")) : null),    (active && !isImageActive && langOf(active) ? React.createElement('span', { className: 'edrv-pb-meta' }, langOf(active)) : null),
     (isImageActive && imgSize ? React.createElement('span', { className: 'edrv-pb-meta' }, imgSize.w + '×' + imgSize.h) : null),
     (cursor ? React.createElement('span', { className: 'edrv-pb-meta' }, cursor) : null),
     (status ? React.createElement('span', { className: 'edrv-pb-meta edrv-pb-status' }, status) : null))
 
   const lspLanguage = active ? langOf(active) : ''
   const lspServer = lspServers.find((item) => item.languageId === lspLanguage)
-  const lspPhaseText = { idle: '未启动', starting: '启动中', ready: '已就绪', indexing: '解析中', unavailable: '不可用', stopped: '已停止' }
-  const lspSourceText = { extension: '扩展', discover: '自动发现', manual: '手动配置', none: '未配置' }
+  const lspPhaseText = { idle: uiText('未启动', "Not started", "Не запущен"), starting: uiText('启动中', "Starting", "Запуск"), ready: uiText('已就绪', "Ready", "Готов"), indexing: uiText('解析中', "Indexing", "Индексация"), unavailable: uiText('不可用', "Unavailable", "Недоступен"), stopped: uiText('已停止', "Stopped", "Остановлен") }
+  const lspSourceText = { extension: uiText('扩展', "Extension", "Расширение"), discover: uiText('自动发现', "Auto-discovered", "Автообнаружение"), manual: uiText('手动配置', "Manual configuration", "Ручная настройка"), none: uiText('未配置', "Not configured", "Не настроено") }
   const lspLabel = lspServer
     ? 'LSP ' + lspLanguage + ' · ' + (lspPhaseText[lspServer.phase] ?? lspServer.phase) + ' · ' + (lspSourceText[lspServer.source] ?? lspServer.source)
-    : 'LSP ' + lspLanguage + ' · 未启动'
+    : 'LSP ' + lspLanguage + uiText(' · 未启动', " · Not started", " · Не запущен")
   const lspProgress = typeof lspServer?.progress === 'number' ? Math.round(lspServer.progress) : null
   // 状态段行内样式：单行状态栏内的一段；LSP 段弹性占满空闲宽度，把后续段推到行尾
   const lspSegStyle = { display: 'inline-flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: '1 1 auto' }
@@ -4930,14 +4931,14 @@ export function EditorView(props) {
   const aiDotCls = aiState === 'busy' ? 'busy' : aiState === 'ok' ? 'ready' : aiState === 'error' ? 'idle' : 'ready'
   const aiMsText = aiStatus.detail && aiStatus.detail.ms != null ? (aiStatus.detail.ms / 1000).toFixed(1) + 's' : ''
   const aiNote = aiStatus.detail && aiStatus.detail.note ? String(aiStatus.detail.note) : ''
-  const aiLabel = !aiEnabled ? 'AI 补全 · 关'
-    : aiState === 'busy' ? 'AI 补全请求中…'
-    : aiState === 'ok' ? 'AI 补全完成' + (aiMsText ? ' · ' + aiMsText : '')
-    : aiState === 'error' ? 'AI 补全失败 · ' + aiNote.slice(0, 48)
-    : 'AI 补全就绪'
+  const aiLabel = !aiEnabled ? uiText('AI 补全 · 关', "AI completion · Off", "AI-дополнение · Выключено")
+    : aiState === 'busy' ? uiText('AI 补全请求中…', "Requesting AI completion…", "Запрос AI-дополнения…")
+    : aiState === 'ok' ? uiText('AI 补全完成', "AI completion finished", "AI-дополнение завершено") + (aiMsText ? ' · ' + aiMsText : '')
+    : aiState === 'error' ? uiText('AI 补全失败 · ', "AI completion failed · ", "Ошибка AI-дополнения · ") + aiNote.slice(0, 48)
+    : uiText('AI 补全就绪', "AI completion ready", "AI-дополнение готово")
   const aiSegStyle = { display: 'inline-flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: '0 0 auto' }
   const aiSeg = (active && aiEnabled !== null)
-    ? React.createElement('span', { className: 'edrv-status-seg', style: aiSegStyle, title: aiState === 'error' && aiNote ? aiNote : 'AI 自动补全（设置页「AI 补全」可配置）' },
+    ? React.createElement('span', { className: 'edrv-status-seg', style: aiSegStyle, title: aiState === 'error' && aiNote ? aiNote : uiText('AI 自动补全（设置页「AI 补全」可配置）', "AI completion (configure under AI Completion in settings)", "AI-дополнение (настраивается в разделе «AI-дополнение»)") },
         React.createElement('span', { className: 'edrv-lsp-status-dot ' + (!aiEnabled ? 'idle' : aiDotCls) }),
         React.createElement('span', { className: 'edrv-sp-lsp' }, aiLabel))
     : null
@@ -4947,9 +4948,9 @@ export function EditorView(props) {
     ? React.createElement('span', {
         className: 'edrv-status-seg',
         style: { display: 'inline-flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: '0 0 auto', cursor: 'pointer' },
-        title: '磁盘内容已被外部修改：重新加载 = 取磁盘版本；保留本地 = 继续编辑（保存时会被版本守卫拒绝）',
+        title: uiText('磁盘内容已被外部修改：重新加载 = 取磁盘版本；保留本地 = 继续编辑（保存时会被版本守卫拒绝）', "Disk contents changed externally: Reload loads the disk version; Keep local continues editing (saving is rejected by version protection)", "Содержимое диска изменено извне: «Перезагрузить» загружает версию с диска; «Оставить локальное» продолжает правку (защита версии отклонит сохранение)"),
         onClick: () => reloadFile(),
-      }, React.createElement('span', { className: 'edrv-sp-lsp' }, diskFlag.kind === 'deleted' ? '⚠ 外部已删除' : '⚠ 外部已修改'))
+      }, React.createElement('span', { className: 'edrv-sp-lsp' }, diskFlag.kind === 'deleted' ? uiText('⚠ 外部已删除', "⚠ Deleted externally", "⚠ Удалён извне") : uiText('⚠ 外部已修改', "⚠ Changed externally", "⚠ Изменён извне")))
     : null
 
   // 底部状态栏：单行多段——LSP 段居左（弹性吸收空闲宽度），外部改动段与 AI 段固定右对齐
@@ -4965,24 +4966,24 @@ export function EditorView(props) {
   const rowTools = React.createElement('div', { className: 'edrv-tabs-tools' },
     openControl,
     (sum.totalFiles > 0
-      ? React.createElement('button', { className: 'edrv-diffchip', title: '打开差异总览/归档', onClick: () => setLauncherOpen((o) => !o) }, '⚠ 差异 ' + sum.totalFiles + ' 文件')
+      ? React.createElement('button', { className: 'edrv-diffchip', title: uiText('打开差异总览/归档', "Open diff overview/archive", "Открыть обзор/архив различий"), onClick: () => setLauncherOpen((o) => !o) }, uiText('⚠ 差异 ', "⚠ Changes: ", "⚠ Изменения: ") + sum.totalFiles + uiText(' 文件', " files", " файлов"))
       : null),
     React.createElement('button', {
       className: 'edrv-chip-btn',
-      title: '后退（' + (chordOf('edrv.navigateBack') ?? '未绑定') + '）' + (navBackTarget ? ' · ' + navNameOf(navBackTarget) : ''),
+      title: uiText('后退（', "Back (", "Назад (") + (chordOf('edrv.navigateBack') ?? uiText('未绑定', "Unbound", "Не назначено")) + '）' + (navBackTarget ? ' · ' + navNameOf(navBackTarget) : ''),
       disabled: !navRef.current.canBack(),
-      'aria-label': '后退',
+      'aria-label': uiText('后退', "Back", "Назад"),
       onClick: navBack,
     }, '←'),
     React.createElement('button', {
       className: 'edrv-chip-btn',
-      title: '前进（' + (chordOf('edrv.navigateForward') ?? '未绑定') + '）' + (navForwardTarget ? ' · ' + navNameOf(navForwardTarget) : ''),
+      title: uiText('前进（', "Forward (", "Вперёд (") + (chordOf('edrv.navigateForward') ?? uiText('未绑定', "Unbound", "Не назначено")) + '）' + (navForwardTarget ? ' · ' + navNameOf(navForwardTarget) : ''),
       disabled: !navRef.current.canForward(),
-      'aria-label': '前进',
+      'aria-label': uiText('前进', "Forward", "Вперёд"),
       onClick: navForward,
     }, '→'),
-    React.createElement('button', { className: 'edrv-chip-btn' + (sidebarOn ? ' edrv-chip-on' : ''), title: '切换面板区 (' + (chordOf('edrv.toggleSidebar') ?? 'Ctrl+B') + ')，图标列常显', onClick: () => setSidebarOn((v) => !v) }, '☰'),
-    React.createElement('button', { className: 'edrv-chip-btn', title: '刷新', onClick: reloadFile }, '⟳'),
+    React.createElement('button', { className: 'edrv-chip-btn' + (sidebarOn ? ' edrv-chip-on' : ''), title: uiText('切换面板区 (', "Toggle panels (", "Переключить панели (") + (chordOf('edrv.toggleSidebar') ?? 'Ctrl+B') + uiText(')，图标列常显', "); icon bar stays visible", "); панель значков остаётся видимой"), onClick: () => setSidebarOn((v) => !v) }, '☰'),
+    React.createElement('button', { className: 'edrv-chip-btn', title: uiText('刷新', "Refresh", "Обновить"), onClick: reloadFile }, '⟳'),
     React.createElement(QuickOpen, { sessionId, onOpen: (p) => openFile(p, false) }))
 
   /**
@@ -4996,8 +4997,8 @@ export function EditorView(props) {
     if (!flag) return null
     const deleted = flag.kind === 'deleted'
     const text = deleted
-      ? '该文件已被外部删除（缓冲内容保留，保存会失败）'
-      : '磁盘内容已被外部修改（当前有未保存编辑，未覆盖）'
+      ? uiText('该文件已被外部删除（缓冲内容保留，保存会失败）', "This file was deleted externally (buffer retained; saving will fail)", "Файл удалён извне (буфер сохранён; сохранение завершится ошибкой)")
+      : uiText('磁盘内容已被外部修改（当前有未保存编辑，未覆盖）', "Disk contents changed externally (unsaved edits retained; not overwritten)", "Содержимое диска изменено извне (несохранённые изменения сохранены; не перезаписаны)")
     return React.createElement('div', {
       className: 'edrv-diskbar',
       style: {
@@ -5010,17 +5011,17 @@ export function EditorView(props) {
       React.createElement('span', { title: flag.path }, '⚠ ' + text),
       React.createElement('span', { style: { flex: 1 } }),
       React.createElement('button', {
-        className: 'edrv-pill edrv-pill-keep', title: '放弃缓冲内容，重新加载磁盘版本',
+        className: 'edrv-pill edrv-pill-keep', title: uiText('放弃缓冲内容，重新加载磁盘版本', "Discard buffer contents and reload the disk version", "Отбросить содержимое буфера и загрузить версию с диска"),
         onClick: () => reloadFile(),
-      }, '重新加载'),
+      }, uiText('重新加载', "Reload", "Перезагрузить")),
       (deleted ? null : React.createElement('button', {
-        className: 'edrv-pill edrv-pill-undo', title: '用编辑器内容覆盖磁盘（放弃磁盘上的外部修改）',
+        className: 'edrv-pill edrv-pill-undo', title: uiText('用编辑器内容覆盖磁盘（放弃磁盘上的外部修改）', "Overwrite disk with editor contents (discard external changes on disk)", "Перезаписать файл содержимым редактора (отбросить внешние изменения на диске)"),
         onClick: overwriteDisk,
-      }, '覆盖磁盘')),
+      }, uiText('覆盖磁盘', "Overwrite disk", "Перезаписать на диске"))),
       (deleted ? null : React.createElement('button', {
-        className: 'edrv-pill edrv-pill-ghost', title: '保留编辑器内容，不取用磁盘版本',
+        className: 'edrv-pill edrv-pill-ghost', title: uiText('保留编辑器内容，不取用磁盘版本', "Keep editor contents without loading the disk version", "Оставить содержимое редактора, не загружая версию с диска"),
         onClick: keepLocal,
-      }, '保留本地')))
+      }, uiText('保留本地', "Keep local", "Оставить локальное"))))
   }
 
   // G9：记录路径为绝对、active 为页签规范形态（相对），必须经 sameFile 归一比较，
@@ -5040,13 +5041,13 @@ export function EditorView(props) {
     React.createElement('div', {
       className: 'edrv-progress',
       role: 'progressbar',
-      'aria-label': '编辑器加载进度',
+      'aria-label': uiText('编辑器加载进度', "Editor loading progress", "Ход загрузки редактора"),
       'aria-valuemin': 0,
       'aria-valuemax': 100,
       'aria-valuenow': progress,
     }, React.createElement('div', { className: 'edrv-progress-value', style: { width: Math.max(0, Math.min(100, progress)) + '%' } })),
     React.createElement('div', { className: 'edrv-loading-percent' }, Math.round(progress) + '%'),
-    retry ? React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: retry }, '重试') : null)
+    retry ? React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: retry }, uiText('重试', "Retry", "Повторить")) : null)
 
   /**
    * 渲染缺失文件终态面板：说明 + 重试 + 关闭页签（不显示进度条，避免卡在 0%）。
@@ -5061,11 +5062,11 @@ export function EditorView(props) {
     React.createElement('div', { style: { fontSize: 12, maxWidth: 460, lineHeight: 1.6 } }, gone.message),
     gone.official
       ? React.createElement('div', { style: { fontSize: 12, maxWidth: 460, lineHeight: 1.6, opacity: 0.8 } },
-        '待审改动在差异栏：Keep 保留删除结果并结案；Undo 需要该文件的原始内容，磁盘已删除时不可用。')
+        uiText('待审改动在差异栏：Keep 保留删除结果并结案；Undo 需要该文件的原始内容，磁盘已删除时不可用。', "Pending changes are in the diff bar: Keep preserves deletion and resolves the record; Undo requires original file contents and is unavailable when deleted from disk.", "Ожидающие изменения находятся на панели различий: Keep сохраняет удаление и завершает запись; Undo требует исходное содержимое файла и недоступен после удаления с диска."))
       : null,
     React.createElement('div', { style: { display: 'flex', gap: 8 } },
-      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: retry }, '重试'),
-      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: close }, '关闭标签页')))
+      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: retry }, uiText('重试', "Retry", "Повторить")),
+      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: close }, uiText('关闭标签页', "Close tab", "Закрыть вкладку"))))
 
   /**
    * 计划页的 Markdown 渲染（HTML 计划页缺失/未声明时的回退）。
@@ -5099,21 +5100,21 @@ export function EditorView(props) {
         : planMarkdownBody(activePlan))
   } else if (pageChanged === pageIdentity && largeCandidate === pageIdentity) {
     body = React.createElement('div', { className: 'edrv-empty', role: 'status' },
-      React.createElement('div', null, '文件已变化，请重新读取'),
-      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: openTextPages }, '重新读取首段'))
+      React.createElement('div', null, uiText('文件已变化，请重新读取', "File changed. Read it again.", "Файл изменился. Прочитайте его заново.")),
+      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: openTextPages }, uiText('重新读取首段', "Reread first page", "Перечитать первую страницу")))
   } else if (paging) {
     body = React.createElement(LargeTextView, { key: pageIdentity, sessionId, path: active, loadPage: loadTextPage })
   } else if (!monaco && !monacoErr) {
     body = loadingBody(loadStage.message, loadStage.progress)
   } else if (monacoErr) {
     body = React.createElement('div', { className: 'edrv-empty' },
-      React.createElement('div', null, 'Monaco 编辑器加载失败：' + String(monacoErr)),
+      React.createElement('div', null, uiText('Monaco 编辑器加载失败：', "Monaco editor failed to load: ", "Не удалось загрузить редактор Monaco: ") + String(monacoErr)),
       React.createElement('div', { style: { fontSize: 11 } }, monacoHint(String(monacoErr))),
-      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: () => { setMonacoErr(null); setLoadStage({ progress: 0, message: '准备重试 Monaco…' }) } }, '重试'))
+      React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: () => { setMonacoErr(null); setLoadStage({ progress: 0, message: uiText('准备重试 Monaco…', "Preparing to retry Monaco…", "Подготовка к повторной загрузке Monaco…") }) } }, uiText('重试', "Retry", "Повторить")))
   } else if (!active) {
     body = React.createElement('div', { className: 'edrv-empty' },
-      React.createElement('div', null, '暂无打开的文件'),
-      React.createElement('div', { style: { fontSize: 12 } }, '使用右上搜索框 (' + (chordOf('edrv.quickOpen') ?? 'Ctrl+P') + ') 打开工作区文件；' + (chordOf('edrv.showCommands') ?? 'Ctrl+Shift+P') + ' 打开命令栏；agent 修改文件后顶部会出现差异角标'))
+      React.createElement('div', null, uiText('暂无打开的文件', "No files open", "Нет открытых файлов")),
+      React.createElement('div', { style: { fontSize: 12 } }, uiText('使用右上搜索框 (', "Use the top-right search box (", "Используйте поле поиска справа вверху (") + (chordOf('edrv.quickOpen') ?? 'Ctrl+P') + uiText(') 打开工作区文件；', ") to open workspace files; ", "), чтобы открыть файлы рабочей области; ") + (chordOf('edrv.showCommands') ?? 'Ctrl+Shift+P') + uiText(' 打开命令栏；agent 修改文件后顶部会出现差异角标', " opens the command palette; a diff badge appears at the top after the agent changes files", " открывает палитру команд; после изменения файлов агентом сверху появляется значок различий")))
   } else if (goneNow) {
     // 终态：文件已在磁盘删除且没有可用预览。不再显示 0% 进度条，也不无限重试。
     body = goneBody(goneNow, () => {
@@ -5129,9 +5130,9 @@ export function EditorView(props) {
         setLoadError(null)
         setContent(null)
         setContentPath(null)
-        setLoadStage({ progress: 10, message: '重新读取文件…' })
+        setLoadStage({ progress: 10, message: uiText('重新读取文件…', "Rereading file…", "Повторное чтение файла…") })
         loadContent(active, sessionId)
-      } }, '重试'))
+      } }, uiText('重试', "Retry", "Повторить")))
   } else if (content === null && compatNow && compatView) {
     body = React.createElement(CompatTextView, {
       key: 'compat-view-' + compatNow.path,
@@ -5144,7 +5145,7 @@ export function EditorView(props) {
       onSaved: () => {
         setCompat(null)
         setCompatView(false)
-        setStatus('已保存为 UTF-8 · 备份 ' + compatNow.path + '.utf8bak')
+        setStatus(uiText('已保存为 UTF-8 · 备份 ', "Saved as UTF-8 · Backup ", "Сохранено в UTF-8 · Резервная копия ") + compatNow.path + '.utf8bak')
         loadContent(compatNow.path, sessionId, true)
       },
       onRepair: () => { setCompatView(false); applyCompatFix(compatNow) },
@@ -5159,13 +5160,13 @@ export function EditorView(props) {
       onCancel: () => cancelCompat(compatNow),
     })
   } else if (content === null && loadError) {
-    body = React.createElement(React.Fragment, null, loadingBody('文件加载失败：' + loadError, 0, () => {
+    body = React.createElement(React.Fragment, null, loadingBody(uiText('文件加载失败：', "File loading failed: ", "Не удалось загрузить файл: ") + loadError, 0, () => {
       setLoadError(null)
       setContent(null)
       setContentPath(null)
-      setLoadStage({ progress: 10, message: '重新读取文件…' })
+      setLoadStage({ progress: 10, message: uiText('重新读取文件…', "Rereading file…", "Повторное чтение файла…") })
       loadContent(active, sessionId)
-    }), largeCandidate === pageIdentity && React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: openTextPages }, '只读分段查看'))
+    }), largeCandidate === pageIdentity && React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', onClick: openTextPages }, uiText('只读分段查看', "Read-only paged view", "Постраничный просмотр только для чтения")))
   } else if (isUniverActive) {
     const cachedDocument = [...univer.documents.values()].find((document) => sameFile(document.file, active))
     body = React.createElement(UniverHost, { key: sessionId + active, path: active, sessionId,
@@ -5173,24 +5174,24 @@ export function EditorView(props) {
       sourceChanged: cachedDocument?.sourceChanged,
       onOpen: (path) => openFile(path, false),
       onFallback: () => {
-        if (isUniverPath(active)) { setStatus('Univer 容器不能作为文本打开'); return }
+        if (isUniverPath(active)) { setStatus(uiText('Univer 容器不能作为文本打开', "Univer containers cannot be opened as text", "Контейнеры Univer нельзя открыть как текст")); return }
         flushSave()
         if (isExcelPath(active)) { setOfficeFallback((previous) => new Set([...previous, active])); return }
         if (props.fileOpeners) openWithDialog(props.fileOpeners, { sessionId, cwd: cwd ?? undefined }, active)
-        else setStatus('没有可用的其他打开方式')
+        else setStatus(uiText('没有可用的其他打开方式', "No alternative openers available", "Другие способы открытия недоступны"))
       } })
   } else if (isExcelActive && contentPath === active && excelState(excelScope, active).document) {
     body = React.createElement(ExcelHost, { key: excelScope + active, state: excelState(excelScope, active), path: active, cwd })
   } else if (isExcelActive) {
-    body = loadingBody(loadStage.message || '读取 Excel…', loadStage.progress)
+    body = loadingBody(loadStage.message || uiText('读取 Excel…', "Reading Excel…", "Чтение Excel…"), loadStage.progress)
   } else if (isImageActive && imageSrc) {
     body = imagePanel()
   } else if (isImageActive) {
-    body = loadingBody(loadStage.message || '读取图片…', loadStage.progress)
+    body = loadingBody(loadStage.message || uiText('读取图片…', "Reading image…", "Чтение изображения…"), loadStage.progress)
   } else if (isPdfActive && pdfBytes) {
     body = React.createElement('div', { className: 'edrv-pdf-host', ref: ensurePdfHost, key: active + ':' + (receiptLoad?.sequence ?? 0) })
   } else if (isPdfActive) {
-    body = loadingBody(loadStage.message || '读取 PDF…', loadStage.progress)
+    body = loadingBody(loadStage.message || uiText('读取 PDF…', "Reading PDF…", "Чтение PDF…"), loadStage.progress)
   } else if (mdPreviewing && contentReady) {
     // Markdown 预览（需求 4）：复用已加载的文本内容渲染，不额外请求；编辑仍在源码态完成
     body = React.createElement(MarkdownPanel, {
@@ -5201,9 +5202,9 @@ export function EditorView(props) {
       onOpenFile: (path, line) => openFileAt(path, line ?? 1),
     })
   } else if (mdPreviewing) {
-    body = loadingBody(loadStage.message || '读取 Markdown…', loadStage.progress)
+    body = loadingBody(loadStage.message || uiText('读取 Markdown…', "Reading Markdown…", "Чтение Markdown…"), loadStage.progress)
   } else if (content === null) {
-    body = loadingBody(loadStage.message || '读取文件内容…', loadStage.progress)
+    body = loadingBody(loadStage.message || uiText('读取文件内容…', "Reading file contents…", "Чтение содержимого файла…"), loadStage.progress)
   } else {
     body = React.createElement('div', { className: 'edrv-monaco-host' },
       React.createElement('div', { ref: ensureEditor }))
@@ -5246,7 +5247,7 @@ export function EditorView(props) {
   // 会话未在当前端激活属于环境提示，不是需要用户处置的错误：降级为中性说明，避免整栏红字。
   const sessionDown = isSessionMissingError(rawReviewError)
   const reviewErrorTone = sessionDown ? 'info' : 'error'
-  const reviewErrorText = !rawReviewError ? undefined : sessionDown ? SESSION_DOWN_NOTICE : sessionErrorText(rawReviewError)
+  const reviewErrorText = !rawReviewError ? undefined : sessionDown ? sessionDownNotice() : sessionErrorText(rawReviewError)
   // 官方元数据未到位且没有报错 = 首次载入中：此时还不知道哪些历史记录会被官方通道接管，
   // 直接按历史记录报数会在每次重启时闪出几十个「待处理文件」，故先显示占位、批量也先不放开。
   const reviewLoading = review.page === null && !review.error
@@ -5273,7 +5274,7 @@ export function EditorView(props) {
     onUndoAllFiles: undoAllFiles,
     allPendingCount: reviewLoading ? 0 : allPending.length + (review.page?.pending ?? 0),
     reviewBatchBusy,
-    batchUnavailable: !review.page?.overview ? '官方待审列表尚未就绪' : undefined,
+    batchUnavailable: !review.page?.overview ? uiText('官方待审列表尚未就绪', "Built-in review list is not ready", "Встроенный список проверки ещё не готов") : undefined,
     onRollback: rollbackFile,
     onJump: jumpTo,
     otherFiles,
@@ -5332,7 +5333,7 @@ export function EditorView(props) {
         language: active ? snippetLanguageOf(active) : '',
         languages: snippetLanguageIds(monacoRef.current),
         // 显式给 line=1：走 openFileAt 的直接定位分支（并清掉 pendingFocus，不残留跳转意图）
-        onOpenFile: (absPath) => { openFileAt(absPath, 1); setStatus('已打开代码片段文件') },
+        onOpenFile: (absPath) => { openFileAt(absPath, 1); setStatus(uiText('已打开代码片段文件', "Snippet file opened", "Файл фрагментов кода открыт")) },
         onInsert: insertSnippetAtCursor,
         onClose: () => setSnippetPicker(null),
       })
@@ -5381,7 +5382,7 @@ export function EditorView(props) {
       const openers = props.fileOpeners
       if (!openers) return
       openWithDialog(openers, { sessionId, cwd: cwd ?? undefined }, p, (opener) => {
-        if (opener) setStatus('已用「' + opener.label + '」打开：' + baseNameOf(p))
+        if (opener) setStatus(uiText('已用「', "Opened with “", "Открыто через «") + opener.label + uiText('」打开：', "”: ", "»: ") + baseNameOf(p))
       })
     },
     // 「在文件夹中查找…」（资源管理器右键、目录目标）：目录过滤种子 + 跳搜索面板
@@ -5394,7 +5395,7 @@ export function EditorView(props) {
   // 调试工具条（VS Code 浮动条紧凑版，图2 形态）：配置下拉 + 启动/继续 + 单步组 + 停止 + 相位。
   // 配置来自工作区 .dsh/launch.json（插件专属，与 VS Code 互不干扰）；无配置时下拉提示且按钮禁用。
   const dapPhaseTextOf = () => ({
-    idle: '', starting: '启动中…', waiting: '等待目标…', running: '运行中', paused: '已暂停', terminated: '已结束',
+    idle: '', starting: uiText('启动中…', "Starting…", "Запуск…"), waiting: uiText('等待目标…', "Waiting for target…", "Ожидание цели…"), running: uiText('运行中', "Running", "Выполняется"), paused: uiText('已暂停', "Paused", "Приостановлено"), terminated: uiText('已结束', "Terminated", "Завершено"),
   }[dapSnap.phase] || '')
   const dapActive = dapSnap.phase !== 'idle' && dapSnap.phase !== 'terminated'
   const dapPaused = dapSnap.phase === 'paused'
@@ -5414,25 +5415,25 @@ export function EditorView(props) {
       className: 'edrv-dapbar-grip',
       role: 'button',
       tabIndex: 0,
-      title: '拖动调试工具条',
-      'aria-label': '拖动调试工具条',
+      title: uiText('拖动调试工具条', "Drag debug toolbar", "Перетащить панель отладки"),
+      'aria-label': uiText('拖动调试工具条', "Drag debug toolbar", "Перетащить панель отладки"),
       onPointerDown: startDapBarDrag,
     }, '⠿'),
     (dapSnap.candidates
       ? [
           React.createElement('select', {
-            key: 'pick', className: 'edrv-dapbar-cfg', title: '选择附加目标进程（processName 命中多个候选）',
+            key: 'pick', className: 'edrv-dapbar-cfg', title: uiText('选择附加目标进程（processName 命中多个候选）', "Select a process to attach to (multiple processName matches)", "Выберите процесс для подключения (несколько совпадений processName)"),
             value: String(dapPickPid || dapSnap.candidates[0]?.pid || ''),
             onChange: (e) => setDapPickPid(Number(e.target.value)),
           },
             dapSnap.candidates.map((it) => React.createElement('option', { key: it.pid, value: String(it.pid) },
               it.pid + ' : ' + it.name + (it.title ? ' — ' + it.title.slice(0, 44) : '')))),
-          dapBtn('✓', '附加到选中进程', false, () => dapStore.confirmPick(dapPickPid || dapSnap.candidates![0]?.pid || 0)),
-          dapBtn('✕', '取消', false, () => dapStore.cancelPick()),
+          dapBtn('✓', uiText('附加到选中进程', "Attach to selected process", "Подключиться к выбранному процессу"), false, () => dapStore.confirmPick(dapPickPid || dapSnap.candidates![0]?.pid || 0)),
+          dapBtn('✕', uiText('取消', "Cancel", "Отмена"), false, () => dapStore.cancelPick()),
         ]
       : React.createElement('select', {
           className: 'edrv-dapbar-cfg',
-          title: '调试配置（读取工作区 .dsh/launch.json；适配器由扩展清单 contributes.debuggers 提供）',
+          title: uiText('调试配置（读取工作区 .dsh/launch.json；适配器由扩展清单 contributes.debuggers 提供）', "Debug configuration (workspace .dsh/launch.json; adapters from extension manifest contributes.debuggers)", "Конфигурация отладки (.dsh/launch.json рабочей области; адаптеры из contributes.debuggers манифеста расширения)"),
           value: dapSnap.selectedConfig ?? '',
           onChange: (e) => dapStore.selectConfig(e.target.value),
         },
@@ -5441,16 +5442,16 @@ export function EditorView(props) {
                 // 旧 host 无 adapters 数据时视为全部可用（保持兼容）；有数据则按可用性置灰并给原因
                 const adapter = dapSnap.adapters.find((a) => a.type === c.type)
                 const ready = dapSnap.adapters.length === 0 || adapter?.available === true
-                const suffix = ready ? '' : '（' + (adapter?.reason || '未发现该类型适配器') + '）'
+                const suffix = ready ? '' : '（' + (adapter?.reason || uiText('未发现该类型适配器', "No adapter found for this type", "Адаптер этого типа не найден")) + '）'
                 return React.createElement('option', { key: c.name, value: c.name, disabled: !ready }, c.name + suffix)
               })
-            : React.createElement('option', { value: '' }, '无可用调试配置'))),
-    dapBtn(dapPaused ? '▶' : '▶', '启动 / 继续（F5）', !dapPaused && (!dapSnap.configs.some((c) => dapSnap.adapters.length === 0 || dapSnap.adapters.find((a) => a.type === c.type)?.available === true) || dapActive), () => dapStore.startOrContinue()),
-    dapBtn('⏸', '暂停', !dapActive, () => { void dapStore.action('pause') }),
-    dapBtn('⤵', '单步跳过（F10）', !dapPaused, () => { void dapStore.action('next') }),
-    dapBtn('↓', '单步步入（F11）', !dapPaused, () => { void dapStore.action('stepIn') }),
-    dapBtn('↑', '单步步出（Shift+F11）', !dapPaused, () => { void dapStore.action('stepOut') }),
-    dapBtn('⏹', '停止（Shift+F5）', !dapActive, () => { void dapStore.stop() }),
+            : React.createElement('option', { value: '' }, uiText('无可用调试配置', "No debug configurations available", "Нет доступных конфигураций отладки")))),
+    dapBtn(dapPaused ? '▶' : '▶', uiText('启动 / 继续（F5）', "Start / Continue (F5)", "Запустить / Продолжить (F5)"), !dapPaused && (!dapSnap.configs.some((c) => dapSnap.adapters.length === 0 || dapSnap.adapters.find((a) => a.type === c.type)?.available === true) || dapActive), () => dapStore.startOrContinue()),
+    dapBtn('⏸', uiText('暂停', "Pause", "Приостановить"), !dapActive, () => { void dapStore.action('pause') }),
+    dapBtn('⤵', uiText('单步跳过（F10）', "Step over (F10)", "Шаг с обходом (F10)"), !dapPaused, () => { void dapStore.action('next') }),
+    dapBtn('↓', uiText('单步步入（F11）', "Step into (F11)", "Шаг с заходом (F11)"), !dapPaused, () => { void dapStore.action('stepIn') }),
+    dapBtn('↑', uiText('单步步出（Shift+F11）', "Step out (Shift+F11)", "Шаг с выходом (Shift+F11)"), !dapPaused, () => { void dapStore.action('stepOut') }),
+    dapBtn('⏹', uiText('停止（Shift+F5）', "Stop (Shift+F5)", "Остановить (Shift+F5)"), !dapActive, () => { void dapStore.stop() }),
     (dapPhaseTextOf()
       ? React.createElement('span', { className: 'edrv-dapbar-phase' + (dapPaused ? ' paused' : '') },
           dapPhaseTextOf() + (dapSnap.pid ? ' · pid ' + dapSnap.pid : ''))
@@ -5466,19 +5467,19 @@ export function EditorView(props) {
    */
   const addLaunchConfig = async () => {
     const ed = editorRef.current
-    if (!ed) { setStatus('无活动编辑器'); return }
+    if (!ed) { setStatus(uiText('无活动编辑器', "No active editor", "Нет активного редактора")); return }
     const path = modelPathOf(ed)
     if (!path || !LAUNCH_JSON_RE.test(String(path).replace(/\\/g, '/'))) {
-      setStatus('请先打开 .dsh/launch.json')
+      setStatus(uiText('请先打开 .dsh/launch.json', "Open .dsh/launch.json first", "Сначала откройте .dsh/launch.json"))
       return
     }
     const model = ed.getModel && ed.getModel()
     const pos = model ? findArrayPos(model.getValue()) : null
-    if (!pos) { setStatus('未找到 configurations 数组'); return }
+    if (!pos) { setStatus(uiText('未找到 configurations 数组', "The configurations array was not found", "Массив configurations не найден")); return }
     // 预拉片段并预检可用条数：全不可用时不弹空 suggest（否则按钮点了无反馈）
     const snippets = await prefetchSnippets().catch(() => [])
     if (!snippets.some((snip) => snip.available !== false)) {
-      setStatus('无可用适配器的配置模板（适配器入口缺失或未发现该类型适配器）')
+      setStatus(uiText('无可用适配器的配置模板（适配器入口缺失或未发现该类型适配器）', "No configuration templates with available adapters (adapter entry missing or no adapter found for this type)", "Нет шаблонов конфигураций с доступными адаптерами (нет точки входа или адаптера этого типа)"))
       return
     }
     ed.focus()
@@ -5487,16 +5488,16 @@ export function EditorView(props) {
       ed.revealPositionInCenterIfOutsideViewport({ lineNumber: pos.line, column: pos.column })
     }
     ed.trigger('edrv-addcfg', 'editor.action.triggerSuggest', null)
-    setStatus('选择要插入的调试配置')
+    setStatus(uiText('选择要插入的调试配置', "Select a debug configuration to insert", "Выберите конфигурацию отладки для вставки"))
   }
 
   // 「添加配置」按钮（VSCode 同款形态，编辑区右下角）：仅插件专属 launch.json 打开且非差异审阅态显示
   const addCfgBtn = (active && LAUNCH_JSON_RE.test(String(active).replace(/\\/g, '/')))
     ? React.createElement('button', {
         className: 'edrv-addcfg',
-        title: '添加调试配置（插入到 configurations 数组开头）',
+        title: uiText('添加调试配置（插入到 configurations 数组开头）', "Add debug configuration (insert at the start of the configurations array)", "Добавить конфигурацию отладки (в начало массива configurations)"),
         onClick: addLaunchConfig,
-      }, '添加配置…')
+      }, uiText('添加配置…', "Add configuration…", "Добавить конфигурацию…"))
     : null
 
   // 侧栏差异栏悬浮在编辑区底部；中央页签仍使用对话 dock。
@@ -5525,10 +5526,10 @@ export function EditorView(props) {
   }
   const sideHintEl = (layout === 'tab' && sideHint && !hintDismissed)
     ? React.createElement('div', { className: 'edrv-side-hint' },
-        React.createElement('span', { className: 'edrv-side-hint-text' }, 'DSH 0.1.5+ 自带官方右侧侧边栏（升级即用）；旧版可安装 dsh-better-sidebar 启用侧边栏编辑（对话+编辑同屏）：'),
+        React.createElement('span', { className: 'edrv-side-hint-text' }, uiText('DSH 0.1.5+ 自带官方右侧侧边栏（升级即用）；旧版可安装 dsh-better-sidebar 启用侧边栏编辑（对话+编辑同屏）：', "DSH 0.1.5+ includes a built-in right sidebar. On older versions, install dsh-better-sidebar to edit beside the conversation:", "DSH 0.1.5+ содержит встроенную правую панель. В старых версиях установите dsh-better-sidebar для редактирования рядом с диалогом:")),
         React.createElement('code', { className: 'edrv-side-hint-cmd' }, SIDEBAR_INSTALL_CMD),
-        React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', title: '复制安装命令', onClick: copyInstallCmd }, '复制命令'),
-        React.createElement('button', { className: 'edrv-side-hint-close', title: '关闭提示', 'aria-label': '关闭提示', onClick: dismissHint }, '×'))
+        React.createElement('button', { className: 'edrv-pill edrv-pill-ghost', title: uiText('复制安装命令', "Copy installation command", "Копировать команду установки"), onClick: copyInstallCmd }, uiText('复制命令', "Copy command", "Копировать команду")),
+        React.createElement('button', { className: 'edrv-side-hint-close', title: uiText('关闭提示', "Dismiss hint", "Закрыть подсказку"), 'aria-label': uiText('关闭提示', "Dismiss hint", "Закрыть подсказку"), onClick: dismissHint }, '×'))
     : null
   // 底部状态栏共用一整条：挂在 mainCol 层级（所有分组之下），不随焦点分组搬家（ddj 2026-10-16）
   const fullView = createPortal(React.createElement(React.Fragment, null, pathBar, sideHintEl, diskBanner(), editorArea), fullHost, 'edrv-full-editor')
@@ -5645,7 +5646,7 @@ export function EditorView(props) {
         onClose: () => setCommitSeed(null),
         onCommitted: (result) => {
           refreshSvnChanges(sessionId, scope)
-          setStatus(result?.revision !== undefined ? '提交成功：r' + result.revision : '提交完成')
+          setStatus(result?.revision !== undefined ? uiText('提交成功：r', "Committed: r", "Коммит выполнен: r") + result.revision : uiText('提交完成', "Commit completed", "Коммит завершён"))
         },
         // 行右键：比较/日志/打开在提交窗口之上打开，不关窗（关窗会丢勾选与信息草稿）
         onChanged: () => refreshSvnChanges(sessionId, scope),
@@ -5654,7 +5655,7 @@ export function EditorView(props) {
         onOpenFile: (path) => openFile(path, false),
         onOpenParent: (path) => {
           void revealPathInExplorer(sessionId, path).then((outcome) => {
-            setStatus(outcome.ok ? '已打开父目录' : '打开父目录失败：' + (outcome.error ?? '未知错误'))
+            setStatus(outcome.ok ? uiText('已打开父目录', "Parent directory opened", "Родительская папка открыта") : uiText('打开父目录失败：', "Failed to open parent directory: ", "Не удалось открыть родительскую папку: ") + (outcome.error ?? uiText('未知错误', "Unknown error", "Неизвестная ошибка")))
           })
         },
       })
@@ -5667,8 +5668,8 @@ export function EditorView(props) {
   const onSvnUpdateDone = (result) => {
     if (svnUpdateDoneRef.current.has(result.jobId)) return
     svnUpdateDoneRef.current.add(result.jobId)
-    const message = result.phase === 'completed' ? 'SVN 更新完成'
-      : result.phase === 'cancelled' ? 'SVN 更新已取消（可能部分完成）' : 'SVN 更新失败：' + result.error
+    const message = result.phase === 'completed' ? uiText('SVN 更新完成', "SVN update completed", "Обновление SVN завершено")
+      : result.phase === 'cancelled' ? uiText('SVN 更新已取消（可能部分完成）', "SVN update cancelled (may be partially completed)", "Обновление SVN отменено (возможно частичное выполнение)") : uiText('SVN 更新失败：', "SVN update failed: ", "Ошибка обновления SVN: ") + result.error
     setStatus(message)
     setRecentUpdate({ path: result.target, sessionId, scope, resumeJobId: result.jobId })
     refreshSvnChanges(sessionId, scope)
@@ -5692,16 +5693,16 @@ export function EditorView(props) {
         }),
         onOpenFile: (path) => openFile(path, false),
         onOpenWith: (path) => {
-          if (!props.fileOpeners) { setStatus('打开方式不可用'); return }
+          if (!props.fileOpeners) { setStatus(uiText('打开方式不可用', "Opener unavailable", "Способ открытия недоступен")); return }
           setUpdateOpenWith(true)
           openWithDialog(props.fileOpeners, { sessionId, cwd: cwd ?? undefined }, path, (opener) => {
             setUpdateOpenWith(false)
-            if (opener) setStatus('已用「' + opener.label + '」打开：' + baseNameOf(path))
+            if (opener) setStatus(uiText('已用「', "Opened with “", "Открыто через «") + opener.label + uiText('」打开：', "”: ", "»: ") + baseNameOf(path))
           })
         },
         onOpenParent: (path) => {
           void revealPathInExplorer(sessionId, path).then((outcome) => {
-            setStatus(outcome.ok ? '已打开父目录' : '打开父目录失败：' + (outcome.error ?? '未知错误'))
+            setStatus(outcome.ok ? uiText('已打开父目录', "Parent directory opened", "Родительская папка открыта") : uiText('打开父目录失败：', "Failed to open parent directory: ", "Не удалось открыть родительскую папку: ") + (outcome.error ?? uiText('未知错误', "Unknown error", "Неизвестная ошибка")))
           })
         },
       })
@@ -5716,7 +5717,7 @@ export function EditorView(props) {
   }
   const svnDiffEl = svnDiff ? React.createElement(FloatingWindow, {
     key: 'edrv-svndiff-window:' + scope,
-    title: '文件对比 · ' + baseNameOf(svnDiff.path), width: 1100, height: 680,
+    title: uiText('文件对比 · ', "File comparison · ", "Сравнение файлов · ") + baseNameOf(svnDiff.path), width: 1100, height: 680,
     owner: String(scope), onClose: closeSvnDiff,
   }, React.createElement(SvnDiffPanel, {
     ...svnDiff, key: 'edrv-svndiff:' + svnDiff.scheme + ':' + svnDiff.path, monaco,
@@ -5760,7 +5761,7 @@ export function EditorView(props) {
     if (action === 'disable' || action === 'enable') { dapStore.setBpEnabled(scope, cwd, path, line, action === 'enable'); return }
     if (action === 'edit') { openBpEditor(path, line); return }
     if (action === 'run-to-line') { dapStore.runTo(cwd, path, line); return }
-    if (action === 'add-triggered') { setStatus('当前 Lua 调试器不支持触发的断点'); return }
+    if (action === 'add-triggered') { setStatus(uiText('当前 Lua 调试器不支持触发的断点', "The current Lua debugger does not support triggered breakpoints", "Текущий отладчик Lua не поддерживает запускаемые точки останова")); return }
     // 添加条件断点 / 添加记录点：先建点，再开浮层并选中对应模式（0 表达式 / 2 日志消息）
     dapStore.toggleAt(scope, cwd, path, line)
     openBpEditor(path, line, action === 'add-logpoint' ? 2 : 0)
@@ -5778,7 +5779,7 @@ export function EditorView(props) {
       mode,
       onSave: (fields) => {
         dapStore.applyBpFields(dapScopeRef.current, dapCwdRef.current, path, line, fields)
-        setStatus('断点已更新')
+        setStatus(uiText('断点已更新', "Breakpoint updated", "Точка останова обновлена"))
         closeBpWidget()
       },
       onClose: () => closeBpWidget(),
