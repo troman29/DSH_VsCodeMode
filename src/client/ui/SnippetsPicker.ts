@@ -14,6 +14,7 @@
  * 漏挂会导致样式整块失效、内容以裸流形式铺在页面底部。
  * 作者 ddj 2026年09月10号
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { rpc } from '../rpc.js'
 import { ModalShell } from './ModalShell.js'
@@ -27,7 +28,7 @@ import '../styles/mcp.css'
 
 /** 片段文件行的第二行摘要：语言 + 条目数 + 相对路径。 */
 export function fileMeta(info) {
-  return languageLabelOf(info.language) + ' · ' + info.count + ' 条 · [' + info.relHint + info.file + ']'
+  return languageLabelOf(info.language) + ' · ' + info.count + uiText(' 条 · [', " entries · [", " элементов · [") + info.relHint + info.file + ']'
 }
 
 /**
@@ -39,7 +40,7 @@ export function fileMeta(info) {
 export function languageOptions(languages) {
   const ids = Array.isArray(languages) && languages.length ? languages : SNIPPET_LANGUAGES
   const seen = new Set()
-  const out = [{ id: '', label: '全语言（所有文件生效）' }]
+  const out = [{ id: '', label: uiText('全语言（所有文件生效）', "All languages (all files)", "Все языки (все файлы)") }]
   for (const raw of ids) {
     const id = String(raw ?? '').trim().toLowerCase()
     if (!id || seen.has(id)) continue
@@ -88,14 +89,14 @@ export function SnippetsPicker(props) {
         if (!aliveRef.current) return
         setEntries(list)
         setError('')
-      }).catch((e) => { if (aliveRef.current) setError('读取代码片段失败：' + String(e)) })
+      }).catch((e) => { if (aliveRef.current) setError(uiText('读取代码片段失败：', "Failed to read snippets: ", "Ошибка чтения фрагментов: ") + String(e)) })
       return
     }
     rpc('snippets.list', {}).then((res) => {
       if (!aliveRef.current) return
       if (res && res.ok) { setData(res); setError('') }
-      else setError(res?.error ?? '读取代码片段失败')
-    }).catch((e) => { if (aliveRef.current) setError('读取代码片段失败：' + String(e)) })
+      else setError(res?.error ?? uiText('读取代码片段失败', "Failed to read snippets", "Ошибка чтения фрагментов"))
+    }).catch((e) => { if (aliveRef.current) setError(uiText('读取代码片段失败：', "Failed to read snippets: ", "Ошибка чтения фрагментов: ") + String(e)) })
   }, [isInsert, currentLanguage])
 
   React.useEffect(() => {
@@ -144,8 +145,8 @@ export function SnippetsPicker(props) {
   const createFile = () => {
     if (!draft) return
     const name = normalizeSnippetFileName(draft.fileName)
-    if (!name) { setError('文件名不能为空'); return }
-    if (draft.scope === 'project' && !cwd) { setError('当前会话没有工作区，无法新建项目片段'); return }
+    if (!name) { setError(uiText('文件名不能为空', "File name cannot be empty", "Имя файла не может быть пустым")); return }
+    if (draft.scope === 'project' && !cwd) { setError(uiText('当前会话没有工作区，无法新建项目片段', "No workspace in this session; cannot create project snippets", "У сеанса нет рабочего пространства; нельзя создать фрагменты проекта")); return }
     setBusy(true)
     setError('')
     rpc('snippets.save', {
@@ -155,12 +156,12 @@ export function SnippetsPicker(props) {
       content: snippetFileTemplate(draft.language),
     }).then((res) => {
       if (!aliveRef.current) return
-      if (!res || !res.ok) { setError(res?.error ?? '新建失败'); return }
+      if (!res || !res.ok) { setError(res?.error ?? uiText('新建失败', "Creation failed", "Ошибка создания")); return }
       invalidateSnippets()
       closeDraft()
       onOpenFile?.(res.file.absPath)
       onClose?.()
-    }).catch((e) => { if (aliveRef.current) setError('新建失败：' + String(e)) })
+    }).catch((e) => { if (aliveRef.current) setError(uiText('新建失败：', "Creation failed: ", "Ошибка создания: ") + String(e)) })
       .finally(() => { if (aliveRef.current) setBusy(false) })
   }
 
@@ -172,14 +173,14 @@ export function SnippetsPicker(props) {
 
   /** 删除片段文件（confirm 后走 snippets.remove）。 */
   const removeFile = (info) => {
-    if (!window.confirm('删除代码片段文件 ' + info.file + '？（不可恢复）')) return
+    if (!window.confirm(uiText('删除代码片段文件 ', "Delete snippet file ", "Удалить файл фрагментов ") + info.file + uiText('？（不可恢复）', "? This cannot be undone.", "? Действие необратимо."))) return
     rpc('snippets.remove', { scope: info.scope, workspacePath: info.scope === 'project' ? cwd : undefined, file: info.file })
       .then((res) => {
         if (!aliveRef.current) return
-        if (!res || !res.ok) { setError(res?.error ?? '删除失败'); return }
+        if (!res || !res.ok) { setError(res?.error ?? uiText('删除失败', "Delete failed", "Ошибка удаления")); return }
         invalidateSnippets()
         load()
-      }).catch((e) => { if (aliveRef.current) setError('删除失败：' + String(e)) })
+      }).catch((e) => { if (aliveRef.current) setError(uiText('删除失败：', "Delete failed: ", "Ошибка удаления: ") + String(e)) })
   }
 
   /** 一级浮窗主体：列表 / 空态 / 错误。 */
@@ -189,7 +190,7 @@ export function SnippetsPicker(props) {
       const list = entries ?? []
       if (!list.length) {
         return React.createElement('div', { className: 'vsm-mcp-empty' },
-          entries === null ? '正在读取代码片段…' : '当前文件没有可用代码片段，可用「代码片段：配置代码片段」新建')
+          entries === null ? uiText('正在读取代码片段…', "Loading snippets…", "Загрузка фрагментов…") : uiText('当前文件没有可用代码片段，可用「代码片段：配置代码片段」新建', "No snippets for this file. Use “Snippets: Configure snippets” to create one.", "Нет фрагментов для этого файла. Создайте их через «Фрагменты: Настроить фрагменты»."))
       }
       return React.createElement('div', { className: 'edrv-snip-list' }, list.map((entry) => React.createElement('button', {
         key: entry.scope + ':' + entry.file + ':' + entry.key,
@@ -201,7 +202,7 @@ export function SnippetsPicker(props) {
           React.createElement('span', { className: 'edrv-snip-desc' }, entry.description || entry.key)),
         React.createElement('span', { className: 'edrv-snip-src' }, entry.file))))
     }
-    if (!data) return React.createElement('div', { className: 'vsm-mcp-empty' }, '正在读取代码片段…')
+    if (!data) return React.createElement('div', { className: 'vsm-mcp-empty' }, uiText('正在读取代码片段…', "Loading snippets…", "Загрузка фрагментов…"))
     const project = (data.projects ?? []).find((item) => item.workspacePath === cwd) ?? null
     /** 行按语言再按文件名排序，同语言片段聚在一起（便于按文件类型找片段）。 */
     const sortByLanguage = (list) => [...list].sort((a, b) =>
@@ -210,27 +211,27 @@ export function SnippetsPicker(props) {
       React.createElement('button', { className: 'edrv-snip-row-main', title: info.absPath, onClick: () => openFile(info) },
         React.createElement('span', { className: 'edrv-snip-label' }, info.file),
         React.createElement('span', { className: 'edrv-snip-desc' }, fileMeta(info))),
-      info.error ? React.createElement('span', { className: 'vsm-mcp-chip edrv-snip-warn' }, 'JSON 解析失败') : null,
-      React.createElement('button', { className: 'edrv-snip-act edrv-snip-danger', title: '删除', onClick: () => removeFile(info) }, '⌫')))
+      info.error ? React.createElement('span', { className: 'vsm-mcp-chip edrv-snip-warn' }, uiText('JSON 解析失败', "JSON parse failed", "Ошибка разбора JSON")) : null,
+      React.createElement('button', { className: 'edrv-snip-act edrv-snip-danger', title: uiText('删除', "Delete", "Удалить"), onClick: () => removeFile(info) }, '⌫')))
     const globalRows = rows(data.user ?? [])
     const projectRows = project ? rows(project.files ?? []) : []
     return React.createElement('div', { className: 'edrv-snip-list' },
-      React.createElement('div', { className: 'edrv-snip-group' }, '全局代码片段（~/.dsh/snippets/）'),
-      globalRows.length ? globalRows : React.createElement('div', { className: 'edrv-snip-empty' }, '还没有全局代码片段'),
-      React.createElement('div', { className: 'edrv-snip-group' }, '项目代码片段' + (cwd ? '（' + cwd + '）' : '')),
+      React.createElement('div', { className: 'edrv-snip-group' }, uiText('全局代码片段（~/.dsh/snippets/）', "Global snippets (~/.dsh/snippets/)", "Глобальные фрагменты (~/.dsh/snippets/)")),
+      globalRows.length ? globalRows : React.createElement('div', { className: 'edrv-snip-empty' }, uiText('还没有全局代码片段', "No global snippets yet", "Глобальных фрагментов пока нет")),
+      React.createElement('div', { className: 'edrv-snip-group' }, uiText('项目代码片段', "Project snippets", "Фрагменты проекта") + (cwd ? uiText('（', " (", " (") + cwd + uiText('）', ")", ")") : '')),
       projectRows.length
         ? projectRows
-        : React.createElement('div', { className: 'edrv-snip-empty' }, cwd ? '当前项目没有代码片段' : '当前会话没有工作区'))
+        : React.createElement('div', { className: 'edrv-snip-empty' }, cwd ? uiText('当前项目没有代码片段', "No snippets in this project", "В проекте нет фрагментов") : uiText('当前会话没有工作区', "No workspace in this session", "У текущего сеанса нет рабочего пространства")))
   }
 
   /** 当前文件语言提示行（让「片段绑定到哪种文件」一目了然）。 */
   const languageBar = React.createElement('div', { className: 'edrv-snip-langbar' },
     currentLanguage
       ? React.createElement(React.Fragment, null,
-          '当前文件语言：',
+          uiText('当前文件语言：', "Current file language: ", "Язык текущего файла: "),
           React.createElement('b', null, languageLabelOf(currentLanguage)),
-          '（' + currentLanguage + '）')
-      : '当前没有打开文件：可新建全语言片段，或先打开文件再新建对应语言的片段')
+          uiText('（', " (", " (") + currentLanguage + uiText('）', ")", ")"))
+      : uiText('当前没有打开文件：可新建全语言片段，或先打开文件再新建对应语言的片段', "No file open. Create an all-language snippet, or open a file to create language-specific snippets.", "Файл не открыт. Создайте фрагмент для всех языков или откройте файл для создания фрагмента его языка."))
 
   // 一级弹窗：走通用 ModalShell（遮罩/portal 单点保证）；
   // maskClass/dialogClass 保持既有类名，故 editor.css 的 .edrv-snip-* 样式与既有测试契约不变。
@@ -242,10 +243,10 @@ export function SnippetsPicker(props) {
     closeOnEsc: false,
     onClose: () => onClose?.(),
   },
-    React.createElement('h3', null, isInsert ? '插入代码片段' : '代码片段：配置代码片段'),
+    React.createElement('h3', null, isInsert ? uiText('插入代码片段', "Insert snippet", "Вставить фрагмент") : uiText('代码片段：配置代码片段', "Snippets: Configure snippets", "Фрагменты: Настроить фрагменты")),
     React.createElement('p', { className: 'edrv-snip-hint' }, isInsert
-      ? '仅列出对当前文件语言生效的片段（选定后在光标处展开，支持 ${1:占位} 与 $TM_FILENAME 等变量）。'
-      : '代码片段按语言绑定：`<语言>.code-snippets` 只对该类文件生效，`global.code-snippets` 对所有文件生效。选中文件即在编辑界面打开。'),
+      ? uiText('仅列出对当前文件语言生效的片段（选定后在光标处展开，支持 ${1:占位} 与 $TM_FILENAME 等变量）。', "Only snippets for the current language are listed. Selection expands at the cursor; supports ${1:placeholder} and variables such as $TM_FILENAME.", "Показаны фрагменты языка текущего файла. Выбор разворачивает их у курсора; поддерживаются ${1:подстановка} и переменные, например $TM_FILENAME.")
+      : uiText('代码片段按语言绑定：`<语言>.code-snippets` 只对该类文件生效，`global.code-snippets` 对所有文件生效。选中文件即在编辑界面打开。', "Snippets are language-specific: `<language>.code-snippets` applies to that language; `global.code-snippets` applies to all files. Select a file to open it in the editor.", "Фрагменты привязаны к языку: `<язык>.code-snippets` действует для этого языка; `global.code-snippets` — для всех файлов. Выберите файл для открытия в редакторе.")),
     isInsert ? null : languageBar,
     renderBody(),
     isInsert
@@ -254,18 +255,18 @@ export function SnippetsPicker(props) {
           React.createElement('button', {
             disabled: busy,
             onClick: () => openDraft('user', ''),
-          }, '新建全语言片段…'),
+          }, uiText('新建全语言片段…', "New all-language snippets…", "Новые фрагменты для всех языков…")),
           React.createElement('button', {
             className: 'vsm-primary',
             disabled: busy || !currentLanguage,
-            title: currentLanguage ? '' : '请先打开一个文件，或改用「新建全语言片段…」',
+            title: currentLanguage ? '' : uiText('请先打开一个文件，或改用「新建全语言片段…」', "Open a file first, or use “New all-language snippets…”", "Сначала откройте файл или выберите «Новые фрагменты для всех языков…»"),
             onClick: () => openDraft('user', currentLanguage),
-          }, currentLanguage ? '新建 ' + languageLabelOf(currentLanguage) + ' 片段文件…' : '新建当前语言片段…'),
+          }, currentLanguage ? uiText('新建 ', "New ", "Создать ") + languageLabelOf(currentLanguage) + uiText(' 片段文件…', " snippet file…", " — файл фрагментов…") : uiText('新建当前语言片段…', "New current-language snippets…", "Новые фрагменты текущего языка…")),
           React.createElement('button', {
             disabled: busy || !cwd,
-            title: cwd ? '' : '当前会话没有工作区',
+            title: cwd ? '' : uiText('当前会话没有工作区', "No workspace in this session", "У текущего сеанса нет рабочего пространства"),
             onClick: () => openDraft('project', currentLanguage),
-          }, '新建项目片段文件…')))
+          }, uiText('新建项目片段文件…', "New project snippet file…", "Новый файл фрагментов проекта…"))))
 
   // 二级弹窗：新建片段文件（语言 + 文件名；更高遮罩层，叠在一级之上）
   const createDialog = draft
@@ -275,14 +276,14 @@ export function SnippetsPicker(props) {
         closeOnEsc: false,
         onClose: closeDraft,
       },
-        React.createElement('h3', null, draft.scope === 'project' ? '新建项目代码片段文件' : '新建全局代码片段文件'),
-        React.createElement('label', null, '生效语言',
+        React.createElement('h3', null, draft.scope === 'project' ? uiText('新建项目代码片段文件', "New project snippet file", "Новый файл фрагментов проекта") : uiText('新建全局代码片段文件', "New global snippet file", "Новый глобальный файл фрагментов")),
+        React.createElement('label', null, uiText('生效语言', "Applicable language", "Язык применения"),
           React.createElement('select', {
             value: draft.language,
             disabled: busy,
             onChange: (event) => { pickLanguage(event.target.value); setError('') },
           }, options.map((item) => React.createElement('option', { key: 'lang-' + item.id, value: item.id }, item.label)))),
-        React.createElement('label', null, '文件名',
+        React.createElement('label', null, uiText('文件名', "File name", "Имя файла"),
           React.createElement('input', {
             autoFocus: true,
             spellCheck: false,
@@ -292,15 +293,15 @@ export function SnippetsPicker(props) {
             onKeyDown: (event) => { if (event.key === 'Enter') createFile() },
           })),
         React.createElement('div', { className: 'edrv-snip-hint' },
-          (draft.scope === 'project' ? '将写入 ' + (cwd ?? '') + '/.dsh/snippets/' : '将写入 ~/.dsh/snippets/')
+          (draft.scope === 'project' ? uiText('将写入 ', "Will write to ", "Будет записано в ") + (cwd ?? '') + '/.dsh/snippets/' : uiText('将写入 ~/.dsh/snippets/', "Will write to ~/.dsh/snippets/", "Будет записано в ~/.dsh/snippets/"))
           + normalizeSnippetFileName(draft.fileName)
           + (draft.language
-              ? '（仅对 ' + languageLabelOf(draft.language) + ' 文件生效）'
-              : '（对所有文件生效）')),
+              ? uiText('（仅对 ', " (only for ", " (только для ") + languageLabelOf(draft.language) + uiText(' 文件生效）', " files)", " файлов)")
+              : uiText('（对所有文件生效）', " (applies to all files)", " (для всех файлов)"))),
         error ? React.createElement('div', { className: 'vsm-mcp-error vsm-mcp-banner' }, error) : null,
         React.createElement('div', { className: 'vsm-mcp-dialog-actions' },
-          React.createElement('button', { disabled: busy, onClick: closeDraft }, '取消'),
-          React.createElement('button', { className: 'vsm-primary', disabled: busy, onClick: createFile }, busy ? '创建中…' : '创建并打开')))
+          React.createElement('button', { disabled: busy, onClick: closeDraft }, uiText('取消', "Cancel", "Отмена")),
+          React.createElement('button', { className: 'vsm-primary', disabled: busy, onClick: createFile }, busy ? uiText('创建中…', "Creating…", "Создание…") : uiText('创建并打开', "Create and open", "Создать и открыть"))))
     : null
 
   // 两个 ModalShell 各自 portal 到 body（根节点带 data-edrv-view 由外壳负责）

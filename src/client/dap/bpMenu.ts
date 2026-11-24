@@ -1,3 +1,4 @@
+import { uiText } from '../uiLocale.js'
 /**
  * dsh-vscode-mode client — 断点 gutter 右键菜单条目（纯函数，可单测）。
  * 逐条对齐 CodeBuddy（VS Code 内核）breakpointEditorContribution.getContextMenuActions
@@ -64,7 +65,7 @@ export function buildBpMenu(state: BpMenuState): BpMenuEntry[] {
   const entries = state.hasBreakpoint ? ownedEntries(state) : addEntries(state.canTriggered === true)
   // CodeBuddy 在 if/else 链之后无条件追加：空行同样支持运行到行（仅在暂停时）
   if (state.paused === true && state.canRunTo === true) {
-    entries.push({ id: 'run-to-line', label: '运行到行', separator: true })
+    entries.push({ id: 'run-to-line', label: uiText("运行到行", "Run to line", "Выполнить до строки"), separator: true })
   }
   return entries
 }
@@ -72,20 +73,20 @@ export function buildBpMenu(state: BpMenuState): BpMenuEntry[] {
 /** 无断点：四个添加类条目（对齐 CodeBuddy 无条件四项）。 */
 function addEntries(canTriggered: boolean): BpMenuEntry[] {
   return [
-    { id: 'add', label: '添加断点' },
-    { id: 'add-conditional', label: '添加条件断点...' },
-    { id: 'add-logpoint', label: '添加记录点...' },
-    { id: 'add-triggered', label: '添加触发的断点...', unsupported: !canTriggered },
+    { id: 'add', label: uiText("添加断点", "Add breakpoint", "Добавить точку останова") },
+    { id: 'add-conditional', label: uiText("添加条件断点...", "Add conditional breakpoint...", "Добавить условную точку останова...") },
+    { id: 'add-logpoint', label: uiText("添加记录点...", "Add logpoint...", "Добавить точку журналирования...") },
+    { id: 'add-triggered', label: uiText("添加触发的断点...", "Add triggered breakpoint...", "Добавить связанную точку останова..."), unsupported: !canTriggered },
   ]
 }
 
 /** 已有断点：删除 / 编辑 / 启停（名词随记录点切换）。 */
 function ownedEntries(state: BpMenuState): BpMenuEntry[] {
-  const noun = state.isLogpoint === true ? '记录点' : '断点'
+  const noun = state.isLogpoint === true ? uiText("记录点", "logpoint", "точка журналирования") : uiText("断点", "breakpoint", "точка останова")
   const enabled = state.enabled !== false
   return [
-    { id: 'delete', label: '删除 ' + noun, hint: 'Delete' },
-    { id: 'edit', label: '编辑 ' + noun + '…' },
-    enabled ? { id: 'disable', label: '禁用' + noun } : { id: 'enable', label: '启用 ' + noun },
+    { id: 'delete', label: uiText("删除 ", "Remove ", "Удалить: ") + noun, hint: 'Delete' },
+    { id: 'edit', label: uiText("编辑 ", "Edit ", "Изменить: ") + noun + '…' },
+    enabled ? { id: 'disable', label: uiText("禁用", "Disable ", "Выключить: ") + noun } : { id: 'enable', label: uiText("启用 ", "Enable ", "Включить: ") + noun },
   ]
 }

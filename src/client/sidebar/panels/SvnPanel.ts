@@ -13,6 +13,7 @@
  * 作者 ddj 2026年09月16号
  */
 import React from 'react'
+import { uiText } from '../../uiLocale.js'
 import { IconRefreshOutline16, entryIconEl } from '../../ui/icons.js'
 import { isDirOf } from '../../ui/svnIcons.js'
 import { useSvnEntryKinds } from '../../ui/useSvnEntryKinds.js'
@@ -91,7 +92,7 @@ function planStepsOf(selected: AiSelected, sessionId: string | undefined) {
   for (const chunk of svnChunksOf(reverts, BATCH_PATHS_CAP)) {
     revDone += chunk.length
     steps.push({
-      label: '还原 ' + revDone + '/' + reverts.length + ' 项',
+      label: uiText('还原 ', "Revert ", "Восстановление ") + revDone + '/' + reverts.length + uiText(' 项', " items", " элементов"),
       kind: 'revert', n: chunk.length,
       run: () => svnRevert(sessionId, chunk),
     })
@@ -102,7 +103,7 @@ function planStepsOf(selected: AiSelected, sessionId: string | undefined) {
     for (const chunk of svnChunksOf(group.paths, BATCH_PATHS_CAP)) {
       done += chunk.length
       steps.push({
-        label: '分组 ' + (index + 1) + '/' + groups.length + ' 组（' + group.name + '）' + done + '/' + group.paths.length + ' 项',
+        label: uiText('分组 ', "Group ", "Группа ") + (index + 1) + '/' + groups.length + uiText(' 组（', " groups (", " групп (") + group.name + '）' + done + '/' + group.paths.length + uiText(' 项', " items", " элементов"),
         kind: 'group', n: chunk.length, key: group.name,
         run: () => svnChangelist(sessionId, chunk, group.name),
       })
@@ -111,7 +112,7 @@ function planStepsOf(selected: AiSelected, sessionId: string | undefined) {
   const items = ignoreItemsOf(selected.ignores)
   items.forEach((item, index) => {
     steps.push({
-      label: '忽略目录 ' + (index + 1) + '/' + items.length + '（' + (item.dir || '工作副本根') + '）',
+      label: uiText('忽略目录 ', "Ignore directory ", "Исключить папку ") + (index + 1) + '/' + items.length + '（' + (item.dir || uiText('工作副本根', "Working copy root", "Корень рабочей копии")) + '）',
       kind: 'ignore', n: item.names.length,
       run: () => svnIgnore(sessionId, [item]),
     })
@@ -141,9 +142,9 @@ function planSummaryOf(steps, log, cancelled) {
       if (!sum.firstFail) sum.firstFail = entry.text
     }
   })
-  let text = 'AI 整理完成：还原 ' + sum.revert + ' · 分组 ' + groupNames.size + ' 组 ' + sum.group + ' 项 · 忽略 ' + sum.ignore + ' 项'
-  if (sum.failed) text += '；失败 ' + sum.failed + '（首条：' + sum.firstFail + '）'
-  if (cancelled) text += '；已取消剩余步骤'
+  let text = uiText('AI 整理完成：还原 ', "AI organization completed: reverted ", "Упорядочивание AI завершено: восстановлено ") + sum.revert + uiText(' · 分组 ', " · Grouped ", " · Сгруппировано ") + groupNames.size + uiText(' 组 ', " groups ", " групп ") + sum.group + uiText(' 项 · 忽略 ', " items · Ignored ", " элементов · Исключено ") + sum.ignore + uiText(' 项', " items", " элементов")
+  if (sum.failed) text += uiText('；失败 ', "; Failed ", "; Ошибок ") + sum.failed + uiText('（首条：', " (first: ", " (первая: ") + sum.firstFail + '）'
+  if (cancelled) text += uiText('；已取消剩余步骤', "; Remaining steps cancelled", "; Оставшиеся шаги отменены")
   return text
 }
 // --endregion
@@ -312,10 +313,10 @@ const SvnRow = React.memo(function SvnRow(props) {
     React.createElement('span', { className: 'edrv-svn-path' }, entry.path),
     (pairNote ? React.createElement('span', { className: 'edrv-svn-pair-mark', title: pairNote }, '⇄') : null),
     React.createElement('span', { className: 'edrv-svn-acts' },
-      (entry.status === 'conflicted' ? act('冲突对比', '与 .mine/.rN 冲突副本并排对比（解决指引见差异视图顶部）', false, () => onConflict(entry.path)) : null),
-      (diffable ? act('比较', SVN_DIFF_BASE_LABEL + '（BASE 与工作区并排）', false, () => onDiff(entry.path)) : null),
-      (!entry.versioned ? act('加入', SVN_ADD_LABEL, false, () => onAdd([entry.path])) : null),
-      (entry.versioned ? act('还原', SVN_REVERT_LABEL + '（放弃本地改动）', true, () => onRevert([entry.path])) : null)))
+      (entry.status === 'conflicted' ? act(uiText('冲突对比', "Compare conflicts", "Сравнить конфликты"), uiText('与 .mine/.rN 冲突副本并排对比（解决指引见差异视图顶部）', "Compare .mine/.rN conflict copies side by side (resolution guidance is at the top of the diff)", "Сравнить конфликтующие копии .mine/.rN рядом (инструкция по разрешению — сверху сравнения)"), false, () => onConflict(entry.path)) : null),
+      (diffable ? act(uiText('比较', "Compare", "Сравнить"), SVN_DIFF_BASE_LABEL + uiText('（BASE 与工作区并排）', " (BASE and workspace side by side)", " (BASE и рабочая область рядом)"), false, () => onDiff(entry.path)) : null),
+      (!entry.versioned ? act(uiText('加入', "Add", "Добавить"), SVN_ADD_LABEL, false, () => onAdd([entry.path])) : null),
+      (entry.versioned ? act(uiText('还原', "Revert", "Восстановить"), SVN_REVERT_LABEL + uiText('（放弃本地改动）', " (discard local changes)", " (отбросить локальные изменения)"), true, () => onRevert([entry.path])) : null)))
 })
 
 /**
@@ -326,12 +327,12 @@ const SvnRow = React.memo(function SvnRow(props) {
  * @returns 主体元素或元素数组
  */
 function svnListBody(state, handlers) {
-  if (!state.managed) return React.createElement('div', { className: 'edrv-tree-loading' }, '当前工作区不受 SVN 管理')
-  if (state.entries === null) return React.createElement('div', { className: 'edrv-tree-loading' }, '读取变更中…')
+  if (!state.managed) return React.createElement('div', { className: 'edrv-tree-loading' }, uiText('当前工作区不受 SVN 管理', "The current workspace is not managed by SVN", "Текущая рабочая область не находится под управлением SVN"))
+  if (state.entries === null) return React.createElement('div', { className: 'edrv-tree-loading' }, uiText('读取变更中…', "Reading changes…", "Чтение изменений…"))
   if (!state.visible.length) {
     // W1-2：名称过滤生效时区分「无匹配」与「无变更」，提示清空过滤框
     return React.createElement('div', { className: 'edrv-tree-loading' },
-      state.nameFiltered ? '无匹配条目（名称过滤生效中，清空过滤框可看全部）' : '无变更（工作副本干净）')
+      state.nameFiltered ? uiText('无匹配条目（名称过滤生效中，清空过滤框可看全部）', "No matches (name filter active; clear it to show all)", "Нет совпадений (действует фильтр имени; очистите его для показа всех)") : uiText('无变更（工作副本干净）', "No changes (working copy clean)", "Нет изменений (рабочая копия чистая)"))
   }
   const rows = []
   for (const group of state.budget.groups) {
@@ -340,18 +341,18 @@ function svnListBody(state, handlers) {
     rows.push(React.createElement('div', {
       key: 'g:' + group.name,
       className: 'edrv-svn-group',
-      title: '点击折叠/展开该分组',
+      title: uiText('点击折叠/展开该分组', "Click to collapse/expand this group", "Нажмите для сворачивания/разворачивания группы"),
       onClick: () => state.onFold?.(group.name),
     },
       React.createElement('span', { className: 'edrv-svn-fold-ch' }, group.folded ? '▸' : '▾'),
-      React.createElement('span', null, 'changelist: ' + group.name),
+      React.createElement('span', null, 'changelist: ' + (group.name === NO_CHANGELIST ? uiText(NO_CHANGELIST, '(Ungrouped)', '(Без группы)') : group.name)),
       (group.name !== NO_CHANGELIST && handlers.onGroupClRemove
         ? React.createElement('button', {
             className: 'edrv-svn-act',
             disabled: handlers.busy,
-            title: '把该分区全部文件移出 changelist（不改文件内容；超过 ' + BATCH_PATHS_CAP + ' 项自动分块执行）',
+            title: uiText('把该分区全部文件移出 changelist（不改文件内容；超过 ', "Remove all files in this section from their changelist (file contents unchanged; over ", "Удалить все файлы раздела из списка изменений (содержимое не меняется; более ") + BATCH_PATHS_CAP + uiText(' 项自动分块执行）', " items are processed in chunks)", " элементов обрабатываются порциями)"),
             onClick: (event) => { event.stopPropagation(); handlers.onGroupClRemove(group.name) },
-          }, '移出分区')
+          }, uiText('移出分区', "Remove from changelist", "Убрать из списка изменений"))
         : null),
       React.createElement('span', { className: 'edrv-svn-group-n' }, String(group.full ?? group.entries.length))))
     if (group.folded) continue
@@ -363,13 +364,13 @@ function svnListBody(state, handlers) {
     rows.push(React.createElement('button', {
       key: 'edrv-svn-more',
       className: 'edrv-svn-act edrv-svn-more',
-      title: '继续渲染更多条目（每次 ' + RENDER_STEP + ' 条；批量动作与导出始终按全量集合计算，不受渲染预算影响）',
+      title: uiText('继续渲染更多条目（每次 ', "Render more entries (", "Показать ещё записи (по ") + RENDER_STEP + uiText(' 条；批量动作与导出始终按全量集合计算，不受渲染预算影响）', " at a time; batch actions and exports always use the full set)", " за раз; пакетные действия и экспорт всегда используют полный набор)"),
       onClick: handlers.onMore,
-    }, '已显示 ' + state.budget.shown + ' / ' + state.budget.total + ' 项，显示更多'))
+    }, uiText('已显示 ', "Showing ", "Показано ") + state.budget.shown + ' / ' + state.budget.total + uiText(' 项，显示更多', " items; show more", " элементов; показать ещё")))
   }
   if (state.capped) {
     rows.push(React.createElement('div', { key: 'edrv-svn-capped', className: 'edrv-tree-loading' },
-      '变更条目过多，清单已按上限截断（列表/批量/导出仅含已载入部分）；可用名称过滤缩小范围'))
+      uiText('变更条目过多，清单已按上限截断（列表/批量/导出仅含已载入部分）；可用名称过滤缩小范围', "Too many changes; list truncated at the limit (list/batch/export include loaded entries only). Use name filtering to narrow the scope.", "Слишком много изменений; список обрезан по пределу (список/пакет/экспорт включают только загруженное). Сузьте область фильтром имени.")))
   }
   return rows
 }
@@ -387,22 +388,22 @@ function svnListBody(state, handlers) {
 function aiBarEl(props) {
   const { managed, busy, aiBusy, deepWaiting, hasRun, onQuick, onDeep } = props
   const locked = !managed || busy || aiBusy || hasRun
-  const status = aiBusy ? '分析中…' : (deepWaiting ? '等待助手投递…' : '就绪')
+  const status = aiBusy ? uiText('分析中…', "Analyzing…", "Анализ…") : (deepWaiting ? uiText('等待助手投递…', "Waiting for assistant delivery…", "Ожидание результата ассистента…") : uiText('就绪', "Ready", "Готово"))
   return React.createElement('div', { className: 'edrv-svn-ai-bar' },
     React.createElement('span', { className: 'edrv-svn-ai-rail', 'aria-hidden': 'true' }),
-    React.createElement('span', { className: 'edrv-svn-ai-label' }, 'AI 整理'),
+    React.createElement('span', { className: 'edrv-svn-ai-label' }, uiText('AI 整理', "AI organization", "Упорядочивание AI")),
     React.createElement('button', {
       className: 'edrv-svn-act edrv-svn-ai-btn',
-      title: '快速分析：由模型直读变更与差异，产出分组/还原/忽略方案（分析后需勾选确认才执行）',
+      title: uiText('快速分析：由模型直读变更与差异，产出分组/还原/忽略方案（分析后需勾选确认才执行）', "Quick analysis: the model reads changes and diffs to suggest groups/reverts/ignores (execution requires checked confirmation)", "Быстрый анализ: модель читает изменения и различия, предлагая группы/восстановления/исключения (выполнение требует отметок и подтверждения)"),
       disabled: locked,
       onClick: onQuick,
-    }, '快速分析'),
+    }, uiText('快速分析', "Quick analysis", "Быстрый анализ")),
     React.createElement('button', {
       className: 'edrv-svn-act edrv-svn-ai-btn',
-      title: '深度分析：把分析任务填入对话，由 AI 助手借 codegraph/读文件深度分析后投递方案回本面板（执行仍需勾选确认）',
+      title: uiText('深度分析：把分析任务填入对话，由 AI 助手借 codegraph/读文件深度分析后投递方案回本面板（执行仍需勾选确认）', "Deep analysis: send the task to the conversation; the AI assistant uses codegraph/file reading and returns a plan here (execution requires checked confirmation)", "Глубокий анализ: задача передаётся в диалог; AI-ассистент использует codegraph/чтение файлов и возвращает план сюда (выполнение требует отметок и подтверждения)"),
       disabled: locked || deepWaiting,
       onClick: onDeep,
-    }, '深度分析'),
+    }, uiText('深度分析', "Deep analysis", "Глубокий анализ")),
     React.createElement('span', { style: { flex: 1 } }),
     React.createElement('span', { className: 'edrv-svn-ai-status' }, status))
 }
@@ -427,50 +428,50 @@ function svnToolbarEl(props) {
   const nameFiltered = String(filter.name || '').trim() !== ''
   return [
     React.createElement('div', { key: 'tools', className: 'edrv-svn-toolbar' },
-      check('未版本控制', '显示未纳入版本控制的文件', filter.unversioned, handlers.toggleUnversioned),
-      check('忽略项', '显示被忽略的文件', filter.ignored, handlers.toggleIgnored),
+      check(uiText('未版本控制', "Unversioned", "Вне контроля версий"), uiText('显示未纳入版本控制的文件', "Show unversioned files", "Показать файлы вне контроля версий"), filter.unversioned, handlers.toggleUnversioned),
+      check(uiText('忽略项', "Ignored", "Исключённые"), uiText('显示被忽略的文件', "Show ignored files", "Показать исключённые файлы"), filter.ignored, handlers.toggleIgnored),
       React.createElement('input', {
         className: 'edrv-svn-name-filter',
-        placeholder: '名称过滤：* ? 通配或子串',
-        title: '按路径过滤条目（* 任意串、? 单字符；无通配符按子串包含，忽略大小写；只影响列表展示，不缩小批量动作范围）',
+        placeholder: uiText('名称过滤：* ? 通配或子串', "Name filter: * ? wildcards or substring", "Фильтр имени: * ? или подстрока"),
+        title: uiText('按路径过滤条目（* 任意串、? 单字符；无通配符按子串包含，忽略大小写；只影响列表展示，不缩小批量动作范围）', "Filter paths (* any string, ? one character; otherwise case-insensitive substring; display only, batch scope unchanged)", "Фильтр путей (* любая строка, ? один символ; иначе подстрока без учёта регистра; только отображение, область пакетных действий не меняется)"),
         value: filter.name || '',
         onChange: (event) => handlers.onNameFilter(event.target.value),
       })),
     (count
       ? React.createElement('div', { key: 'bulk', className: 'edrv-svn-bulk' },
-          React.createElement('span', { className: 'edrv-svn-count' }, String(count) + (nameFiltered ? '/' + countAll : '') + ' 项'),
+          React.createElement('span', { className: 'edrv-svn-count' }, String(count) + (nameFiltered ? '/' + countAll : '') + uiText(' 项', " items", " элементов")),
           React.createElement('span', { style: { flex: 1 } }),
           // 导出簇 ┊ 动作簇（设计定稿：语义分组，分隔线只在两簇之间）
           React.createElement('button', {
-            className: 'edrv-svn-act', title: '导出当前列表为 CSV（带 BOM，Excel 直开；状态/路径/changelist/修订）',
+            className: 'edrv-svn-act', title: uiText('导出当前列表为 CSV（带 BOM，Excel 直开；状态/路径/changelist/修订）', "Export current list to CSV (BOM for Excel; status/path/changelist/revision)", "Экспортировать список в CSV (BOM для Excel; состояние/путь/changelist/ревизия)"),
             onClick: handlers.onExportCsv,
-          }, '导出 CSV'),
+          }, uiText('导出 CSV', "Export CSV", "Экспорт CSV")),
           React.createElement('button', {
-            className: 'edrv-svn-act', title: '导出当前列表为 HTML 报表（仅本地查看，不外发）',
+            className: 'edrv-svn-act', title: uiText('导出当前列表为 HTML 报表（仅本地查看，不外发）', "Export current list as HTML report (local viewing only; not sent externally)", "Экспортировать список в HTML-отчёт (локальный просмотр, без отправки)"),
             onClick: handlers.onExportHtml,
-          }, '导出 HTML'),
+          }, uiText('导出 HTML', "Export HTML", "Экспорт HTML")),
           React.createElement('button', {
             className: 'edrv-svn-act edrv-svnplan-primary',
             disabled: handlers.busy,
-            title: '打开原生提交对话框（勾选文件 → 写信息 → 提交；未版本控制默认不勾）',
+            title: uiText('打开原生提交对话框（勾选文件 → 写信息 → 提交；未版本控制默认不勾）', "Open commit dialog (select files → write message → commit; unversioned files unchecked by default)", "Открыть окно коммита (выбрать файлы → написать сообщение → коммит; файлы вне контроля версий не отмечены)"),
             onClick: () => handlers.commit?.(),
-          }, '提交…'),
+          }, uiText('提交…', "Commit…", "Коммит…")),
           ((paths.unversioned.length || paths.revert.length)
             ? React.createElement('span', { className: 'edrv-svn-sep' })
             : null),
           (paths.unversioned.length
             ? React.createElement('button', {
                 className: 'edrv-svn-act', disabled: handlers.busy,
-                title: '把全部未版本控制文件加入版本控制（不受名称过滤影响）',
+                title: uiText('把全部未版本控制文件加入版本控制（不受名称过滤影响）', "Add all unversioned files (not affected by name filter)", "Добавить все файлы вне контроля версий (независимо от фильтра имени)"),
                 onClick: () => handlers.add(paths.unversioned),
-              }, '全部加入')
+              }, uiText('全部加入', "Add all", "Добавить все"))
             : null),
           (paths.revert.length
             ? React.createElement('button', {
                 className: 'edrv-svn-act edrv-svn-act-danger', disabled: handlers.busy,
-                title: '还原全部已受版本控制文件的本地改动（不受名称过滤影响）',
+                title: uiText('还原全部已受版本控制文件的本地改动（不受名称过滤影响）', "Revert all versioned files’ local changes (not affected by name filter)", "Восстановить все локальные изменения файлов под контролем версий (независимо от фильтра имени)"),
                 onClick: () => handlers.revert(paths.revert),
-              }, '全部还原')
+              }, uiText('全部还原', "Revert all", "Восстановить все"))
             : null))
       : null),
   ]
@@ -538,9 +539,9 @@ export function SvnPanel(props) {
     if (!paths.length) return
     if (kind === 'revert') {
       const preview = paths.length > CONFIRM_PREVIEW_CAP
-        ? paths.slice(0, CONFIRM_PREVIEW_CAP).join('\n') + '\n…等 ' + paths.length + ' 个文件'
+        ? paths.slice(0, CONFIRM_PREVIEW_CAP).join('\n') + uiText('\n…等 ', "\n…total: ", "\n…всего: ") + paths.length + uiText(' 个文件', " files", " файлов")
         : paths.join('\n')
-      const head = REVERT_CONFIRM_HEAD + paths.length + REVERT_CONFIRM_TAIL
+      const head = uiText(REVERT_CONFIRM_HEAD, 'Revert local changes in the following ', 'Восстановить локальные изменения следующих ') + paths.length + uiText(REVERT_CONFIRM_TAIL, ' files? Added (A) files remain on disk; only their registration is removed.', ' файлов? Добавленные (A) файлы останутся на диске; отменится только их регистрация.')
       if (!window.confirm(head + '\n\n' + preview)) return
     }
     setBusy(true)
@@ -582,10 +583,10 @@ export function SvnPanel(props) {
       const revSide = artifacts.find((item) => item.kind === 'rev')
       const mineSide = artifacts.find((item) => item.kind === 'mine')
       if (!revSide || !mineSide) {
-        live?.notify?.('未发现冲突副本（.mine/.rN）：' + artifacts.map((item) => item.name).join('、'))
+        live?.notify?.(uiText('未发现冲突副本（.mine/.rN）：', "No conflict copies found (.mine/.rN): ", "Конфликтующие копии не найдены (.mine/.rN): ") + artifacts.map((item) => item.name).join('、'))
         return
       }
-      if (!live?.openSvnLocalPair) { live?.notify?.('当前视图不支持冲突对比'); return }
+      if (!live?.openSvnLocalPair) { live?.notify?.(uiText('当前视图不支持冲突对比', "This view does not support conflict comparison", "Это представление не поддерживает сравнение конфликтов")); return }
       live.openSvnLocalPair(revSide.path, mineSide.path, '.r' + (revSide.rev ?? '?'), '.mine', path)
     })
   }, [sessionId])
@@ -646,8 +647,8 @@ export function SvnPanel(props) {
     if (!pairsKnown) return {}
     const notes = {}
     for (const pair of pairMissingWithUnversioned(entries ?? [], sizes)) {
-      notes[pair.missingPath] = '疑似改名：原文件 → ' + pair.unversionedPath
-      notes[pair.unversionedPath] = '疑似改名：← 原文件 ' + pair.missingPath
+      notes[pair.missingPath] = uiText('疑似改名：原文件 → ', "Possible rename: original file → ", "Возможное переименование: исходный файл → ") + pair.unversionedPath
+      notes[pair.unversionedPath] = uiText('疑似改名：← 原文件 ', "Possible rename: ← original file ", "Возможное переименование: ← исходный файл ") + pair.missingPath
     }
     return notes
   }, [pairsKnown, entries, sizes])
@@ -687,10 +688,10 @@ export function SvnPanel(props) {
     const total = paths.length
     if (!failures.length) {
       ctxRef.current?.notify?.(name === null
-        ? '已移出分区（' + total + ' 项）'
-        : '已移入分区「' + name + '」（' + total + ' 项）')
+        ? uiText('已移出分区（', "Removed from changelist (", "Убрано из списка изменений (") + total + uiText(' 项）', " items)", " элементов)")
+        : uiText('已移入分区「', "Moved to changelist “", "Перемещено в список изменений «") + name + '」（' + total + uiText(' 项）', " items)", " элементов)"))
     } else {
-      ctxRef.current?.notify?.('分区完成 ' + done + '/' + total + ' 项；' + failures[0])
+      ctxRef.current?.notify?.(uiText('分区完成 ', "Changelist operation completed ", "Операция со списком изменений завершена ") + done + '/' + total + uiText(' 项；', " items; ", " элементов; ") + failures[0])
     }
     refreshSvnChanges(sessionId, scope)
   }, [sessionId, scope])
@@ -701,7 +702,7 @@ export function SvnPanel(props) {
    * @param entry 变更条目
    */
   const moveToChangelist = async (entry) => {
-    const name = await ctxRef.current?.prompt?.('移入 SVN 分区（changelist）', entry.changelist || '')
+    const name = await ctxRef.current?.prompt?.(uiText('移入 SVN 分区（changelist）', "Move to SVN changelist", "Переместить в список изменений SVN"), entry.changelist || '')
     if (!name) return
     const nameError = svnChangelistNameErrorOf(name)
     if (nameError) { ctxRef.current?.notify?.(nameError); return }
@@ -727,7 +728,7 @@ export function SvnPanel(props) {
    */
   const runAiPlan = React.useCallback(() => {
     if (aiBusy || aiRun) return
-    if (!entries || !entries.length) { ctxRef.current?.notify?.('无变更可分析'); return }
+    if (!entries || !entries.length) { ctxRef.current?.notify?.(uiText('无变更可分析', "No changes to analyze", "Нет изменений для анализа")); return }
     setAiBusy(true)
     void svnAiPlan(sessionId).then((outcome) => {
       if (!outcome.ok || !outcome.plan) { ctxRef.current?.notify?.(outcome.message); return }
@@ -835,7 +836,7 @@ export function SvnPanel(props) {
       ticks += 1
       if (ticks > DEEP_POLL_MAX) {
         stopDeepPoll()
-        ctxRef.current?.notify?.('等待 AI 助手方案超时（10 分钟），已停止取件')
+        ctxRef.current?.notify?.(uiText('等待 AI 助手方案超时（10 分钟），已停止取件', "Timed out waiting for AI plan (10 minutes); stopped checking", "Истекло ожидание плана AI (10 минут); проверка остановлена"))
         return
       }
       void svnAiPlanPending(sessionId, since).then((outcome) => {
@@ -849,7 +850,7 @@ export function SvnPanel(props) {
           model: undefined,
           source: 'agent',
         })
-        ctxRef.current?.notify?.('AI 助手方案已送达，请勾选确认后执行')
+        ctxRef.current?.notify?.(uiText('AI 助手方案已送达，请勾选确认后执行', "AI assistant plan received. Check and confirm items before executing.", "План AI-ассистента получен. Отметьте и подтвердите элементы перед выполнением."))
       })
     }, DEEP_POLL_MS)
   }, [sessionId, stopDeepPoll])
@@ -863,38 +864,38 @@ export function SvnPanel(props) {
   const runDeepPlan = React.useCallback(() => {
     const live = ctxRef.current
     if (aiBusy || aiRun || deepWaiting) return
-    if (!entries || !entries.length) { live?.notify?.('无变更可分析'); return }
+    if (!entries || !entries.length) { live?.notify?.(uiText('无变更可分析', "No changes to analyze", "Нет изменений для анализа")); return }
     const wcRoot = live?.svn?.wcRoot ? String(live.svn.wcRoot) : ''
     const since = Date.now()
     const add = live?.addToConversation
-    if (!add?.appendText) { live?.notify?.('无法填入任务（无会话或输入框不可用）'); return }
+    if (!add?.appendText) { live?.notify?.(uiText('无法填入任务（无会话或输入框不可用）', "Cannot insert task (no session or input unavailable)", "Нельзя вставить задачу (нет сессии или поле ввода недоступно)")); return }
 
     /** @private @author ddj 2026年10月29号 @returns Draft insertion only; never submits or starts a task poll. */
     async function draftCurrent(): Promise<void> {
-      if (!sessionId) { live?.notify?.('无法填入任务（无会话或输入框不可用）'); return }
+      if (!sessionId) { live?.notify?.(uiText('无法填入任务（无会话或输入框不可用）', "Cannot insert task (no session or input unavailable)", "Нельзя вставить задачу (нет сессии или поле ввода недоступно)")); return }
       try {
         const outcome = await add.appendText(sessionId, buildAgentPrompt(wcRoot, sessionId))
-        if (outcome === 'ok' || outcome === 'busy') live?.notify?.('已填入当前草稿，请手动发送')
-        else live?.notify?.('发起失败：' + (outcome === 'unavailable' ? '无会话或输入框不可用' : '输入框忙，请重试'))
-      } catch { live?.notify?.('草稿填入失败，请检查当前输入框') }
+        if (outcome === 'ok' || outcome === 'busy') live?.notify?.(uiText('已填入当前草稿，请手动发送', "Inserted into current draft. Send it manually.", "Вставлено в текущий черновик. Отправьте вручную."))
+        else live?.notify?.(uiText('发起失败：', "Could not start: ", "Не удалось запустить: ") + (outcome === 'unavailable' ? uiText('无会话或输入框不可用', "No session or input unavailable", "Нет сессии или поле ввода недоступно") : uiText('输入框忙，请重试', "Input is busy. Retry.", "Поле ввода занято. Повторите.")))
+      } catch { live?.notify?.(uiText('草稿填入失败，请检查当前输入框', "Failed to insert draft. Check the current input field.", "Не удалось вставить черновик. Проверьте текущее поле ввода.")) }
     }
     /** @private @author ddj 2026年10月29号 @param id Created target. @returns One detailed send decision; ambiguous receipts never retry. */
     async function sendAndWatch(id): Promise<void> {
       if (!id) { await draftCurrent(); return }
       if (typeof add.sendTaskResult !== 'function') {
-        live?.notify?.('发送接口不支持受理确认，本次未自动发送，请手动处理')
+        live?.notify?.(uiText('发送接口不支持受理确认，本次未自动发送，请手动处理', "Send interface cannot confirm acceptance; nothing was sent automatically. Handle it manually.", "Интерфейс отправки не подтверждает принятие; автоматической отправки не было. Выполните вручную."))
         return
       }
       let result: TaskSendResult | undefined
       try { result = await add.sendTaskResult(id, buildAgentPrompt(wcRoot, id)) }
       catch { result = { status: 'unknown', legacyOk: false } }
       if (result?.status === 'accepted') {
-        live?.notify?.('已在新会话「AI 深度分析」受理任务，请在左侧会话列表点开查看进度')
+        live?.notify?.(uiText('已在新会话「AI 深度分析」受理任务，请在左侧会话列表点开查看进度', "Task accepted in the new AI Deep Analysis session. Open it in the left session list to view progress.", "Задача принята в новой сессии «Глубокий анализ AI». Откройте её в списке слева для просмотра хода работы."))
         startDeepPoll(since)
       } else if (result?.status === 'rejected' || result?.status === 'unavailable') await draftCurrent()
-      else if (result?.status === 'cancelled') live?.notify?.('发送操作已取消，任务可能已提交，请检查目标会话：' + id)
-      else if (result?.status === 'submitted') live?.notify?.('已调用提交但受理未确认，请检查目标会话，不要重复发送：' + id)
-      else live?.notify?.('任务受理未确认，请检查目标会话，不要重复发送：' + id)
+      else if (result?.status === 'cancelled') live?.notify?.(uiText('发送操作已取消，任务可能已提交，请检查目标会话：', "Send cancelled; the task may have been submitted. Check the target session: ", "Отправка отменена; задача могла быть отправлена. Проверьте целевую сессию: ") + id)
+      else if (result?.status === 'submitted') live?.notify?.(uiText('已调用提交但受理未确认，请检查目标会话，不要重复发送：', "Submission called but acceptance unconfirmed. Check the target session; do not resend: ", "Отправка вызвана, но принятие не подтверждено. Проверьте целевую сессию; не отправляйте повторно: ") + id)
+      else live?.notify?.(uiText('任务受理未确认，请检查目标会话，不要重复发送：', "Task acceptance unconfirmed. Check the target session; do not resend: ", "Принятие задачи не подтверждено. Проверьте целевую сессию; не отправляйте повторно: ") + id)
     }
     /** @private @author ddj 2026年10月29号 @returns Creates a target before sending; creation failure can only insert a manual draft. */
     async function beginDeep(): Promise<void> {
@@ -931,13 +932,13 @@ export function SvnPanel(props) {
   const rowMenuEntriesOf = (entry): ContextMenuEntry[] => [
     {
       id: 'cl-set',
-      label: entry.changelist ? '移到其他分区…' : '移入分区…',
+      label: entry.changelist ? uiText('移到其他分区…', "Move to another changelist…", "Переместить в другой список изменений…") : uiText('移入分区…', "Move to changelist…", "Переместить в список изменений…"),
       disabled: !entry.versioned || busy,
       onClick: () => { void moveToChangelist(entry) },
     },
     {
       id: 'cl-remove',
-      label: '移出分区' + (entry.changelist ? '「' + entry.changelist + '」' : ''),
+      label: uiText('移出分区', "Remove from changelist", "Убрать из списка изменений") + (entry.changelist ? '「' + entry.changelist + '」' : ''),
       disabled: !entry.versioned || !entry.changelist || busy,
       onClick: () => { void runCl([entry.path], null) },
     },
@@ -978,12 +979,12 @@ export function SvnPanel(props) {
       entry.changelist || '',
       entry.revision && entry.revision > 0 ? String(entry.revision) : '',
     ])
-    const headers = ['状态', '路径', 'changelist', '修订']
+    const headers = [uiText('状态', "Status", "Состояние"), uiText('路径', "Path", "Путь"), 'changelist', uiText('修订', "Revision", "Ревизия")]
     const stamp = new Date().toISOString().slice(0, 10)
     const done = kind === 'html'
-      ? downloadText('svn-changes-' + stamp + '.html', htmlTableOf(headers, rows, 'SVN 变更列表 ' + stamp), 'text/html')
+      ? downloadText('svn-changes-' + stamp + '.html', htmlTableOf(headers, rows, uiText('SVN 变更列表 ', "SVN changes ", "Изменения SVN ") + stamp), 'text/html')
       : downloadText('svn-changes-' + stamp + '.csv', csvOf([headers, ...rows]), 'text/csv')
-    if (!done) ctx?.notify?.('导出失败：浏览器下载能力不可用')
+    if (!done) ctx?.notify?.(uiText('导出失败：浏览器下载能力不可用', "Export failed: browser downloads unavailable", "Ошибка экспорта: загрузки браузера недоступны"))
   }
 
   const groups = React.useMemo(() => groupByChangelist(shown), [shown])
@@ -1018,7 +1019,7 @@ export function SvnPanel(props) {
   })
   /** @private @author ddj 2026年10月15号 Open the shared update window independently of selection and local changes. */
   function updateProject() { ctxRef.current?.openSvnUpdate?.('') }
-  const updateHint = !managed ? 'SVN CLI 或工作副本不可用' : !ctx?.openSvnUpdate ? 'SVN 更新窗口不可用' : '更新项目（打开 SVN 更新窗口）'
+  const updateHint = !managed ? uiText('SVN CLI 或工作副本不可用', "SVN CLI or working copy unavailable", "SVN CLI или рабочая копия недоступны") : !ctx?.openSvnUpdate ? uiText('SVN 更新窗口不可用', "SVN update window unavailable", "Окно обновления SVN недоступно") : uiText('更新项目（打开 SVN 更新窗口）', "Update project (open SVN update window)", "Обновить проект (открыть окно обновления SVN)")
   const rootName = ctx?.svn?.wcRoot ? String(ctx.svn.wcRoot).split(/[\\/]/).pop() || ctx.svn.wcRoot : ''
 
   // W2-3：远端更新提示条（null = 未检查；failed = 降级文案；否则展示落后数与 against 修订）
@@ -1027,16 +1028,16 @@ export function SvnPanel(props) {
     : React.createElement('div', { className: 'edrv-svn-hintbar' + (remote.failed ? ' edrv-svn-hintbar-warn' : '') },
         React.createElement('span', { style: { flex: 1 } },
           remote.failed
-            ? '远端检查失败（网络不可达或超时；可用 ⟳ 或「检查远端」重试）'
+            ? uiText('远端检查失败（网络不可达或超时；可用 ⟳ 或「检查远端」重试）', "Remote check failed (network unavailable or timeout; retry with ⟳ or Check remote)", "Проверка удалённого репозитория не удалась (сеть недоступна или тайм-аут; повторите через ⟳ или проверку репозитория)")
             : (remote.outdated.length
-              ? '远端有 ' + remote.outdated.length + ' 个更新（against r' + (remote.againstRev ?? '?') + '），其中本地已改 ' + remote.outdated.filter((item) => item.path && versionedPathSet.has(item.path)).length + ' 个；更新前请先提交或还原'
-              : '远端无更新（against r' + (remote.againstRev ?? '?') + '）')),
-        React.createElement('button', { className: 'edrv-svn-act', title: '关闭提示条', onClick: () => setRemote(null) }, '✕'))
+              ? uiText('远端有 ', "Remote has ", "В репозитории ") + remote.outdated.length + uiText(' 个更新（against r', " updates (against r", " обновлений (относительно r") + (remote.againstRev ?? '?') + uiText('），其中本地已改 ', "), locally modified: ", "), локально изменено: ") + remote.outdated.filter((item) => item.path && versionedPathSet.has(item.path)).length + uiText(' 个；更新前请先提交或还原', " files; commit or revert before updating", " файлов; выполните коммит или восстановление перед обновлением")
+              : uiText('远端无更新（against r', "No remote updates (against r", "Нет удалённых обновлений (относительно r") + (remote.againstRev ?? '?') + '）')),
+        React.createElement('button', { className: 'edrv-svn-act', title: uiText('关闭提示条', "Dismiss notice", "Закрыть уведомление"), onClick: () => setRemote(null) }, '✕'))
 
   // W2-5：改名配对候选超上限提示（评估范围 = FILE_SIZES_CAP，missing 优先）
   const pairCapEl = pairCapHint
     ? React.createElement('div', { className: 'edrv-svn-hintbar' },
-        '改名配对候选超过 ' + FILE_SIZES_CAP + ' 个，仅评估前 ' + FILE_SIZES_CAP + ' 个（缺失文件优先）')
+        uiText('改名配对候选超过 ', "Rename candidates exceed ", "Кандидатов переименования больше ") + FILE_SIZES_CAP + uiText(' 个，仅评估前 ', "; evaluating only the first ", "; проверяются только первые ") + FILE_SIZES_CAP + uiText(' 个（缺失文件优先）', " (missing files first)", " (сначала отсутствующие файлы)"))
     : null
 
   // P5：行右键菜单（分区管理；ContextMenu 经 portal 挂 body，Esc/外点自动关闭）
@@ -1082,21 +1083,21 @@ export function SvnPanel(props) {
 
   return React.createElement('div', { className: 'edrv-side-panel' },
     React.createElement('div', { className: 'edrv-side-head' },
-      React.createElement('span', { className: 'edrv-side-title' }, 'SVN 变更'),
+      React.createElement('span', { className: 'edrv-side-title' }, uiText('SVN 变更', "SVN changes", "Изменения SVN")),
       React.createElement('span', { className: 'edrv-side-root', title: ctx?.svn?.wcRoot || '' }, rootName),
       React.createElement('span', { style: { flex: 1 } }),
       // 项目更新、只读检查和本地刷新保持独立入口。
       React.createElement('span', { className: 'edrv-svn-head-icons' },
         React.createElement('button', {
-          className: 'edrv-side-btn', title: updateHint, 'aria-label': '更新项目',
+          className: 'edrv-side-btn', title: updateHint, 'aria-label': uiText('更新项目', "Update project", "Обновить проект"),
           disabled: !managed || !ctx?.openSvnUpdate, onClick: updateProject,
         }, '↓'),
         React.createElement('button', {
-          className: 'edrv-side-btn', title: '检查远端更新（svn status -u；约数秒，离线自动降级）',
+          className: 'edrv-side-btn', title: uiText('检查远端更新（svn status -u；约数秒，离线自动降级）', "Check remote updates (svn status -u; takes a few seconds, handles offline mode)", "Проверить удалённые обновления (svn status -u; несколько секунд, учитывает отсутствие сети)"),
           onClick: checkRemote,
         }, remoteBusy ? '…' : '⇅'),
         React.createElement('button', {
-          className: 'edrv-side-btn', title: '刷新变更',
+          className: 'edrv-side-btn', title: uiText('刷新变更', "Refresh changes", "Обновить изменения"),
           onClick: () => { refreshSvnChanges(sessionId, scope); ctx?.refreshRecords?.() },
         }, refreshIconEl()))),
     aiBarEl({

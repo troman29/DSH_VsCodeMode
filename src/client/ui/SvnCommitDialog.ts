@@ -9,6 +9,7 @@
  * @author ddj 2026年11月15号
  */
 import React from 'react'
+import { uiText } from '../uiLocale.js'
 import { ContextMenu } from './ContextMenu.js'
 import { copyText } from '../copyText.js'
 import { runSvnAction } from '../svnActions.js'
@@ -38,7 +39,7 @@ import {
 const TONE_ORDER = ['modified', 'added', 'deleted', 'conflict', 'plain']
 
 /** 状态分级 → 中文标签。 */
-const TONE_LABEL = { modified: '修改', added: '新增', deleted: '删除', conflict: '冲突', plain: '其他' }
+const TONE_LABEL = { get modified() { return uiText('修改', "Modified", "Изменено") }, get added() { return uiText('新增', "Added", "Добавлено") }, get deleted() { return uiText('删除', "Deleted", "Удалено") }, get conflict() { return uiText('冲突', "Conflicts", "Конфликты") }, get plain() { return uiText('其他', "Other", "Прочее") } }
 
 /**
  * 勾选范围 → 一行计数文案（页脚左键位）。
@@ -47,7 +48,7 @@ const TONE_LABEL = { modified: '修改', added: '新增', deleted: '删除', con
  * @returns 如「已选 6 / 17 个文件 · 修改 5 · 新增 1」
  */
 function statsTextOf(stats) {
-  const parts = ['已选 ' + stats.picked + ' / ' + stats.total + ' 个文件']
+  const parts = [uiText('已选 ', "Selected ", "Выбрано ") + stats.picked + ' / ' + stats.total + uiText(' 个文件', " files", " файлов")]
   for (const tone of TONE_ORDER) {
     const count = stats.byTone[tone] ?? 0
     if (count) parts.push(TONE_LABEL[tone] + ' ' + count)
@@ -64,7 +65,7 @@ function statsTextOf(stats) {
 function sectionNoteOf(section) {
   if (section.defaultChecked) return null
 
-  return section.key === 'unversioned' ? '默认不选' : '默认不提交'
+  return section.key === 'unversioned' ? uiText('默认不选', "Unchecked by default", "Не выбрано по умолчанию") : uiText('默认不提交', "Not committed by default", "Не отправляется по умолчанию")
 }
 
 /**
@@ -105,10 +106,10 @@ function checkBoxEl(checked, onToggle, title, indeterminate = false) {
 function sectionHeadEl(section, tri, onToggle) {
   const note = sectionNoteOf(section)
   return React.createElement('div', { className: 'edrv-svncommit-group', key: section.key },
-    checkBoxEl(tri === 'all', onToggle, tri === 'part' ? '部分勾选，点击全选本分区' : '全选本分区', tri === 'part'),
+    checkBoxEl(tri === 'all', onToggle, tri === 'part' ? uiText('部分勾选，点击全选本分区', "Partially checked; click to select this entire section", "Выбрано частично; нажмите, чтобы выбрать весь раздел") : uiText('全选本分区', "Select entire section", "Выбрать весь раздел"), tri === 'part'),
     React.createElement('span', { className: 'edrv-svncommit-gname', title: section.label }, section.label),
-    note ? React.createElement('span', { className: 'edrv-svncommit-gnote', title: '该分区默认不勾选；需要提交时逐条勾上' }, note) : null,
-    React.createElement('span', { className: 'edrv-svncommit-gcount' }, section.entries.length + ' 项'))
+    note ? React.createElement('span', { className: 'edrv-svncommit-gnote', title: uiText('该分区默认不勾选；需要提交时逐条勾上', "This section is unchecked by default; select individual items to commit", "Этот раздел не выбран по умолчанию; отметьте нужные элементы для коммита") }, note) : null,
+    React.createElement('span', { className: 'edrv-svncommit-gcount' }, section.entries.length + uiText(' 项', " items", " элементов")))
 }
 
 /** 右键菜单目标：文件行（row）或提交信息框（msg）；msg 额外带着打开时的选区。 */
@@ -215,7 +216,7 @@ function runEditCommand(s, node, command) {
 
   let ok = false
   try { ok = typeof document !== 'undefined' && document.execCommand(command) } catch { ok = false }
-  if (!ok) { s.notify?.('该操作不可用，请用键盘快捷键'); return }
+  if (!ok) { s.notify?.(uiText('该操作不可用，请用键盘快捷键', "This action is unavailable. Use a keyboard shortcut.", "Действие недоступно. Используйте сочетание клавиш.")); return }
 
   // execCommand 只改 DOM 值：读回来同步受控状态，否则下一次渲染把这次编辑回滚掉
   s.setMessage(node.value)
@@ -232,10 +233,10 @@ async function pasteInto(s, menu) {
   if (!node) return
 
   const clip = typeof navigator === 'undefined' ? null : navigator.clipboard
-  if (!clip || typeof clip.readText !== 'function') { s.notify?.('剪贴板读取不可用，请用 Ctrl+V'); return }
+  if (!clip || typeof clip.readText !== 'function') { s.notify?.(uiText('剪贴板读取不可用，请用 Ctrl+V', "Clipboard reading unavailable. Use Ctrl+V.", "Чтение буфера обмена недоступно. Используйте Ctrl+V.")); return }
 
   let text = ''
-  try { text = await clip.readText() } catch { s.notify?.('粘贴失败，请用 Ctrl+V'); return }
+  try { text = await clip.readText() } catch { s.notify?.(uiText('粘贴失败，请用 Ctrl+V', "Paste failed. Use Ctrl+V.", "Не удалось вставить. Используйте Ctrl+V.")); return }
 
   const value = s.message ?? ''
   s.setMessage(value.slice(0, menu.start) + text + value.slice(menu.end))
@@ -255,10 +256,10 @@ async function pasteInto(s, menu) {
 function multiRowMenuOf(s, paths) {
   const busy = Boolean(s.busy || s.aiBusy)
   return [
-    { id: 'pick-on', label: '勾选选中 ' + paths.length + ' 项', disabled: busy, onClick: () => s.setPickChecked(paths, true) },
-    { id: 'pick-off', label: '取消勾选选中 ' + paths.length + ' 项', disabled: busy, onClick: () => s.setPickChecked(paths, false) },
-    { id: 'copy', label: '复制 ' + paths.length + ' 条路径', separator: true, disabled: busy,
-      onClick: () => { void copyText(paths.join('\n'), '已复制路径', s.notify) } },
+    { id: 'pick-on', label: uiText('勾选选中 ', "Check selected ", "Отметить выбранные ") + paths.length + uiText(' 项', " items", " элементов"), disabled: busy, onClick: () => s.setPickChecked(paths, true) },
+    { id: 'pick-off', label: uiText('取消勾选选中 ', "Uncheck selected ", "Снять отметки с выбранных ") + paths.length + uiText(' 项', " items", " элементов"), disabled: busy, onClick: () => s.setPickChecked(paths, false) },
+    { id: 'copy', label: uiText('复制 ', "Copy ", "Копировать ") + paths.length + uiText(' 条路径', " paths", " путей"), separator: true, disabled: busy,
+      onClick: () => { void copyText(paths.join('\n'), uiText('已复制路径', "Paths copied", "Пути скопированы"), s.notify) } },
   ]
 }
 
@@ -272,14 +273,14 @@ function oneRowMenuOf(s, entry) {
   const acts = commitActs(entry, Boolean(s.busy || s.aiBusy))
   const picked = s.checked.has(entry.path)
   return [
-    { id: 'compare', label: '与基线比较', disabled: !acts.compare, onClick: () => s.onCompare?.(entry.path) },
-    { id: 'log', label: '查看日志', disabled: !acts.log, onClick: () => s.onShowLog?.(entry.path) },
-    { id: 'open', label: '打开文件', separator: true, disabled: !acts.open, onClick: () => s.onOpenFile?.(entry.path) },
-    { id: 'parent', label: '打开父目录', disabled: !acts.openParent, onClick: () => s.onOpenParent?.(updateParent(entry.path)) },
-    { id: 'toggle', label: picked ? '取消勾选此项' : '勾选此项', separator: true, disabled: !acts.toggle, onClick: () => s.toggle(entry.path) },
-    { id: 'add', label: '加入版本控制', disabled: !acts.add, onClick: () => s.rowAction('add', entry.path) },
-    { id: 'revert', label: '还原（放弃本地改动）…', danger: true, disabled: !acts.revert, onClick: () => s.rowAction('revert-cli', entry.path) },
-    { id: 'copy', label: '复制路径', separator: true, disabled: !acts.copyPath, onClick: () => { void copyText(entry.path, '已复制路径', s.notify) } },
+    { id: 'compare', label: uiText('与基线比较', "Compare with BASE", "Сравнить с BASE"), disabled: !acts.compare, onClick: () => s.onCompare?.(entry.path) },
+    { id: 'log', label: uiText('查看日志', "Show log", "Показать журнал"), disabled: !acts.log, onClick: () => s.onShowLog?.(entry.path) },
+    { id: 'open', label: uiText('打开文件', "Open file", "Открыть файл"), separator: true, disabled: !acts.open, onClick: () => s.onOpenFile?.(entry.path) },
+    { id: 'parent', label: uiText('打开父目录', "Open parent directory", "Открыть родительскую папку"), disabled: !acts.openParent, onClick: () => s.onOpenParent?.(updateParent(entry.path)) },
+    { id: 'toggle', label: picked ? uiText('取消勾选此项', "Uncheck this item", "Снять отметку с элемента") : uiText('勾选此项', "Check this item", "Отметить элемент"), separator: true, disabled: !acts.toggle, onClick: () => s.toggle(entry.path) },
+    { id: 'add', label: uiText('加入版本控制', "Add to version control", "Добавить под контроль версий"), disabled: !acts.add, onClick: () => s.rowAction('add', entry.path) },
+    { id: 'revert', label: uiText('还原（放弃本地改动）…', "Revert (discard local changes)…", "Восстановить (отбросить локальные изменения)…"), danger: true, disabled: !acts.revert, onClick: () => s.rowAction('revert-cli', entry.path) },
+    { id: 'copy', label: uiText('复制路径', "Copy path", "Копировать путь"), separator: true, disabled: !acts.copyPath, onClick: () => { void copyText(entry.path, uiText('已复制路径', "Paths copied", "Пути скопированы"), s.notify) } },
   ]
 }
 
@@ -312,7 +313,7 @@ export function commitMenuEntriesOf(s, menu) {
   try {
     return menu.kind === 'row' ? rowMenuEntriesOf(s, menu) : msgMenuEntriesOf(s, menu)
   } catch {
-    return [{ id: 'menu-error', label: '菜单装配失败：请关闭窗口重开', disabled: true }]
+    return [{ id: 'menu-error', label: uiText('菜单装配失败：请关闭窗口重开', "Could not build menu. Close and reopen the window.", "Не удалось создать меню. Закройте и откройте окно заново."), disabled: true }]
   }
 }
 
@@ -326,12 +327,12 @@ function msgMenuEntriesOf(s, menu) {
   const node = menu.node
   const hasRange = menu.end > menu.start
   return [
-    { id: 'undo', label: '撤销', hint: 'Ctrl+Z', onClick: () => runEditCommand(s, node, 'undo') },
-    { id: 'redo', label: '重做', hint: 'Ctrl+Y', onClick: () => runEditCommand(s, node, 'redo') },
-    { id: 'cut', label: '剪切', hint: 'Ctrl+X', separator: true, disabled: !hasRange, onClick: () => runEditCommand(s, node, 'cut') },
-    { id: 'copy', label: '复制', hint: 'Ctrl+C', disabled: !hasRange, onClick: () => runEditCommand(s, node, 'copy') },
-    { id: 'paste', label: '粘贴', hint: 'Ctrl+V', onClick: () => { void pasteInto(s, menu) } },
-    { id: 'select-all', label: '全选', hint: 'Ctrl+A', separator: true, disabled: !s.message, onClick: () => runEditCommand(s, node, 'selectAll') },
+    { id: 'undo', label: uiText('撤销', "Undo", "Отменить"), hint: 'Ctrl+Z', onClick: () => runEditCommand(s, node, 'undo') },
+    { id: 'redo', label: uiText('重做', "Redo", "Повторить"), hint: 'Ctrl+Y', onClick: () => runEditCommand(s, node, 'redo') },
+    { id: 'cut', label: uiText('剪切', "Cut", "Вырезать"), hint: 'Ctrl+X', separator: true, disabled: !hasRange, onClick: () => runEditCommand(s, node, 'cut') },
+    { id: 'copy', label: uiText('复制', "Copy", "Копировать"), hint: 'Ctrl+C', disabled: !hasRange, onClick: () => runEditCommand(s, node, 'copy') },
+    { id: 'paste', label: uiText('粘贴', "Paste", "Вставить"), hint: 'Ctrl+V', onClick: () => { void pasteInto(s, menu) } },
+    { id: 'select-all', label: uiText('全选', "Select all", "Выбрать всё"), hint: 'Ctrl+A', separator: true, disabled: !s.message, onClick: () => runEditCommand(s, node, 'selectAll') },
   ]
 }
 
@@ -375,7 +376,7 @@ function rowEl(entry, checked, onToggle, s) {
 function tableEl(s) {
   if (!s.sections.length) {
     return React.createElement('div', { className: 'edrv-svncommit-table' },
-      React.createElement('div', { className: 'edrv-svncommit-empty' }, s.plan ? '没有可提交的变更' : '正在读取变更清单…'))
+      React.createElement('div', { className: 'edrv-svncommit-empty' }, s.plan ? uiText('没有可提交的变更', "No changes to commit", "Нет изменений для коммита") : uiText('正在读取变更清单…', "Reading changes…", "Чтение списка изменений…")))
   }
 
   const body = []
@@ -384,7 +385,7 @@ function tableEl(s) {
     // 空分区（只登记过分区、当前无改动）：留一行说明，别让人以为列表被截断
     if (!section.entries.length) {
       body.push(React.createElement('div', { className: 'edrv-svncommit-emptyrow', key: section.key + ':empty' },
-        '该分区当前没有待提交改动（分区已登记）'))
+        uiText('该分区当前没有待提交改动（分区已登记）', "This registered section has no pending changes", "В этом зарегистрированном разделе нет ожидающих изменений")))
       continue
     }
     for (const entry of section.entries) {
@@ -393,11 +394,11 @@ function tableEl(s) {
   }
   return React.createElement('div', { className: 'edrv-svncommit-table' },
     React.createElement('div', { className: 'edrv-svncommit-cols' },
-      React.createElement('span', null, '勾选'),
-      React.createElement('span', null, '状态'),
+      React.createElement('span', null, uiText('勾选', "Select", "Выбрать")),
+      React.createElement('span', null, uiText('状态', "Status", "Состояние")),
       React.createElement('span', { 'aria-hidden': true }),
-      React.createElement('span', null, '路径')),
-    React.createElement('div', { className: 'edrv-svncommit-list', role: 'table', 'aria-label': '待提交文件清单' }, ...body))
+      React.createElement('span', null, uiText('路径', "Path", "Путь"))),
+    React.createElement('div', { className: 'edrv-svncommit-list', role: 'table', 'aria-label': uiText('待提交文件清单', "Files to commit", "Файлы для коммита") }, ...body))
 }
 
 /**
@@ -412,14 +413,14 @@ function barEl(s) {
         className: 'edrv-svn-act edrv-svncommit-ctl',
         defaultValue: '',
         disabled: s.busy,
-        title: '最近提交信息（选择后填入信息框）',
+        title: uiText('最近提交信息（选择后填入信息框）', "Recent commit messages (select to fill the message field)", "Последние сообщения коммитов (выберите для вставки в поле)"),
         onChange: (event) => {
           const index = Number(event.target.value)
           if (Number.isInteger(index) && index >= 0) s.setMessage(s.plan.recent[index] ?? '')
           event.target.value = ''
         },
       },
-        React.createElement('option', { value: '' }, '最近信息…'),
+        React.createElement('option', { value: '' }, uiText('最近信息…', "Recent messages…", "Последние сообщения…")),
         ...s.plan.recent.map((item, index) => React.createElement('option', {
           key: 'recent-' + index,
           value: String(index),
@@ -432,17 +433,17 @@ function barEl(s) {
       className: 'edrv-svn-act edrv-svncommit-ctl',
       value: s.style,
       disabled: s.busy || s.aiBusy,
-      title: 'AI 提交信息风格',
+      title: uiText('AI 提交信息风格', "AI commit message style", "Стиль сообщения коммита AI"),
       onChange: (event) => s.setStyle(event.target.value),
     }, ...Object.keys(AI_COMMIT_STYLE_LABEL).map((key) => React.createElement('option', { key, value: key }, AI_COMMIT_STYLE_LABEL[key]))),
     React.createElement('button', {
       type: 'button',
       className: 'edrv-svn-act edrv-svncommit-ctl',
-      title: 'AI 只分析已勾选文件，产出提交信息草稿（不会自动提交）',
+      title: uiText('AI 只分析已勾选文件，产出提交信息草稿（不会自动提交）', "AI analyzes checked files only and drafts a commit message (never commits automatically)", "AI анализирует только отмеченные файлы и готовит сообщение (без автоматического коммита)"),
       disabled: s.aiBusy || s.busy || !s.paths.length,
       onClick: s.generate,
-    }, '✨ AI 生成提交信息'),
-    React.createElement('label', { className: 'edrv-svn-check', title: '提交后保留锁定（--no-unlock）' },
+    }, uiText('✨ AI 生成提交信息', "✨ Generate commit message with AI", "✨ Создать сообщение коммита с AI")),
+    React.createElement('label', { className: 'edrv-svn-check', title: uiText('提交后保留锁定（--no-unlock）', "Keep locks after commit (--no-unlock)", "Сохранить блокировки после коммита (--no-unlock)") },
       React.createElement('input', {
         className: 'edrv-svncommit-cb',
         type: 'checkbox',
@@ -450,9 +451,9 @@ function barEl(s) {
         disabled: s.busy,
         onChange: () => s.setKeepLocks(!s.keepLocks),
       }),
-      ' 保持锁定'),
-    React.createElement('span', { className: 'edrv-svncommit-badge', title: '已勾选 / 清单内全部文件' },
-      '已选 ' + s.stats.picked + ' / ' + s.stats.total))
+      uiText(' 保持锁定', " Keep locks", " Сохранить блокировки")),
+    React.createElement('span', { className: 'edrv-svncommit-badge', title: uiText('已勾选 / 清单内全部文件', "Checked / all listed files", "Отмеченные / все файлы списка") },
+      uiText('已选 ', "Selected ", "Выбрано ") + s.stats.picked + ' / ' + s.stats.total))
 }
 
 /**
@@ -465,7 +466,7 @@ function composeEl(s) {
   const error = s.message.trim() ? s.messageError : null
   return React.createElement('div', { className: 'edrv-svncommit-compose' },
     React.createElement('div', { className: 'edrv-svncommit-composehead' },
-      React.createElement('span', { className: 'edrv-svncommit-label' }, '提交信息'),
+      React.createElement('span', { className: 'edrv-svncommit-label' }, uiText('提交信息', "Commit message", "Сообщение коммита")),
       React.createElement('span', { className: 'edrv-svncommit-hint' }, commitHintOf(s.message)),
       error ? React.createElement('span', { className: 'edrv-svncommit-error' }, error) : null),
     React.createElement('textarea', {
@@ -473,7 +474,7 @@ function composeEl(s) {
       value: s.message,
       rows: 4,
       spellCheck: false,
-      placeholder: '首行是提交标题，例如：修复删除道具后背包不刷新。空一行可写正文。',
+      placeholder: uiText('首行是提交标题，例如：修复删除道具后背包不刷新。空一行可写正文。', "The first line is the commit title, e.g. Fix inventory refresh after item deletion. Leave a blank line before the body.", "Первая строка — заголовок коммита, например: Исправить обновление инвентаря после удаления предмета. Отделите описание пустой строкой."),
       onChange: (event) => s.setMessage(event.target.value),
       onContextMenu: (event) => s.menuOpen(event, 'msg', null, event.currentTarget),
     }))
@@ -500,11 +501,11 @@ function resultEl(result) {
  */
 function telemetryEl(s) {
   const error = s.failed || s.loadError
-  const aiText = s.ai.phase === 'running' ? 'AI 生成中…' : 'AI：' + s.ai.note
+  const aiText = s.ai.phase === 'running' ? uiText('AI 生成中…', "AI generating…", "AI создаёт сообщение…") : 'AI：' + s.ai.note
   return React.createElement('div', { className: 'edrv-svncommit-telemetry', role: 'status' },
     error ? React.createElement('span', { className: 'edrv-svncommit-error' }, error) : null,
     s.plan?.truncated
-      ? React.createElement('span', { className: 'edrv-svncommit-warn', title: '变更清单被截断，可能未列出全部变更；请缩小范围或先用命令行确认' }, '清单已截断，可能未列出全部变更')
+      ? React.createElement('span', { className: 'edrv-svncommit-warn', title: uiText('变更清单被截断，可能未列出全部变更；请缩小范围或先用命令行确认', "Change list truncated; some changes may be missing. Narrow the scope or verify using the command line.", "Список изменений обрезан; часть изменений может отсутствовать. Сузьте область или проверьте через командную строку.") }, uiText('清单已截断，可能未列出全部变更', "List truncated; some changes may be missing", "Список обрезан; часть изменений может отсутствовать"))
       : null,
     React.createElement('span', { className: 'edrv-svncommit-ai' }, aiText),
     s.ai.model ? React.createElement('span', { className: 'edrv-svncommit-ai', title: s.ai.model }, s.ai.model) : null)
@@ -518,15 +519,15 @@ function telemetryEl(s) {
  */
 function footEl(s) {
   return React.createElement('div', { className: 'edrv-svncommit-foot' },
-    React.createElement('span', { className: 'edrv-svncommit-counts' }, s.paths.length ? statsTextOf(s.stats) : '未勾选任何文件'),
-    React.createElement('button', { type: 'button', className: 'edrv-svn-act', disabled: s.busy, title: '取消（不提交）', onClick: s.onClose }, '取消'),
+    React.createElement('span', { className: 'edrv-svncommit-counts' }, s.paths.length ? statsTextOf(s.stats) : uiText('未勾选任何文件', "No files checked", "Файлы не отмечены")),
+    React.createElement('button', { type: 'button', className: 'edrv-svn-act', disabled: s.busy, title: uiText('取消（不提交）', "Cancel (do not commit)", "Отмена (без коммита)"), onClick: s.onClose }, uiText('取消', "Cancel", "Отмена")),
     React.createElement('button', {
       type: 'button',
       className: 'edrv-svn-act edrv-svncommit-primary',
-      title: s.messageError ?? '提交已勾选文件',
+      title: s.messageError ?? uiText('提交已勾选文件', "Commit checked files", "Создать коммит отмеченных файлов"),
       disabled: s.busy || Boolean(s.messageError) || !s.paths.length,
       onClick: s.submit,
-    }, s.busy ? '提交中…' : '提交（' + s.paths.length + '）'))
+    }, s.busy ? uiText('提交中…', "Committing…", "Создание коммита…") : uiText('提交（', "Commit (", "Коммит (") + s.paths.length + '）'))
 }
 
 /**
@@ -599,7 +600,7 @@ function useCommitWrite(ctx) {
    */
   const generate = () => {
     if (aiBusy || busy) return
-    setAi({ phase: 'running', note: '生成中…' })
+    setAi({ phase: 'running', note: uiText('生成中…', "Generating…", "Создание…") })
     void runAiCommit(sessionId, paths, style).then((outcome) => {
       setAi(outcome.state)
       if (outcome.text) setMessage(outcome.text)
@@ -614,8 +615,8 @@ function useCommitWrite(ctx) {
   const submit = () => {
     if (busy || messageError || !paths.length) return
     const ok = typeof window === 'undefined' ? false : window.confirm(
-      '确认提交以下 ' + paths.length + ' 个文件？\n提交后无法用 SVN 撤销（只能反向合并或再提交修复）。'
-      + (hasUnversionedOf(sections, checked) ? '\n\n注意：未版本控制文件将先被 svn add 再提交。' : ''),
+      uiText('确认提交以下 ', "Commit the following ", "Создать коммит следующих ") + paths.length + uiText(' 个文件？\n提交后无法用 SVN 撤销（只能反向合并或再提交修复）。', " files?\nSVN cannot undo a commit directly (use reverse merge or a corrective commit).", " файлов?\nSVN не может прямо отменить коммит (используйте обратное слияние или исправляющий коммит).")
+      + (hasUnversionedOf(sections, checked) ? uiText('\n\n注意：未版本控制文件将先被 svn add 再提交。', "\n\nNote: unversioned files will be added with svn add before committing.", "\n\nВнимание: файлы вне контроля версий сначала добавляются через svn add, затем отправляются в коммит.") : ''),
     )
     if (!ok) return
 
@@ -749,7 +750,7 @@ export function SvnCommitDialog(props) {
   }
   const entries = commitMenuEntriesOf(view, context.menu)
   return React.createElement(FloatingWindow, {
-    title: 'SVN 提交',
+    title: uiText('SVN 提交', "SVN commit", "Коммит SVN"),
     dialogClass: 'edrv-svncommit-dialog',
     width: 880,
     height: 680,
@@ -759,8 +760,8 @@ export function SvnCommitDialog(props) {
     actions: React.createElement('button', {
       type: 'button',
       className: 'edrv-svncommit-close',
-      title: s.busy ? '提交进行中；请等待结果' : '关闭（不提交）',
-      'aria-label': '关闭提交窗口',
+      title: s.busy ? uiText('提交进行中；请等待结果', "Commit in progress; wait for the result", "Коммит выполняется; дождитесь результата") : uiText('关闭（不提交）', "Close (do not commit)", "Закрыть (без коммита)"),
+      'aria-label': uiText('关闭提交窗口', "Close commit window", "Закрыть окно коммита"),
       disabled: s.busy,
       onClick: onClose,
     }, '✕'),

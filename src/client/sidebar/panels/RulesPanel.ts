@@ -7,6 +7,7 @@
  * 文本域双向同步（控件改写 frontmatter，文本域回读控件），保存走 rules.save。
  * 作者 ddj 2026年09月03号（2026年09月07号 交互性调整）
  */
+import { uiText } from '../../uiLocale.js'
 import React from 'react'
 import { rpc } from '../../rpc.js'
 import type { SidebarCtx } from '../types.js'
@@ -15,7 +16,7 @@ import { parseRuleFm, applyRuleMeta } from '../../rulesMdc.js'
 
 /** 新建规则模板（frontmatter 字段与 host parseRuleMdc 对齐）。 */
 const NEW_TEMPLATE = '---\ndescription: \nalwaysApply: true\n---\n\n'
-const TYPE_LABEL = { always: '总是', auto: '自动', manual: '手动' }
+const TYPE_LABEL = { get always() { return uiText('总是', "Always", "Всегда") }, get auto() { return uiText('自动', "Automatic", "Автоматически") }, get manual() { return uiText('手动', "Manual", "Вручную") } }
 /** 列表行描述的基础显示上限（字符数；宽面板下的封顶值，超出省略号）。 */
 const DESC_MAX = 24
 /** 动态字数下限（极窄面板的保底可见字符数）。 */
@@ -145,7 +146,7 @@ function rebuildContent(base, fmType, desc, globsText) {
  */
 function RuleRow(props) {
   const rule = props.rule
-  const desc = [rule.error ? '解析失败：' + rule.error : null, rule.description || (rule.type === 'auto' ? 'globs: ' + rule.globs.join(', ') : '')]
+  const desc = [rule.error ? uiText('解析失败：', "Parse failed: ", "Ошибка разбора: ") + rule.error : null, rule.description || (rule.type === 'auto' ? 'globs: ' + rule.globs.join(', ') : '')]
     .filter(Boolean).join(' · ')
   return React.createElement('div', { className: 'edrv-rules-row' + (rule.enabled ? '' : ' off') },
     React.createElement('div', { className: 'edrv-rules-main', onClick: () => props.onEdit(rule), title: rule.absPath },
@@ -153,18 +154,18 @@ function RuleRow(props) {
         React.createElement('span', { className: 'edrv-rules-file' }, rule.file),
         !props.narrow ? React.createElement('span', { className: 'edrv-rules-path' }, '[' + rule.relHint + rule.file + ']') : null,
         props.narrow && rule.scope === 'user' && rule.origin === 'legacy'
-          ? React.createElement('span', { className: 'edrv-rules-path', title: rule.absPath }, '旧目录') : null,
-        !rule.enabled ? React.createElement('span', { className: 'edrv-rules-offtag' }, '已停用') : null),
+          ? React.createElement('span', { className: 'edrv-rules-path', title: rule.absPath }, uiText('旧目录', "Legacy directory", "Старый каталог")) : null,
+        !rule.enabled ? React.createElement('span', { className: 'edrv-rules-offtag' }, uiText('已停用', "Disabled", "Отключено")) : null),
       React.createElement('div', { className: 'edrv-rules-sub' },
-        React.createElement('span', { className: 'edrv-rules-sublabel' }, '类型:'),
+        React.createElement('span', { className: 'edrv-rules-sublabel' }, uiText('类型:', "Type:", "Тип:")),
         typeBadge(rule.type),
         desc ? React.createElement('span', { className: 'edrv-rules-desc', title: desc }, clampDesc(desc, props.descCap)) : null)),
     React.createElement('div', { className: 'edrv-rules-actions' },
-      React.createElement('button', { className: 'edrv-rules-act', title: '编辑', onClick: () => props.onEdit(rule) }, pencilIcon()),
-      React.createElement('button', { className: 'edrv-rules-act', title: '删除', onClick: () => props.onRemove(rule) }, trashIcon()),
+      React.createElement('button', { className: 'edrv-rules-act', title: uiText('编辑', "Edit", "Изменить"), onClick: () => props.onEdit(rule) }, pencilIcon()),
+      React.createElement('button', { className: 'edrv-rules-act', title: uiText('删除', "Delete", "Удалить"), onClick: () => props.onRemove(rule) }, trashIcon()),
       React.createElement('button', {
         className: 'edrv-rules-switch' + (rule.enabled ? ' on' : ''), role: 'switch', 'aria-checked': rule.enabled,
-        title: rule.enabled ? '已启用（点击停用）' : '已停用（点击启用）',
+        title: rule.enabled ? uiText('已启用（点击停用）', "Enabled (click to disable)", "Включено (нажмите для отключения)") : uiText('已停用（点击启用）', "Disabled (click to enable)", "Отключено (нажмите для включения)"),
         onClick: () => props.onToggle(rule),
       }, React.createElement('span', { className: 'edrv-rules-knob' }))))
 }
@@ -186,25 +187,25 @@ function RuleRow(props) {
 function RuleEditor(props) {
   const form = props.form
   const isNew = form.mode === 'new'
-  const crumb = (form.scope === 'project' ? '项目规则' : '用户规则') + ' > ' + form.relHint + ' > ' + (form.file || '新建规则.mdc')
+  const crumb = (form.scope === 'project' ? uiText('项目规则', "Project rules", "Правила проекта") : uiText('用户规则', "User rules", "Правила пользователя")) + ' > ' + form.relHint + ' > ' + (form.file || uiText('新建规则.mdc', "New rule.mdc", "Новое правило.mdc"))
   return React.createElement('div', { className: 'edrv-rules-editor' },
     React.createElement('div', { className: 'edrv-rules-editor-head' },
       React.createElement('span', { className: 'edrv-rules-crumb', title: crumb }, crumb),
-      React.createElement('button', { className: 'edrv-rules-act', title: '取消', onClick: props.onCancel }, '✕')),
+      React.createElement('button', { className: 'edrv-rules-act', title: uiText('取消', "Cancel", "Отмена"), onClick: props.onCancel }, '✕')),
     React.createElement('div', { className: 'edrv-rules-editor-ctl' },
-      React.createElement('label', { className: 'edrv-rules-ctl-label' }, '规则类型'),
+      React.createElement('label', { className: 'edrv-rules-ctl-label' }, uiText('规则类型', "Rule type", "Тип правила")),
       React.createElement('select', { className: 'edrv-rules-select', value: form.fmType, onChange: props.onType },
         Object.keys(TYPE_LABEL).map((key) => React.createElement('option', { key, value: key }, TYPE_LABEL[key]))),
-      React.createElement('label', { className: 'edrv-rules-ctl-label' }, '描述'),
+      React.createElement('label', { className: 'edrv-rules-ctl-label' }, uiText('描述', "Description", "Описание")),
       React.createElement('input', {
         className: 'edrv-rules-input edrv-rules-desc-input', value: form.desc, spellCheck: false,
-        placeholder: isNew ? '规则用途说明（写入 frontmatter description）' : '规则用途说明', onChange: props.onDesc,
+        placeholder: isNew ? uiText('规则用途说明（写入 frontmatter description）', "Rule description (saved to frontmatter description)", "Описание правила (сохраняется в description метаданных)") : uiText('规则用途说明', "Rule description", "Описание правила"), onChange: props.onDesc,
       })),
     form.fmType === 'auto' ? React.createElement('div', { className: 'edrv-rules-editor-ctl' },
       React.createElement('label', { className: 'edrv-rules-ctl-label' }, 'globs'),
       React.createElement('input', {
         className: 'edrv-rules-input', value: form.globs, spellCheck: false,
-        placeholder: 'src/**/*.ts, *.md（逗号分隔，命中才注入）', onChange: props.onGlobs,
+        placeholder: uiText('src/**/*.ts, *.md（逗号分隔，命中才注入）', "src/**/*.ts, *.md (comma-separated; inject on match)", "src/**/*.ts, *.md (через запятую; добавлять при совпадении)"), onChange: props.onGlobs,
       })) : null,
     React.createElement('textarea', {
       className: 'edrv-rules-body', spellCheck: false,
@@ -212,10 +213,10 @@ function RuleEditor(props) {
       onChange: props.onBody,
     }),
     React.createElement('div', { className: 'edrv-rules-editor-hint' },
-      '类型/描述/globs 与 frontmatter 双向同步；enabled 与其余键原样保留；无 frontmatter 的纯 markdown 视为「手动」规则'),
+      uiText('类型/描述/globs 与 frontmatter 双向同步；enabled 与其余键原样保留；无 frontmatter 的纯 markdown 视为「手动」规则', "Type/description/globs sync with frontmatter in both directions; enabled and other keys are preserved. Markdown without frontmatter is treated as a manual rule.", "Тип/описание/globs синхронизируются с метаданными в обе стороны; enabled и остальные ключи сохраняются. Markdown без метаданных считается ручным правилом.")),
     form.error ? React.createElement('div', { className: 'edrv-rules-err' }, form.error) : null,
     React.createElement('div', { className: 'edrv-rules-editor-foot' },
-      React.createElement('button', { className: 'edrv-rules-save', disabled: form.saving, onClick: props.onSave }, form.saving ? '保存中…' : '保存')))
+      React.createElement('button', { className: 'edrv-rules-save', disabled: form.saving, onClick: props.onSave }, form.saving ? uiText('保存中…', "Saving…", "Сохранение…") : uiText('保存', "Save", "Сохранить"))))
 }
 // --endregion
 
@@ -249,8 +250,8 @@ export function RulesPanel(props) {
   const load = () => {
     rpc('rules.list', {}).then((res) => {
       if (!mountedRef.current) return
-      if (res && res.ok) { setData(res); setError('') } else setError(res?.error ?? '读取规则失败')
-    }).catch((e) => { if (mountedRef.current) setError('读取规则异常: ' + String(e)) })
+      if (res && res.ok) { setData(res); setError('') } else setError(res?.error ?? uiText('读取规则失败', "Failed to read rules", "Ошибка чтения правил"))
+    }).catch((e) => { if (mountedRef.current) setError(uiText('读取规则异常: ', "Rule read error: ", "Ошибка чтения правил: ") + String(e)) })
   }
 
   React.useEffect(() => {
@@ -287,7 +288,7 @@ export function RulesPanel(props) {
    */
   const openNew = () => {
     const scope = tab === 'project' ? 'project' : 'user'
-    if (scope === 'project' && !cwd) { notify('当前会话没有工作区，无法新建项目规则'); return }
+    if (scope === 'project' && !cwd) { notify(uiText('当前会话没有工作区，无法新建项目规则', "No workspace in this session; cannot create project rules", "У сеанса нет рабочего пространства; нельзя создать правила проекта")); return }
     const parsed = parseRuleFm(NEW_TEMPLATE)
     setForm({
       mode: 'new', scope, origin: scope === 'user' ? 'current' : undefined, workspacePath: scope === 'project' ? cwd : undefined,
@@ -303,14 +304,14 @@ export function RulesPanel(props) {
   const openEdit = (rule) => {
     rpc('rules.read', { scope: rule.scope, origin: rule.origin, workspacePath: rule.scope === 'project' ? rule.workspacePath : undefined, file: rule.file })
       .then((res) => {
-        if (!res || !res.ok) { notify(res?.error ?? '读取规则失败'); return }
+        if (!res || !res.ok) { notify(res?.error ?? uiText('读取规则失败', "Failed to read rules", "Ошибка чтения правил")); return }
         const parsed = parseRuleFm(res.content)
         setForm({
           mode: 'edit', scope: rule.scope, origin: rule.origin, workspacePath: rule.workspacePath, relHint: rule.relHint,
           file: rule.file, content: res.content,
           fmType: parsed.type, desc: parsed.description, globs: parsed.globs.join(', '), error: '', saving: false,
         })
-      }).catch((e) => notify('读取规则异常: ' + String(e)))
+      }).catch((e) => notify(uiText('读取规则异常: ', "Rule read error: ", "Ошибка чтения правил: ") + String(e)))
   }
 
   /** 类型下拉变更：frontmatter 按新类型重写，控件同步。 */
@@ -341,17 +342,17 @@ export function RulesPanel(props) {
   const saveForm = () => {
     const next = { ...form, saving: true, error: '' }
     const file = String(form.file ?? '').trim()
-    if (!file) { setForm({ ...next, saving: false, error: '文件名不能为空' }); return }
-    if (form.fmType === 'auto' && globList(form.globs).length === 0) { setForm({ ...next, saving: false, error: '自动规则需要至少一个 glob（逗号分隔）' }); return }
+    if (!file) { setForm({ ...next, saving: false, error: uiText('文件名不能为空', "File name cannot be empty", "Имя файла не может быть пустым") }); return }
+    if (form.fmType === 'auto' && globList(form.globs).length === 0) { setForm({ ...next, saving: false, error: uiText('自动规则需要至少一个 glob（逗号分隔）', "Automatic rules require at least one glob (comma-separated)", "Автоматическим правилам нужен хотя бы один glob-шаблон (через запятую)") }); return }
     setForm(next)
     rpc('rules.save', { scope: form.scope, origin: form.origin, workspacePath: form.workspacePath, file, content: form.content })
       .then((res) => {
         if (res && res.ok) {
           setForm(null)
-          notify('规则已保存：' + file)
+          notify(uiText('规则已保存：', "Rule saved: ", "Правило сохранено: ") + file)
           load()
-        } else setForm((prev) => ({ ...prev, saving: false, error: res?.error ?? '保存失败' }))
-      }).catch((e) => setForm((prev) => ({ ...prev, saving: false, error: '保存异常: ' + String(e) })))
+        } else setForm((prev) => ({ ...prev, saving: false, error: res?.error ?? uiText('保存失败', "Save failed", "Ошибка сохранения") }))
+      }).catch((e) => setForm((prev) => ({ ...prev, saving: false, error: uiText('保存异常: ', "Save error: ", "Ошибка сохранения: ") + String(e) })))
   }
 
   /**
@@ -360,12 +361,12 @@ export function RulesPanel(props) {
    */
   const removeRule = (rule) => {
     const reveal = rule.scope === 'user' && rule.origin !== 'legacy'
-      ? '\n若旧目录有同名规则，删除后它将重新生效。' : ''
-    if (!window.confirm('删除规则 ' + rule.absPath + '？（不可恢复）' + reveal)) return
+      ? uiText('\n若旧目录有同名规则，删除后它将重新生效。', "\nA same-named rule in the legacy directory will become active again after deletion.", "\nПосле удаления одноимённое правило из старого каталога снова начнёт действовать.") : ''
+    if (!window.confirm(uiText('删除规则 ', "Delete rule ", "Удалить правило ") + rule.absPath + uiText('？（不可恢复）', "? This cannot be undone.", "? Действие необратимо.") + reveal)) return
     rpc('rules.remove', { scope: rule.scope, origin: rule.origin, workspacePath: rule.workspacePath, file: rule.file })
       .then((res) => {
-        if (res && res.ok) { notify('已删除：' + rule.file); load() } else notify(res?.error ?? '删除失败')
-      }).catch((e) => notify('删除异常: ' + String(e)))
+        if (res && res.ok) { notify(uiText('已删除：', "Deleted: ", "Удалено: ") + rule.file); load() } else notify(res?.error ?? uiText('删除失败', "Delete failed", "Ошибка удаления"))
+      }).catch((e) => notify(uiText('删除异常: ', "Delete error: ", "Ошибка удаления: ") + String(e)))
   }
 
   /**
@@ -384,9 +385,9 @@ export function RulesPanel(props) {
     applyLocal(enabled)
     rpc('rules.toggle', { scope: rule.scope, origin: rule.origin, workspacePath: rule.workspacePath, file: rule.file, enabled })
       .then((res) => {
-        if (res && res.ok) { applyLocal(res.rule?.enabled === true); notify(res.rule?.enabled === false ? '已停用：' + rule.file : '已启用：' + rule.file) }
-        else { applyLocal(!enabled); notify(res?.error ?? '切换失败') }
-      }).catch((e) => { applyLocal(!enabled); notify('切换异常: ' + String(e)) })
+        if (res && res.ok) { applyLocal(res.rule?.enabled === true); notify(res.rule?.enabled === false ? uiText('已停用：', "Disabled: ", "Отключено: ") + rule.file : uiText('已启用：', "Enabled: ", "Включено: ") + rule.file) }
+        else { applyLocal(!enabled); notify(res?.error ?? uiText('切换失败', "Toggle failed", "Ошибка переключения")) }
+      }).catch((e) => { applyLocal(!enabled); notify(uiText('切换异常: ', "Toggle error: ", "Ошибка переключения: ") + String(e)) })
   }
 
   /** 当前列表数据（按 Tab 取用户规则或当前工作区的项目规则）。 */
@@ -397,25 +398,25 @@ export function RulesPanel(props) {
   }
 
   const renderTabs = () => React.createElement('div', { className: 'edrv-rules-tabs' },
-    React.createElement('button', { className: 'edrv-rules-tab' + (tab === 'user' ? ' on' : ''), onClick: () => switchTab('user') }, '用户规则'),
-    React.createElement('button', { className: 'edrv-rules-tab' + (tab === 'project' ? ' on' : ''), onClick: () => switchTab('project') }, '项目规则'),
-    React.createElement('button', { className: 'edrv-rules-new', title: '新建规则', onClick: openNew }, '＋ 新建规则'))
+    React.createElement('button', { className: 'edrv-rules-tab' + (tab === 'user' ? ' on' : ''), onClick: () => switchTab('user') }, uiText('用户规则', "User rules", "Правила пользователя")),
+    React.createElement('button', { className: 'edrv-rules-tab' + (tab === 'project' ? ' on' : ''), onClick: () => switchTab('project') }, uiText('项目规则', "Project rules", "Правила проекта")),
+    React.createElement('button', { className: 'edrv-rules-new', title: uiText('新建规则', "New rule", "Новое правило"), onClick: openNew }, uiText('＋ 新建规则', "＋ New rule", "＋ Новое правило")))
 
   /** 项目 Tab 的工作区展示（不可编辑，自动跟随当前会话）。 */
   const renderWsLine = () => {
     if (tab !== 'project') return null
     return React.createElement('div', { className: 'edrv-rules-ws-line', title: cwd ?? '' },
-      '工作区：' + (cwd ?? '当前会话未打开工作区'))
+      uiText('工作区：', "Workspace: ", "Рабочее пространство: ") + (cwd ?? uiText('当前会话未打开工作区', "No workspace open in this session", "В текущем сеансе не открыто рабочее пространство")))
   }
 
   const renderEmpty = () => {
     if (tab === 'project') {
-      if (!cwd) return '当前会话没有工作区，项目规则不可用（项目规则跟随会话所在工作区）'
-      if (!data?.projects?.length) return '当前 DSH 没有已注册的工作区；在目标工作区打开一次会话后再来管理'
-      if (!activeProject()) return '当前工作区未注册为 DSH workspace，暂不能管理其项目规则'
-      return '<工作区>/.dsh/rules/ 还没有规则，点击「＋ 新建规则」创建'
+      if (!cwd) return uiText('当前会话没有工作区，项目规则不可用（项目规则跟随会话所在工作区）', "No workspace in this session; project rules follow the session workspace and are unavailable", "У сеанса нет рабочего пространства; правила проекта привязаны к нему и недоступны")
+      if (!data?.projects?.length) return uiText('当前 DSH 没有已注册的工作区；在目标工作区打开一次会话后再来管理', "No registered workspaces in this DSH. Open a session in the target workspace first.", "В DSH нет зарегистрированных пространств. Сначала откройте сеанс в нужном пространстве.")
+      if (!activeProject()) return uiText('当前工作区未注册为 DSH workspace，暂不能管理其项目规则', "Current workspace is not registered in DSH; its project rules cannot be managed yet", "Текущее пространство не зарегистрировано в DSH; управление правилами проекта пока недоступно")
+      return uiText('<工作区>/.dsh/rules/ 还没有规则，点击「＋ 新建规则」创建', "No rules in <workspace>/.dsh/rules/. Click “＋ New rule” to create one.", "В <пространство>/.dsh/rules/ нет правил. Нажмите «＋ Новое правило» для создания.")
     }
-    return '还没有用户规则（当前 DSH_HOME/rules/ 或旧目录 ~/.dsh/rules/），点击「＋ 新建规则」创建'
+    return uiText('还没有用户规则（当前 DSH_HOME/rules/ 或旧目录 ~/.dsh/rules/），点击「＋ 新建规则」创建', "No user rules in DSH_HOME/rules/ or legacy ~/.dsh/rules/. Click “＋ New rule” to create one.", "Нет правил пользователя в DSH_HOME/rules/ или старом ~/.dsh/rules/. Нажмите «＋ Новое правило» для создания.")
   }
 
   const renderBody = () => {
@@ -425,7 +426,7 @@ export function RulesPanel(props) {
         onSave: saveForm, onCancel: () => setForm(null),
       })
     }
-    if (!data) return React.createElement('div', { className: 'edrv-rules-empty' }, '加载中…')
+    if (!data) return React.createElement('div', { className: 'edrv-rules-empty' }, uiText('加载中…', "Loading…", "Загрузка…"))
     if (error) return React.createElement('div', { className: 'edrv-rules-err' }, error)
     const rows = rowsOf()
     if (!rows.length) return React.createElement('div', { className: 'edrv-rules-empty' }, renderEmpty())
@@ -444,6 +445,6 @@ export function RulesPanel(props) {
     renderTabs(),
     renderWsLine(),
     React.createElement('div', { className: 'edrv-rules-hint' },
-      tab === 'user' ? '读取 DSH_HOME/rules/ 与 ~/.dsh/rules/；同名时当前目录优先，新建保存到当前目录' : '项目规则仅对所在工作区的会话生效（存放于 <工作区>/.dsh/rules/）'),
+      tab === 'user' ? uiText('读取 DSH_HOME/rules/ 与 ~/.dsh/rules/；同名时当前目录优先，新建保存到当前目录', "Reads DSH_HOME/rules/ and ~/.dsh/rules/. Current directory wins on duplicate names; new rules are saved there.", "Чтение DSH_HOME/rules/ и ~/.dsh/rules/. При одинаковых именах приоритет у текущего каталога; новые правила сохраняются туда.") : uiText('项目规则仅对所在工作区的会话生效（存放于 <工作区>/.dsh/rules/）', "Project rules apply only to sessions in their workspace (stored in <workspace>/.dsh/rules/)", "Правила проекта действуют только для сеансов своего пространства (хранятся в <пространство>/.dsh/rules/)")),
     renderBody())
 }

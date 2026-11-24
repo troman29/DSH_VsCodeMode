@@ -1,3 +1,4 @@
+import { uiText } from '../uiLocale.js'
 import ExcelJS from 'exceljs'
 import { Unzip, UnzipInflate, strFromU8, strToU8, zipSync } from 'fflate/browser'
 import { xmlGate, parseXml, basicXml } from './xmlGate.js'
@@ -17,15 +18,15 @@ const THEME = ['#FFFFFF', '#000000', '#E7E6E6', '#44546A', '#4472C4', '#ED7D31',
 
 /** @private @author ddj 2026年10月28号 @param bytes ZIP bytes. @returns Bounded XML entries; throws before exceeding an inflation budget. */
 export function inspectZip(bytes: Uint8Array): Map<string, string> {
-  if (bytes.byteLength > EXCEL_LIMITS.compressed) throw new Error('Excel 压缩文件超过 20MiB')
-  if (bytes[0] !== 80 || bytes[1] !== 75) throw new Error('Excel 已加密或不是有效的 XLSX ZIP')
+  if (bytes.byteLength > EXCEL_LIMITS.compressed) throw new Error(uiText('Excel 压缩文件超过 20MiB', "Compressed Excel file exceeds 20MiB", "Сжатый файл Excel превышает 20MiB"))
+  if (bytes[0] !== 80 || bytes[1] !== 75) throw new Error(uiText('Excel 已加密或不是有效的 XLSX ZIP', "Excel file is encrypted or not a valid XLSX ZIP", "Файл Excel зашифрован или не является корректным XLSX ZIP"))
   const parts = new Map<string, string>()
   const checksums = zipDirectory(bytes)
   let total = 0
   let entries = 0
   let failure: Error | undefined
   const unzip = new Unzip((entry) => {
-    if (++entries > EXCEL_LIMITS.entries || parts.has(entry.name)) throw new Error('Excel ZIP 条目过多或存在重复部件')
+    if (++entries > EXCEL_LIMITS.entries || parts.has(entry.name)) throw new Error(uiText('Excel ZIP 条目过多或存在重复部件', "Excel ZIP has too many entries or duplicate parts", "В ZIP Excel слишком много записей или повторяющиеся части"))
     const chunks: Uint8Array[] = []
     let size = 0
     parts.set(entry.name, '')
@@ -33,14 +34,14 @@ export function inspectZip(bytes: Uint8Array): Map<string, string> {
       if (error) { failure = error; return }
       size += chunk.byteLength
       total += chunk.byteLength
-      if (size > EXCEL_LIMITS.part || total > EXCEL_LIMITS.expanded) throw new Error('Excel 解压超过单部件 32MiB 或累计 100MiB 限制')
+      if (size > EXCEL_LIMITS.part || total > EXCEL_LIMITS.expanded) throw new Error(uiText('Excel 解压超过单部件 32MiB 或累计 100MiB 限制', "Excel expansion exceeds 32MiB per part or 100MiB total", "Распаковка Excel превышает 32MiB на часть или 100MiB суммарно"))
       chunks.push(chunk)
       if (!final) return
       const joined = new Uint8Array(size)
       let offset = 0
       for (const item of chunks) { joined.set(item, offset); offset += item.byteLength }
       const expected = checksums.get(entry.name)
-      if (!expected || expected.size !== size || expected.crc !== crc32(joined)) throw new Error('Excel ZIP CRC/目录大小不一致或已损坏')
+      if (!expected || expected.size !== size || expected.crc !== crc32(joined)) throw new Error(uiText('Excel ZIP CRC/目录大小不一致或已损坏', "Excel ZIP CRC/directory size mismatch or corruption", "Несоответствие CRC/размера каталога ZIP Excel или повреждение"))
       parts.set(entry.name, strFromU8(joined))
     }
     entry.start()
@@ -51,8 +52,8 @@ export function inspectZip(bytes: Uint8Array): Map<string, string> {
     unzip.push(bytes.subarray(offset, offset + 4096), offset + 4096 >= bytes.length)
     if (failure) throw failure
   }
-  if (parts.size !== checksums.size) throw new Error('Excel ZIP 本地条目与中央目录不一致')
-  if (!parts.has('xl/workbook.xml') || !parts.has('[Content_Types].xml')) throw new Error('Excel 工作簿部件缺失或文件损坏')
+  if (parts.size !== checksums.size) throw new Error(uiText('Excel ZIP 本地条目与中央目录不一致', "Excel ZIP local entries do not match the central directory", "Локальные записи ZIP Excel не совпадают с центральным каталогом"))
+  if (!parts.has('xl/workbook.xml') || !parts.has('[Content_Types].xml')) throw new Error(uiText('Excel 工作簿部件缺失或文件损坏', "Excel workbook parts missing or file corrupted", "Отсутствуют части книги Excel или файл повреждён"))
   return parts
 }
 
@@ -71,28 +72,28 @@ function zipDirectory(bytes: Uint8Array): Map<string, { crc: number; size: numbe
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   let eocd = bytes.length - 22
   for (; eocd >= Math.max(0, bytes.length - 65557); eocd--) if (view.getUint32(eocd, true) === 0x06054b50) break
-  if (eocd < 0 || eocd + 22 > bytes.length) throw new Error('Excel ZIP 中央目录缺失')
+  if (eocd < 0 || eocd + 22 > bytes.length) throw new Error(uiText('Excel ZIP 中央目录缺失', "Excel ZIP central directory missing", "Отсутствует центральный каталог ZIP Excel"))
   const count = view.getUint16(eocd + 10, true)
   const size = view.getUint32(eocd + 12, true)
   const offset = view.getUint32(eocd + 16, true)
-  if (view.getUint16(eocd + 4, true) || view.getUint16(eocd + 6, true) || count > EXCEL_LIMITS.entries || offset + size !== eocd) throw new Error('Excel 不支持分卷、ZIP64 或无效目录')
+  if (view.getUint16(eocd + 4, true) || view.getUint16(eocd + 6, true) || count > EXCEL_LIMITS.entries || offset + size !== eocd) throw new Error(uiText('Excel 不支持分卷、ZIP64 或无效目录', "Excel does not support split archives, ZIP64, or invalid directories", "Excel не поддерживает многотомные архивы, ZIP64 или некорректные каталоги"))
   const result = new Map<string, { crc: number; size: number }>()
   let cursor = offset
   for (let index = 0; index < count; index++) {
-    if (cursor + 46 > eocd || view.getUint32(cursor, true) !== 0x02014b50) throw new Error('Excel ZIP 条目目录损坏')
+    if (cursor + 46 > eocd || view.getUint32(cursor, true) !== 0x02014b50) throw new Error(uiText('Excel ZIP 条目目录损坏', "Excel ZIP entry directory corrupted", "Каталог записей ZIP Excel повреждён"))
     const flags = view.getUint16(cursor + 8, true)
     const method = view.getUint16(cursor + 10, true)
     const expanded = view.getUint32(cursor + 24, true)
     const nameLength = view.getUint16(cursor + 28, true)
     const extra = view.getUint16(cursor + 30, true)
     const comment = view.getUint16(cursor + 32, true)
-    if ((flags & 1) || ![0, 8].includes(method) || expanded > EXCEL_LIMITS.part) throw new Error('Excel ZIP 已加密、压缩方式不支持或单部件超限')
+    if ((flags & 1) || ![0, 8].includes(method) || expanded > EXCEL_LIMITS.part) throw new Error(uiText('Excel ZIP 已加密、压缩方式不支持或单部件超限', "Excel ZIP is encrypted, uses unsupported compression, or exceeds the part limit", "ZIP Excel зашифрован, использует неподдерживаемое сжатие или превышает лимит части"))
     const name = strFromU8(bytes.subarray(cursor + 46, cursor + 46 + nameLength))
-    if (result.has(name) || /(?:^|\/)\.\.(?:\/|$)|\\/.test(name) || name.startsWith('/')) throw new Error('Excel ZIP 重复/越界部件名')
+    if (result.has(name) || /(?:^|\/)\.\.(?:\/|$)|\\/.test(name) || name.startsWith('/')) throw new Error(uiText('Excel ZIP 重复/越界部件名', "Excel ZIP has duplicate or out-of-bounds part names", "В ZIP Excel повторяющиеся имена частей или выход за границы пути"))
     result.set(name, { crc: view.getUint32(cursor + 16, true), size: expanded })
     cursor += 46 + nameLength + extra + comment
   }
-  if (cursor !== eocd) throw new Error('Excel ZIP 目录长度不一致')
+  if (cursor !== eocd) throw new Error(uiText('Excel ZIP 目录长度不一致', "Excel ZIP directory length mismatch", "Несоответствие длины каталога ZIP Excel"))
   return result
 }
 
@@ -101,21 +102,21 @@ export function rawGate(parts: Map<string, string>): string[] {
   const reasons = new Set<string>()
   for (const [name, xml] of parts) {
     if (name.endsWith('/')) continue
-    if (!PARTS.test(name)) reasons.add('不支持的 OOXML 部件：' + name)
-    if (/<!DOCTYPE|<!ENTITY/i.test(xml)) throw new Error('Excel XML 包含不安全的实体定义')
+    if (!PARTS.test(name)) reasons.add(uiText('不支持的 OOXML 部件：', "Unsupported OOXML part: ", "Неподдерживаемая часть OOXML: ") + name)
+    if (/<!DOCTYPE|<!ENTITY/i.test(xml)) throw new Error(uiText('Excel XML 包含不安全的实体定义', "Excel XML contains unsafe entity declarations", "XML Excel содержит небезопасные объявления сущностей"))
     if (name.endsWith('.rels')) {
       for (const tag of xml.matchAll(/<Relationship\b[^>]*>/g)) {
         const relation = /\bType=["']([^"']+)["']/.exec(tag[0])?.[1] || ''
         const suffix = relation.replace(/^https?:\/\/schemas\.openxmlformats\.org\/(?:officeDocument\/2006|package\/2006)\/relationships\//, '')
-        if (!RELATIONS.has(suffix) || /TargetMode=["']External/i.test(tag[0])) reasons.add('外部或未知关系：' + relation)
+        if (!RELATIONS.has(suffix) || /TargetMode=["']External/i.test(tag[0])) reasons.add(uiText('外部或未知关系：', "External or unknown relationship: ", "Внешняя или неизвестная связь: ") + relation)
       }
     }
     if (!/^xl\/(?:worksheets\/sheet\d+|workbook|styles|sharedStrings)\.xml$/.test(name)) continue
-    if (/<(?:\w+:)?(?:drawing|legacyDrawing|picture|pivotTable|tableParts|extLst|sheetProtection|workbookProtection|conditionalFormatting|dataValidations|hyperlink|definedName|autoFilter|controls|oleObjects|rPh|phoneticPr|r)(?:\s|>)/.test(basicXml(name, xml))) reasons.add('包含高级对象、保护、富文本、筛选或扩展：' + name)
+    if (/<(?:\w+:)?(?:drawing|legacyDrawing|picture|pivotTable|tableParts|extLst|sheetProtection|workbookProtection|conditionalFormatting|dataValidations|hyperlink|definedName|autoFilter|controls|oleObjects|rPh|phoneticPr|r)(?:\s|>)/.test(basicXml(name, xml))) reasons.add(uiText('包含高级对象、保护、富文本、筛选或扩展：', "Contains advanced objects, protection, rich text, filters, or extensions: ", "Содержит сложные объекты, защиту, форматированный текст, фильтры или расширения: ") + name)
     for (const formula of xml.matchAll(/<(?:\w+:)?f\b([^>]*)>([\s\S]*?)<\/(?:\w+:)?f>/g)) {
-      if (formula[1].trim() || !basicFormula(xmlText(formula[2]))) reasons.add('不支持的复杂/共享/数组公式：' + name)
+      if (formula[1].trim() || !basicFormula(xmlText(formula[2]))) reasons.add(uiText('不支持的复杂/共享/数组公式：', "Unsupported complex/shared/array formula: ", "Неподдерживаемая сложная/общая/массивная формула: ") + name)
     }
-    if (/<(?:\w+:)?f\b[^>]*\/>/.test(xml)) reasons.add('共享或空公式：' + name)
+    if (/<(?:\w+:)?f\b[^>]*\/>/.test(xml)) reasons.add(uiText('共享或空公式：', "Shared or empty formula: ", "Общая или пустая формула: ") + name)
   }
   return [...reasons]
 }
@@ -170,17 +171,17 @@ function importStyle(style: Partial<ExcelJS.Style>, palette: string[]): IStyleDa
 
 /** @private @author ddj 2026年10月28号 @param workbook Parsed workbook. @returns Independent model-level refusal reasons and resource validation. */
 function modelGate(workbook: ExcelJS.Workbook): string[] {
-  if (workbook.worksheets.length > EXCEL_LIMITS.sheets) throw new Error('Excel 超过 50 个工作表')
+  if (workbook.worksheets.length > EXCEL_LIMITS.sheets) throw new Error(uiText('Excel 超过 50 个工作表', "Excel exceeds 50 worksheets", "В Excel более 50 листов"))
   const reasons = new Set<string>()
   let count = 0
   for (const sheet of workbook.worksheets) {
-    if (sheet.state !== 'visible' || sheet.getImages().length || (sheet.model as ExcelJS.WorksheetModel & { sheetProtection?: unknown }).sheetProtection) reasons.add('隐藏工作表、图片或保护：' + sheet.name)
+    if (sheet.state !== 'visible' || sheet.getImages().length || (sheet.model as ExcelJS.WorksheetModel & { sheetProtection?: unknown }).sheetProtection) reasons.add(uiText('隐藏工作表、图片或保护：', "Hidden worksheet, images, or protection: ", "Скрытый лист, изображения или защита: ") + sheet.name)
     sheet.eachRow({ includeEmpty: false }, (row) => row.eachCell({ includeEmpty: false }, (cell) => {
-      if (++count > EXCEL_LIMITS.cells) throw new Error('Excel 已用单元格超过 200000')
-      if (cell.formula && (!basicFormula(cell.formula) || cell.formulaType !== ExcelJS.FormulaType.Master)) reasons.add('复杂公式：' + sheet.name + '!' + cell.address)
-      if (cell.type === ExcelJS.ValueType.RichText || cell.type === ExcelJS.ValueType.Hyperlink || cell.type === ExcelJS.ValueType.Error) reasons.add('富文本、超链接或错误值：' + sheet.name + '!' + cell.address)
-      if (cell.fill?.type === 'gradient' || (cell.fill?.type === 'pattern' && !['none', 'solid'].includes(cell.fill.pattern))) reasons.add('不支持的填充：' + cell.address)
-      if (cell.alignment?.textRotation || cell.alignment?.indent || cell.alignment?.shrinkToFit || cell.border?.diagonal || cell.font?.vertAlign) reasons.add('高级样式：' + cell.address)
+      if (++count > EXCEL_LIMITS.cells) throw new Error(uiText('Excel 已用单元格超过 200000', "Excel exceeds 200000 used cells", "В Excel более 200000 используемых ячеек"))
+      if (cell.formula && (!basicFormula(cell.formula) || cell.formulaType !== ExcelJS.FormulaType.Master)) reasons.add(uiText('复杂公式：', "Complex formula: ", "Сложная формула: ") + sheet.name + '!' + cell.address)
+      if (cell.type === ExcelJS.ValueType.RichText || cell.type === ExcelJS.ValueType.Hyperlink || cell.type === ExcelJS.ValueType.Error) reasons.add(uiText('富文本、超链接或错误值：', "Rich text, hyperlink, or error value: ", "Форматированный текст, гиперссылка или значение ошибки: ") + sheet.name + '!' + cell.address)
+      if (cell.fill?.type === 'gradient' || (cell.fill?.type === 'pattern' && !['none', 'solid'].includes(cell.fill.pattern))) reasons.add(uiText('不支持的填充：', "Unsupported fill: ", "Неподдерживаемая заливка: ") + cell.address)
+      if (cell.alignment?.textRotation || cell.alignment?.indent || cell.alignment?.shrinkToFit || cell.border?.diagonal || cell.font?.vertAlign) reasons.add(uiText('高级样式：', "Advanced style: ", "Сложный стиль: ") + cell.address)
     }))
   }
   return [...reasons]
@@ -254,7 +255,7 @@ function exportStyle(style: IStyleData): Partial<ExcelJS.Style> {
 
 /** @private @author ddj 2026年10月28号 @param index Zero-based coordinate. @param limit Exclusive dimension limit. @sideEffects Rejects invalid coordinates before ExcelJS allocates rows or merges. */
 function checkIndex(index: number, limit: number): void {
-  if (!Number.isInteger(index) || index < 0 || index >= limit) throw new Error('Excel 导出坐标越界')
+  if (!Number.isInteger(index) || index < 0 || index >= limit) throw new Error(uiText('Excel 导出坐标越界', "Excel export coordinate out of bounds", "Координата экспорта Excel вне границ"))
 }
 
 /** @private @author ddj 2026年10月28号 @param snapshot Captured edit. @sideEffects Rejects unsupported editing metadata and validates cumulative merge allocations before creating any ExcelJS worksheet. */
@@ -263,13 +264,13 @@ function checkSnapshot(snapshot: IWorkbookData): void {
   const allowed = new Set(['id', 'name', 'rowCount', 'columnCount', 'cellData', 'rowData', 'columnData', 'mergeData', 'defaultRowHeight', 'defaultColumnWidth', 'hidden', 'freeze', 'zoomRatio', 'scrollTop', 'scrollLeft', 'rowHeader', 'columnHeader', 'showGridlines', 'rightToLeft', 'tabColor', 'status'])
   for (const id of snapshot.sheetOrder) {
     const sheet = snapshot.sheets[id]
-    if (!sheet) throw new Error('工作表快照缺失')
+    if (!sheet) throw new Error(uiText('工作表快照缺失', "Worksheet snapshot missing", "Снимок листа отсутствует"))
     const metadata = sheet as unknown as Record<string, unknown>
     for (const [key, entry] of Object.entries(metadata)) {
-      if (!allowed.has(key) && entry != null) throw new Error('不支持的工作表编辑字段：' + key)
+      if (!allowed.has(key) && entry != null) throw new Error(uiText('不支持的工作表编辑字段：', "Unsupported worksheet edit field: ", "Неподдерживаемое поле редактирования листа: ") + key)
     }
-    if (sheet.hidden || sheet.rightToLeft || sheet.tabColor) throw new Error('导出不支持隐藏工作表、从右向左或工作表颜色')
-    if (sheet.freeze && Object.entries(sheet.freeze).some(([key, entry]) => Number(entry) !== (key.startsWith('start') ? -1 : 0))) throw new Error('导出不支持冻结窗格')
+    if (sheet.hidden || sheet.rightToLeft || sheet.tabColor) throw new Error(uiText('导出不支持隐藏工作表、从右向左或工作表颜色', "Export does not support hidden sheets, right-to-left layout, or sheet colors", "Экспорт не поддерживает скрытые листы, направление справа налево или цвета листов"))
+    if (sheet.freeze && Object.entries(sheet.freeze).some(([key, entry]) => Number(entry) !== (key.startsWith('start') ? -1 : 0))) throw new Error(uiText('导出不支持冻结窗格', "Export does not support frozen panes", "Экспорт не поддерживает закреплённые области"))
     for (const [row, cells] of Object.entries(sheet.cellData || {})) {
       checkIndex(Number(row), 1048576)
       for (const [col, cell] of Object.entries(cells || {})) {
@@ -282,9 +283,9 @@ function checkSnapshot(snapshot: IWorkbookData): void {
     for (const range of sheet.mergeData || []) {
       checkIndex(range.startRow, 1048576); checkIndex(range.endRow, 1048576)
       checkIndex(range.startColumn, 16384); checkIndex(range.endColumn, 16384)
-      if (range.endRow < range.startRow || range.endColumn < range.startColumn) throw new Error('Excel 合并范围倒置')
+      if (range.endRow < range.startRow || range.endColumn < range.startColumn) throw new Error(uiText('Excel 合并范围倒置', "Excel merged range is reversed", "Диапазон объединения Excel задан в обратном порядке"))
       merged += (range.endRow - range.startRow + 1) * (range.endColumn - range.startColumn + 1)
-      if (merged > EXCEL_LIMITS.cells) throw new Error('Excel 累计合并范围超过 200000 单元格')
+      if (merged > EXCEL_LIMITS.cells) throw new Error(uiText('Excel 累计合并范围超过 200000 单元格', "Excel merged ranges exceed 200000 cells in total", "Объединённые диапазоны Excel превышают 200000 ячеек суммарно"))
     }
   }
 }
@@ -292,12 +293,12 @@ function checkSnapshot(snapshot: IWorkbookData): void {
 /** @private @author ddj 2026年10月28号 @param cell Edited cell. @param snapshot Style dictionary. @sideEffects Rejects unsupported cell/style fields rather than silently stripping newly edited content. */
 function checkCell(cell: ICellData, snapshot: IWorkbookData): void {
   for (const [key, entry] of Object.entries(cell)) {
-    if (entry != null && !['v', 't', 'f', 's'].includes(key)) throw new Error('不支持的单元格编辑字段：' + key)
+    if (entry != null && !['v', 't', 'f', 's'].includes(key)) throw new Error(uiText('不支持的单元格编辑字段：', "Unsupported cell edit field: ", "Неподдерживаемое поле редактирования ячейки: ") + key)
   }
   const style = typeof cell.s === 'string' ? snapshot.styles[cell.s] : cell.s
   if (!style) return
   for (const [key, entry] of Object.entries(style)) {
-    if (entry != null && !['ff', 'fs', 'bl', 'it', 'st', 'ul', 'cl', 'bg', 'ht', 'vt', 'tb', 'n', 'bd'].includes(key)) throw new Error('不支持的样式编辑字段：' + key)
+    if (entry != null && !['ff', 'fs', 'bl', 'it', 'st', 'ul', 'cl', 'bg', 'ht', 'vt', 'tb', 'n', 'bd'].includes(key)) throw new Error(uiText('不支持的样式编辑字段：', "Unsupported style edit field: ", "Неподдерживаемое поле редактирования стиля: ") + key)
   }
   checkStyle(style)
 }
@@ -305,13 +306,13 @@ function checkCell(cell: ICellData, snapshot: IWorkbookData): void {
 /** @private @author ddj 2026年10月28号 @param object Nested style object. @param allowed Supported non-null keys. @sideEffects Rejects nested data that the converter cannot preserve. */
 function checkKeys(object: object, allowed: string[]): void {
   const unknown = Object.entries(object).filter(([key, entry]) => entry != null && !allowed.includes(key)).map(([key]) => key)
-  if (unknown.length) throw new Error('不支持的嵌套样式字段：' + unknown.join(', '))
+  if (unknown.length) throw new Error(uiText('不支持的嵌套样式字段：', "Unsupported nested style field: ", "Неподдерживаемое вложенное поле стиля: ") + unknown.join(', '))
 }
 
 /** @private @author ddj 2026年10月28号 @param color Supported RGB color. @sideEffects Rejects theme references, alpha and non-RGB edited color representations. */
 function checkColor(color: object): void {
   checkKeys(color, ['rgb'])
-  if (!/^#[a-f\d]{6}$/i.test((color as { rgb?: string }).rgb || '')) throw new Error('不支持的样式颜色')
+  if (!/^#[a-f\d]{6}$/i.test((color as { rgb?: string }).rgb || '')) throw new Error(uiText('不支持的样式颜色', "Unsupported style color", "Неподдерживаемый цвет стиля"))
 }
 
 /** @private @author ddj 2026年10月28号 @param style Edited style. @sideEffects Validates exact conversion enums and every nested style object before encoding. */
@@ -319,25 +320,25 @@ function checkStyle(style: IStyleData): void {
   const enums: Record<string, number[]> = { bl: [0, 1], it: [0, 1], ht: [0, 1, 2, 3, 4, 6], vt: [0, 1, 2, 3], tb: [1, 3] }
   for (const [key, allowed] of Object.entries(enums)) {
     const entry = (style as Record<string, unknown>)[key]
-    if (entry != null && !allowed.includes(entry as number)) throw new Error('不支持的样式枚举：' + key)
+    if (entry != null && !allowed.includes(entry as number)) throw new Error(uiText('不支持的样式枚举：', "Unsupported style enumeration: ", "Неподдерживаемое значение стиля: ") + key)
   }
-  if (style.ff != null && typeof style.ff !== 'string') throw new Error('字体名称无效')
-  if (style.fs != null && (!Number.isFinite(style.fs) || style.fs <= 0)) throw new Error('字体大小无效')
+  if (style.ff != null && typeof style.ff !== 'string') throw new Error(uiText('字体名称无效', "Invalid font name", "Некорректное имя шрифта"))
+  if (style.fs != null && (!Number.isFinite(style.fs) || style.fs <= 0)) throw new Error(uiText('字体大小无效', "Invalid font size", "Некорректный размер шрифта"))
   for (const decoration of [style.ul, style.st]) {
     if (!decoration) continue
     // Univer copies font color into disabled decorations after editing. It has no visible effect.
     checkKeys(decoration, decoration.s === 0 ? ['s', 'cl'] : ['s'])
     if (decoration.cl) checkColor(decoration.cl)
-    if (decoration.s != null && ![0, 1].includes(decoration.s)) throw new Error('不支持的下划线/删除线样式')
+    if (decoration.s != null && ![0, 1].includes(decoration.s)) throw new Error(uiText('不支持的下划线/删除线样式', "Unsupported underline/strikethrough style", "Неподдерживаемый стиль подчёркивания/зачёркивания"))
   }
   for (const color of [style.cl, style.bg]) if (color) checkColor(color)
-  if (style.n) { checkKeys(style.n, ['pattern']); if (typeof style.n.pattern !== 'string') throw new Error('数字格式无效') }
+  if (style.n) { checkKeys(style.n, ['pattern']); if (typeof style.n.pattern !== 'string') throw new Error(uiText('数字格式无效', "Invalid number format", "Некорректный числовой формат")) }
   if (!style.bd) return
   checkKeys(style.bd, ['t', 'b', 'l', 'r'])
   for (const border of Object.values(style.bd)) {
     if (!border) continue
     checkKeys(border, ['s', 'cl'])
-    if (!Number.isInteger(border.s) || border.s < 1 || border.s >= BORDER_NAMES.length) throw new Error('不支持的边框样式')
+    if (!Number.isInteger(border.s) || border.s < 1 || border.s >= BORDER_NAMES.length) throw new Error(uiText('不支持的边框样式', "Unsupported border style", "Неподдерживаемый стиль границы"))
     if (border.cl) checkColor(border.cl)
   }
 }
@@ -349,15 +350,15 @@ function checkDimensions(dimensions: unknown, limit: number, allowed: string[]):
     if (!dimension) continue
     for (const [key, entry] of Object.entries(dimension)) {
       if (allowed.includes(key)) {
-        if (typeof entry !== 'number' || !Number.isFinite(entry) || entry <= 0) throw new Error('Excel 行高列宽无效')
-      } else if (entry != null && entry !== 0 && entry !== false) throw new Error('不支持的行列编辑字段：' + key)
+        if (typeof entry !== 'number' || !Number.isFinite(entry) || entry <= 0) throw new Error(uiText('Excel 行高列宽无效', "Invalid Excel row height or column width", "Некорректная высота строки или ширина столбца Excel"))
+      } else if (entry != null && entry !== 0 && entry !== false) throw new Error(uiText('不支持的行列编辑字段：', "Unsupported row/column edit field: ", "Неподдерживаемое поле редактирования строки/столбца: ") + key)
     }
   }
 }
 
 /** @public @author ddj 2026年10月28号 @param snapshot Captured editing revision. @returns Browser-copy XLSX bytes after revalidating edits against the whitelist. */
 export async function encodeExcel(snapshot: IWorkbookData): Promise<Uint8Array> {
-  if (snapshot.sheetOrder.length > EXCEL_LIMITS.sheets) throw new Error('Excel 超过 50 个工作表')
+  if (snapshot.sheetOrder.length > EXCEL_LIMITS.sheets) throw new Error(uiText('Excel 超过 50 个工作表', "Excel exceeds 50 worksheets", "В Excel более 50 листов"))
   checkSnapshot(snapshot)
   const workbook = new ExcelJS.Workbook()
   workbook.calcProperties.fullCalcOnLoad = true
@@ -365,14 +366,14 @@ export async function encodeExcel(snapshot: IWorkbookData): Promise<Uint8Array> 
   let count = 0
   for (const id of snapshot.sheetOrder) {
     const sheet = snapshot.sheets[id]
-    if (!sheet) throw new Error('工作表快照缺失')
+    if (!sheet) throw new Error(uiText('工作表快照缺失', "Worksheet snapshot missing", "Снимок листа отсутствует"))
     const output = workbook.addWorksheet(sheet.name || 'Sheet')
     for (const [rowKey, cells] of Object.entries(sheet.cellData || {})) {
       for (const [columnKey, cell] of Object.entries(cells || {}) as [string, ICellData][]) {
         if (!cell) continue
-        if (++count > EXCEL_LIMITS.cells) throw new Error('Excel 已用单元格超过 200000')
-        if (cell.p || cell.si || cell.custom) throw new Error('编辑产生了不支持的富文本、共享公式或自定义数据')
-        if (cell.f && !basicFormula(cell.f)) throw new Error('导出仅支持 SUM/AVERAGE/MIN/MAX/COUNT 和普通引用')
+        if (++count > EXCEL_LIMITS.cells) throw new Error(uiText('Excel 已用单元格超过 200000', "Excel exceeds 200000 used cells", "В Excel более 200000 используемых ячеек"))
+        if (cell.p || cell.si || cell.custom) throw new Error(uiText('编辑产生了不支持的富文本、共享公式或自定义数据', "Editing produced unsupported rich text, shared formulas, or custom data", "Редактирование создало неподдерживаемый форматированный текст, общие формулы или пользовательские данные"))
+        if (cell.f && !basicFormula(cell.f)) throw new Error(uiText('导出仅支持 SUM/AVERAGE/MIN/MAX/COUNT 和普通引用', "Export supports only SUM/AVERAGE/MIN/MAX/COUNT and ordinary references", "Экспорт поддерживает только SUM/AVERAGE/MIN/MAX/COUNT и обычные ссылки"))
         const target = output.getCell(Number(rowKey) + 1, Number(columnKey) + 1)
         if (cell.f) target.value = { formula: cell.f.replace(/^=/, '') }
         else target.value = cell.v ?? null

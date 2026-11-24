@@ -8,6 +8,7 @@
  * 作者 ddj 2026年10月30号
  */
 import React from 'react'
+import { uiText } from '../uiLocale.js'
 import { ModalShell } from './ModalShell.js'
 import { PickMulti, PickSeg, PickSwitch, PickWorkspace } from './QuickMenuPickers.js'
 import type { PickGroup, PickOption, PickSegOption } from './QuickMenuPickers.js'
@@ -55,14 +56,14 @@ interface RuleChoice {
 
 /** 类型分段的可选值。 */
 const TYPE_OPTIONS: PickSegOption[] = [
-  { value: 'button', label: '按钮' },
-  { value: 'group', label: '组' },
+  { value: 'button', get label() { return uiText('按钮', "Button", "Кнопка") } },
+  { value: 'group', get label() { return uiText('组', "Group", "Группа") } },
 ]
 
 /** 规则注入方式分段的可选值。 */
 const MODE_OPTIONS: PickSegOption[] = [
-  { value: 'reference', label: '引用' },
-  { value: 'inline', label: '内联正文' },
+  { value: 'reference', get label() { return uiText('引用', "Reference", "Ссылка") } },
+  { value: 'inline', get label() { return uiText('内联正文', "Inline content", "Встроенный текст") } },
 ]
 
 /** 最大嵌套层数分段的可选值（1–5）。 */
@@ -133,15 +134,15 @@ function skillGroups(
   if (groups.length === 0 && names && names.length > 0) {
     const options = names.map((name) => skillOption(name, ctx))
     for (const option of options) known.add(option.key)
-    groups.push({ key: 'session', label: '当前会话技能', options })
+    groups.push({ key: 'session', label: uiText('当前会话技能', "Current session skills", "Навыки текущего сеанса"), options })
   }
 
   const extra = selected.filter((name) => !known.has(name))
   if (extra.length > 0) {
     groups.push({
       key: 'bound',
-      label: '已绑定（不在候选内）',
-      options: extra.map((name) => skillOption(name, ctx, '候选目录里没有该技能，可取消绑定')),
+      label: uiText('已绑定（不在候选内）', "Bound (not in available choices)", "Привязано (нет среди вариантов)"),
+      options: extra.map((name) => skillOption(name, ctx, uiText('候选目录里没有该技能，可取消绑定', "Skill is absent from the catalog; you can unbind it", "Навык отсутствует в каталоге; привязку можно удалить"))),
     })
   }
   return groups
@@ -181,25 +182,25 @@ function ruleGroups(choices: RuleChoice[], selected: RuleBinding[], ctx: Validat
   const groups: PickGroup[] = []
 
   if (user.length > 0) {
-    groups.push({ key: 'user', label: '用户规则', options: user.map((choice) => ruleOption(choice, ctx)) })
+    groups.push({ key: 'user', label: uiText('用户规则', "User rules", "Правила пользователя"), options: user.map((choice) => ruleOption(choice, ctx)) })
   }
   if (project.length > 0) {
-    groups.push({ key: 'project', label: '当前工作区规则', options: project.map((choice) => ruleOption(choice, ctx)) })
+    groups.push({ key: 'project', label: uiText('当前工作区规则', "Current workspace rules", "Правила текущего пространства"), options: project.map((choice) => ruleOption(choice, ctx)) })
   }
 
   const extra = selected.filter((binding) => !known.has(bindingKey(binding)))
   if (extra.length > 0) {
     groups.push({
       key: 'bound',
-      label: '已绑定（规则已不存在）',
+      label: uiText('已绑定（规则已不存在）', "Bound (rule no longer exists)", "Привязано (правило отсутствует)"),
       options: extra.map((binding) => {
         const status = validateRule(binding, ctx)
         return {
           key: bindingKey(binding),
           label: binding.file,
-          hint: binding.scope === 'user' ? '用户规则' : '项目规则',
+          hint: binding.scope === 'user' ? uiText('用户规则', "User rules", "Правила пользователя") : uiText('项目规则', "Project rules", "Правила проекта"),
           state: status.state === 'warn' ? 'warn' : 'error',
-          reason: status.reason ?? '候选里没有该规则，可取消绑定',
+          reason: status.reason ?? uiText('候选里没有该规则，可取消绑定', "Rule is absent from the choices; you can unbind it", "Правило отсутствует среди вариантов; привязку можно удалить"),
         }
       }),
     })
@@ -258,10 +259,10 @@ function buildDraft(
  */
 function groupChoices(doc: QuickMenuDoc, selfId: string): Array<{ id: string; label: string }> {
   const banned = selfId === '' ? [] : descendantIds(doc, selfId)
-  const out: Array<{ id: string; label: string }> = [{ id: '', label: '顶层（root 组）' }]
+  const out: Array<{ id: string; label: string }> = [{ id: '', label: uiText('顶层（root 组）', "Top level (root group)", "Верхний уровень (корневая группа)") }]
   for (const item of doc.items) {
     if (item.type !== 'group' || banned.includes(item.id)) continue
-    out.push({ id: item.id, label: item.name + '（第 ' + depthOf(doc, item.id) + ' 层）' })
+    out.push({ id: item.id, label: item.name + uiText('（第 ', " (level ", " (уровень ") + depthOf(doc, item.id) + uiText(' 层）', ")", ")") })
   }
   return out
 }
@@ -279,7 +280,7 @@ function ruleChoices(snapshot: RuleListSnapshot | null, cwd?: string): RuleChoic
   for (const info of snapshot.user) {
     const binding: RuleBinding = { scope: 'user', file: info.file }
     if (info.origin) binding.origin = info.origin
-    out.push({ binding, label: info.file, hint: '用户规则 · ' + (info.type === 'always' ? '总是生效' : info.type === 'auto' ? '按 globs' : '手动') })
+    out.push({ binding, label: info.file, hint: uiText('用户规则 · ', "User rule · ", "Правило пользователя · ") + (info.type === 'always' ? uiText('总是生效', "Always active", "Действует всегда") : info.type === 'auto' ? uiText('按 globs', "By globs", "По glob-шаблонам") : uiText('手动', "Manual", "Вручную")) })
   }
   const wanted = normalizePath(cwd ?? '')
   for (const project of snapshot.projects) {
@@ -288,7 +289,7 @@ function ruleChoices(snapshot: RuleListSnapshot | null, cwd?: string): RuleChoic
       out.push({
         binding: { scope: 'project', workspacePath: project.workspacePath, file: info.file },
         label: info.file,
-        hint: '项目规则 · ' + project.title,
+        hint: uiText('项目规则 · ', "Project rule · ", "Правило проекта · ") + project.title,
       })
     }
   }
@@ -427,7 +428,7 @@ export function QuickItemDialog(props: QuickItemDialogProps) {
     const result = editing ? await host.store.updateItem(finalItem) : await host.store.createItem(finalItem)
     setBusy(false)
     if (!result.ok) {
-      setError(result.error ?? '保存失败')
+      setError(result.error ?? uiText('保存失败', "Save failed", "Ошибка сохранения"))
       return
     }
     props.onClose()
@@ -439,13 +440,13 @@ export function QuickItemDialog(props: QuickItemDialogProps) {
    */
   async function onDelete(): Promise<void> {
     if (!editing) return
-    const suffix = editing.type === 'group' ? '及其全部子项' : ''
-    if (!window.confirm('确认删除「' + editing.name + '」' + suffix + '？')) return
+    const suffix = editing.type === 'group' ? uiText('及其全部子项', " and all its children", " и все дочерние элементы") : ''
+    if (!window.confirm(uiText('确认删除「', "Delete “", "Удалить «") + editing.name + uiText('」', "”", "»") + suffix + uiText('？', "?", "?"))) return
     setBusy(true)
     const result = await host.store.removeItem(editing.id)
     setBusy(false)
     if (!result.ok) {
-      setError(result.error ?? '删除失败')
+      setError(result.error ?? uiText('删除失败', "Delete failed", "Ошибка удаления"))
       return
     }
     props.onClose()
@@ -459,18 +460,18 @@ export function QuickItemDialog(props: QuickItemDialogProps) {
   function basicRow(): React.ReactNode {
     return React.createElement('div', { className: 'edrv-qm-row2' },
       React.createElement('div', { className: 'edrv-qm-field edrv-qm-field--narrow' },
-        React.createElement('span', { className: 'edrv-qm-field-label' }, '类型'),
+        React.createElement('span', { className: 'edrv-qm-field-label' }, uiText('类型', "Type", "Тип")),
         React.createElement(PickSeg, {
           options: TYPE_OPTIONS,
           value: type,
-          label: '菜单项类型',
+          label: uiText('菜单项类型', "Menu item type", "Тип элемента меню"),
           onChange: (next) => setType(next as QuickItemType),
         })),
       React.createElement('label', { className: 'edrv-qm-field' },
-        React.createElement('span', { className: 'edrv-qm-field-label' }, '名称'),
+        React.createElement('span', { className: 'edrv-qm-field-label' }, uiText('名称', "Name", "Название")),
         React.createElement('input', {
           className: 'edrv-qm-input', value: name, maxLength: QUICK_MENU_NAME_CAP,
-          placeholder: type === 'group' ? '例如：代码审查' : '例如：审查当前改动',
+          placeholder: type === 'group' ? uiText('例如：代码审查', "e.g. Code review", "например: Проверка кода") : uiText('例如：审查当前改动', "e.g. Review current changes", "например: Проверить текущие изменения"),
           onChange: (event) => setName(event.target.value),
         })))
   }
@@ -483,20 +484,20 @@ export function QuickItemDialog(props: QuickItemDialogProps) {
   function placeRow(): React.ReactNode {
     return React.createElement('div', { className: 'edrv-qm-row2' },
       React.createElement('label', { className: 'edrv-qm-field' },
-        React.createElement('span', { className: 'edrv-qm-field-label' }, '归属组'),
+        React.createElement('span', { className: 'edrv-qm-field-label' }, uiText('归属组', "Parent group", "Родительская группа")),
         React.createElement('select', {
           className: 'edrv-qm-select', value: parent ?? '',
           onChange: (event: React.ChangeEvent<HTMLSelectElement>) => setParent(event.target.value === '' ? null : event.target.value),
         }, groupChoices(doc, draftId).map((choice) => React.createElement('option', { key: choice.id, value: choice.id }, choice.label)))),
       React.createElement('div', { className: 'edrv-qm-field' },
-        React.createElement('span', { className: 'edrv-qm-field-label' }, '同级优先级（越小越靠前）'),
+        React.createElement('span', { className: 'edrv-qm-field-label' }, uiText('同级优先级（越小越靠前）', "Sibling priority (lower comes first)", "Приоритет на уровне (меньше — выше)")),
         React.createElement('div', { className: 'edrv-qm-inline' },
           React.createElement('input', {
             className: 'edrv-qm-input edrv-qm-input--order', type: 'number', min: 0, max: QUICK_MENU_ORDER_CAP, value: order,
             onChange: (event) => setOrder(Number(event.target.value) || 0),
           }),
-          React.createElement('button', { type: 'button', className: 'edrv-qm-btn edrv-qm-btn--sm', onClick: () => setOrder((value) => Math.max(0, value - 10)) }, '上移'),
-          React.createElement('button', { type: 'button', className: 'edrv-qm-btn edrv-qm-btn--sm', onClick: () => setOrder((value) => Math.min(QUICK_MENU_ORDER_CAP, value + 10)) }, '下移'))))
+          React.createElement('button', { type: 'button', className: 'edrv-qm-btn edrv-qm-btn--sm', onClick: () => setOrder((value) => Math.max(0, value - 10)) }, uiText('上移', "Move up", "Выше")),
+          React.createElement('button', { type: 'button', className: 'edrv-qm-btn edrv-qm-btn--sm', onClick: () => setOrder((value) => Math.min(QUICK_MENU_ORDER_CAP, value + 10)) }, uiText('下移', "Move down", "Ниже")))))
   }
 
   /**
@@ -507,17 +508,17 @@ export function QuickItemDialog(props: QuickItemDialogProps) {
   function workspaceField(): React.ReactNode {
     return React.createElement('div', { className: 'edrv-qm-field' },
       React.createElement('div', { className: 'edrv-qm-field-head' },
-        React.createElement('span', { className: 'edrv-qm-field-label' }, '限定工作区'),
+        React.createElement('span', { className: 'edrv-qm-field-label' }, uiText('限定工作区', "Workspace scope", "Область рабочих пространств")),
         React.createElement('span', { className: 'edrv-qm-field-hint' }, inherited
-          ? '遵循上级组：' + inherited.join('、') + '（此项不可编辑）'
-          : '默认全部工作区可见，可切到当前工作区或展开更多')),
+          ? uiText('遵循上级组：', "Inherited from parent: ", "От родительской группы: ") + inherited.join(uiText('、', ", ", ", ")) + uiText('（此项不可编辑）', " (read-only)", " (только чтение)")
+          : uiText('默认全部工作区可见，可切到当前工作区或展开更多', "Visible in all workspaces by default; select the current workspace or expand for more", "По умолчанию видно во всех пространствах; выберите текущее или откройте остальные"))),
       React.createElement(PickWorkspace, {
         buttonId: 'edrv-qm-pick-workspaces',
         workspaces: workspaceList,
         selected: inherited ?? workspaces,
         cwd: before.cwd,
         inherited: inherited !== null,
-        inheritedHint: '遵循上级组，此项不可编辑',
+        inheritedHint: uiText('遵循上级组，此项不可编辑', "Inherited from parent group; read-only", "Унаследовано от родительской группы; только чтение"),
         onChange: (next) => setWorkspaces(next),
       }))
   }
@@ -530,11 +531,11 @@ export function QuickItemDialog(props: QuickItemDialogProps) {
   function promptField(): React.ReactNode {
     return React.createElement('div', { className: 'edrv-qm-field' },
       React.createElement('div', { className: 'edrv-qm-field-head' },
-        React.createElement('span', { className: 'edrv-qm-field-label' }, '预填提示词'),
-        React.createElement('span', { className: 'edrv-qm-field-hint' }, '占位符：{{workspace}} {{selection}} {{date}} {{rules}} {{skills}}')),
+        React.createElement('span', { className: 'edrv-qm-field-label' }, uiText('预填提示词', "Prefilled prompt", "Готовый запрос")),
+        React.createElement('span', { className: 'edrv-qm-field-hint' }, uiText('占位符：{{workspace}} {{selection}} {{date}} {{rules}} {{skills}}', "Placeholders: {{workspace}} {{selection}} {{date}} {{rules}} {{skills}}", "Подстановки: {{workspace}} {{selection}} {{date}} {{rules}} {{skills}}"))),
       React.createElement('textarea', {
         className: 'edrv-qm-textarea', value: prompt, maxLength: QUICK_MENU_PROMPT_CAP,
-        placeholder: '点击后发送给 AI 的内容…',
+        placeholder: uiText('点击后发送给 AI 的内容…', "Content sent to AI when clicked…", "Текст для ИИ при нажатии…"),
         onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => setPrompt(event.target.value),
       }))
   }
@@ -547,14 +548,14 @@ export function QuickItemDialog(props: QuickItemDialogProps) {
   function skillField(): React.ReactNode {
     return React.createElement('div', { className: 'edrv-qm-field' },
       React.createElement('div', { className: 'edrv-qm-field-head' },
-        React.createElement('span', { className: 'edrv-qm-field-label' }, '绑定技能'),
-        React.createElement('span', { className: 'edrv-qm-field-hint' }, '发送时写成 /技能名；黄点=当前会话不可见')),
+        React.createElement('span', { className: 'edrv-qm-field-label' }, uiText('绑定技能', "Skill bindings", "Привязки навыков")),
+        React.createElement('span', { className: 'edrv-qm-field-hint' }, uiText('发送时写成 /技能名；黄点=当前会话不可见', "Sent as /skill-name; yellow dot = unavailable in this session", "Отправляется как /имя-навыка; жёлтая точка = недоступно в текущем сеансе"))),
       React.createElement(PickMulti, {
         buttonId: 'edrv-qm-pick-skills',
         groups: skillPick,
         selected: skills,
-        unit: '个技能',
-        emptyText: '没有可选技能（全局技能目录与当前工作区 .dsh/skills 均为空）',
+        unit: uiText('个技能', " skills", " навыков"),
+        emptyText: uiText('没有可选技能（全局技能目录与当前工作区 .dsh/skills 均为空）', "No skills available (global skills and workspace .dsh/skills are both empty)", "Нет доступных навыков (глобальный каталог и .dsh/skills рабочего пространства пусты)"),
         onToggle: toggleSkill,
       }))
   }
@@ -567,19 +568,19 @@ export function QuickItemDialog(props: QuickItemDialogProps) {
   function ruleField(): React.ReactNode {
     return React.createElement('div', { className: 'edrv-qm-field' },
       React.createElement('div', { className: 'edrv-qm-field-head' },
-        React.createElement('span', { className: 'edrv-qm-field-label' }, '绑定规则'),
+        React.createElement('span', { className: 'edrv-qm-field-label' }, uiText('绑定规则', "Rule bindings", "Привязки правил")),
         React.createElement(PickSeg, {
           options: MODE_OPTIONS,
           value: ruleMode,
-          label: '规则注入方式',
+          label: uiText('规则注入方式', "Rule injection mode", "Способ добавления правил"),
           onChange: (next) => setRuleMode(next as RuleInjectMode),
         })),
       React.createElement(PickMulti, {
         buttonId: 'edrv-qm-pick-rules',
         groups: rulePick,
         selected: rules.map((binding) => bindingKey(binding)),
-        unit: '条规则',
-        emptyText: '没有可选规则（可在规则面板新建 .mdc 规则）',
+        unit: uiText('条规则', " rules", " правил"),
+        emptyText: uiText('没有可选规则（可在规则面板新建 .mdc 规则）', "No rules available (create .mdc rules in the rules panel)", "Нет доступных правил (создайте правила .mdc в панели правил)"),
         onToggle: toggleRuleKey,
       }))
   }
@@ -591,45 +592,45 @@ export function QuickItemDialog(props: QuickItemDialogProps) {
    */
   function clickField(): React.ReactNode {
     return React.createElement('label', { className: 'edrv-qm-field' },
-      React.createElement('span', { className: 'edrv-qm-field-label' }, '点击动作'),
+      React.createElement('span', { className: 'edrv-qm-field-label' }, uiText('点击动作', "Click action", "Действие при нажатии")),
       React.createElement('select', {
         className: 'edrv-qm-select', value: clickAction,
         onChange: (event: React.ChangeEvent<HTMLSelectElement>) => setClickAction(event.target.value as ClickAction | 'inherit'),
       },
-        React.createElement('option', { value: 'inherit' }, '跟随全局'),
-        React.createElement('option', { value: 'send' }, '直接发送'),
-        React.createElement('option', { value: 'fill' }, '只填入输入框')))
+        React.createElement('option', { value: 'inherit' }, uiText('跟随全局', "Use global setting", "Общая настройка")),
+        React.createElement('option', { value: 'send' }, uiText('直接发送', "Send directly", "Отправить сразу")),
+        React.createElement('option', { value: 'fill' }, uiText('只填入输入框', "Fill input only", "Только заполнить поле"))))
   }
 
   // 标题从滚动区里提出来做成固定头：长表单往下滚时仍知道自己在编辑什么
   const parentName = parent === null ? null : (doc.items.find((entry) => entry.id === parent)?.name ?? null)
-  const typeLabel = type === 'group' ? '组' : '按钮'
-  const headTitle = editing ? '编辑「' + editing.name + '」' : parent === null ? '新建顶层项' : '新建子项'
-  const headSub = (editing ? (editing.type === 'group' ? '组' : '按钮') : typeLabel)
-    + (parentName ? ' · 位于「' + parentName + '」' : ' · 位于顶层')
+  const typeLabel = type === 'group' ? uiText('组', "Group", "Группа") : uiText('按钮', "Button", "Кнопка")
+  const headTitle = editing ? uiText('编辑「', "Edit “", "Изменить «") + editing.name + uiText('」', "”", "»") : parent === null ? uiText('新建顶层项', "New top-level item", "Новый элемент верхнего уровня") : uiText('新建子项', "New child item", "Новый дочерний элемент")
+  const headSub = (editing ? (editing.type === 'group' ? uiText('组', "Group", "Группа") : uiText('按钮', "Button", "Кнопка")) : typeLabel)
+    + (parentName ? uiText(' · 位于「', " · In “", " · В «") + parentName + uiText('」', "”", "»") : uiText(' · 位于顶层', " · At top level", " · На верхнем уровне"))
 
   const header = React.createElement('div', { className: 'edrv-qm-head' },
     React.createElement('div', { className: 'edrv-qm-head-title' }, headTitle),
     React.createElement('div', { className: 'edrv-qm-head-sub' }, headSub))
 
   const body = React.createElement('div', { className: 'edrv-qm-dialog-body' },
-    React.createElement(Section, { title: '基本信息' }, basicRow(), placeRow(), workspaceField()),
-    type === 'button' ? React.createElement(Section, { title: '提示词', hint: '点击后发给 AI 的内容' }, promptField()) : null,
-    type === 'button' ? React.createElement(Section, { title: '绑定' }, skillField(), ruleField()) : null,
-    type === 'button' ? React.createElement(Section, { title: '行为' }, clickField()) : null,
+    React.createElement(Section, { title: uiText('基本信息', "Basic information", "Основные сведения") }, basicRow(), placeRow(), workspaceField()),
+    type === 'button' ? React.createElement(Section, { title: uiText('提示词', "Prompt", "Запрос"), hint: uiText('点击后发给 AI 的内容', "Content sent to AI when clicked", "Текст для ИИ при нажатии") }, promptField()) : null,
+    type === 'button' ? React.createElement(Section, { title: uiText('绑定', "Bindings", "Привязки") }, skillField(), ruleField()) : null,
+    type === 'button' ? React.createElement(Section, { title: uiText('行为', "Behavior", "Поведение") }, clickField()) : null,
     error !== '' ? React.createElement('div', { className: 'edrv-qm-error-list' }, error) : null,
     status.errors.length > 0 ? React.createElement('ul', { className: 'edrv-qm-error-list' }, status.errors.map((text) => React.createElement('li', { key: text }, text))) : null,
     status.warnings.length > 0 ? React.createElement('ul', { className: 'edrv-qm-warn-list' }, status.warnings.map((text) => React.createElement('li', { key: text }, text))) : null,
   )
 
   const actions = React.createElement('div', { className: 'edrv-qm-actions' },
-    editing ? React.createElement('button', { type: 'button', className: 'edrv-qm-btn edrv-qm-btn--danger', disabled: busy, onClick: () => { void onDelete() } }, '删除') : null,
+    editing ? React.createElement('button', { type: 'button', className: 'edrv-qm-btn edrv-qm-btn--danger', disabled: busy, onClick: () => { void onDelete() } }, uiText('删除', "Delete", "Удалить")) : null,
     React.createElement('span', { className: 'edrv-qm-actions-grow' }),
-    React.createElement('button', { type: 'button', className: 'edrv-qm-btn', onClick: props.onClose }, '取消'),
+    React.createElement('button', { type: 'button', className: 'edrv-qm-btn', onClick: props.onClose }, uiText('取消', "Cancel", "Отмена")),
     React.createElement('button', {
       type: 'button', className: 'edrv-qm-btn edrv-qm-btn--primary', disabled: busy || status.errors.length > 0,
       onClick: () => { void onSave() },
-    }, busy ? '保存中…' : editing ? '保存' : '创建'))
+    }, busy ? uiText('保存中…', "Saving…", "Сохранение…") : editing ? uiText('保存', "Save", "Сохранить") : uiText('创建', "Create", "Создать")))
 
   return React.createElement(ModalShell, {
     dialogClass: 'edrv-qm-dialog', zIndex: 220,
@@ -670,7 +671,7 @@ export function MenuGlobalDialog(props: MenuGlobalDialogProps) {
     const result = await host.store.save({ ...doc, enabled, clickAction, maxDepth })
     setBusy(false)
     if (!result.ok) {
-      setError(result.error ?? '保存失败')
+      setError(result.error ?? uiText('保存失败', "Save failed", "Ошибка сохранения"))
       return
     }
     props.onClose()
@@ -690,8 +691,8 @@ export function MenuGlobalDialog(props: MenuGlobalDialogProps) {
     })
     const result = await host.store.save({ ...doc, enabled, clickAction, maxDepth, items })
     setBusy(false)
-    if (!result.ok) setError(result.error ?? '清理失败')
-    else host.notify('已清理失效绑定')
+    if (!result.ok) setError(result.error ?? uiText('清理失败', "Cleanup failed", "Ошибка очистки"))
+    else host.notify(uiText('已清理失效绑定', "Invalid bindings removed", "Недействительные привязки удалены"))
   }
 
   /**
@@ -706,61 +707,61 @@ export function MenuGlobalDialog(props: MenuGlobalDialogProps) {
         ref: fileRef, type: 'file', accept: 'application/json', style: { display: 'none' },
         onChange: (event) => { void onImport(event, host, setError) },
       }),
-      React.createElement('button', { type: 'button', className: 'edrv-qm-btn', onClick: () => downloadDoc(doc) }, '导出 JSON'),
+      React.createElement('button', { type: 'button', className: 'edrv-qm-btn', onClick: () => downloadDoc(doc) }, uiText('导出 JSON', "Export JSON", "Экспорт JSON")),
       React.createElement('button', {
         type: 'button', className: 'edrv-qm-btn',
         onClick: () => fileRef.current?.click(),
-      }, '导入 JSON'),
+      }, uiText('导入 JSON', "Import JSON", "Импорт JSON")),
       React.createElement('button', {
         type: 'button', className: 'edrv-qm-btn',
-        onClick: () => { host.store.patchLauncher(null, null); void host.store.flushLauncher(); host.notify('已重置悬浮按钮位置') },
-      }, '重置按钮位置'))
+        onClick: () => { host.store.patchLauncher(null, null); void host.store.flushLauncher(); host.notify(uiText('已重置悬浮按钮位置', "Floating button position reset", "Положение плавающей кнопки сброшено")) },
+      }, uiText('重置按钮位置', "Reset button position", "Сбросить положение кнопки")))
   }
 
   const header = React.createElement('div', { className: 'edrv-qm-head' },
-    React.createElement('div', { className: 'edrv-qm-head-title' }, '菜单设置'),
-    React.createElement('div', { className: 'edrv-qm-head-sub' }, '悬浮按钮、交互行为与配置迁移'))
+    React.createElement('div', { className: 'edrv-qm-head-title' }, uiText('菜单设置', "Menu settings", "Настройки меню")),
+    React.createElement('div', { className: 'edrv-qm-head-sub' }, uiText('悬浮按钮、交互行为与配置迁移', "Floating button, interaction, and configuration migration", "Плавающая кнопка, взаимодействие и перенос настроек")))
 
   const body = React.createElement('div', { className: 'edrv-qm-dialog-body' },
-    React.createElement(Section, { title: '外观' },
+    React.createElement(Section, { title: uiText('外观', "Appearance", "Внешний вид") },
       React.createElement(PickSwitch, {
         buttonId: 'edrv-qm-switch-enabled',
-        label: '显示悬浮按钮',
-        hint: '关闭后左侧不再显示快捷菜单按钮，配置会保留',
+        label: uiText('显示悬浮按钮', "Show floating button", "Показывать плавающую кнопку"),
+        hint: uiText('关闭后左侧不再显示快捷菜单按钮，配置会保留', "Hide the left quick menu button while keeping its configuration", "Скрыть кнопку быстрого меню слева, сохранив настройки"),
         checked: enabled,
         onChange: setEnabled,
       })),
-    React.createElement(Section, { title: '交互' },
+    React.createElement(Section, { title: uiText('交互', "Interaction", "Взаимодействие") },
       React.createElement('label', { className: 'edrv-qm-field' },
-        React.createElement('span', { className: 'edrv-qm-field-label' }, '点击默认动作'),
+        React.createElement('span', { className: 'edrv-qm-field-label' }, uiText('点击默认动作', "Default click action", "Действие по умолчанию")),
         React.createElement('select', {
           className: 'edrv-qm-select', value: clickAction,
           onChange: (event: React.ChangeEvent<HTMLSelectElement>) => setClickAction(event.target.value as ClickAction),
         },
-          React.createElement('option', { value: 'send' }, '直接发送给 AI'),
-          React.createElement('option', { value: 'fill' }, '只填入输入框'))),
+          React.createElement('option', { value: 'send' }, uiText('直接发送给 AI', "Send directly to AI", "Сразу отправить ИИ")),
+          React.createElement('option', { value: 'fill' }, uiText('只填入输入框', "Fill input only", "Только заполнить поле")))),
       React.createElement('div', { className: 'edrv-qm-field' },
         React.createElement('div', { className: 'edrv-qm-field-head' },
-          React.createElement('span', { className: 'edrv-qm-field-label' }, '最大嵌套层数'),
-          React.createElement('span', { className: 'edrv-qm-field-hint' }, 'root 列里的项是第 1 层；调小不删除已有深层项，只禁止继续新增')),
+          React.createElement('span', { className: 'edrv-qm-field-label' }, uiText('最大嵌套层数', "Maximum nesting depth", "Максимальная глубина вложенности")),
+          React.createElement('span', { className: 'edrv-qm-field-hint' }, uiText('root 列里的项是第 1 层；调小不删除已有深层项，只禁止继续新增', "Items in the root column are level 1. Reducing the limit keeps existing deeper items but prevents new ones.", "Элементы корневого столбца — уровень 1. Уменьшение лимита сохраняет глубокие элементы, но запрещает добавление новых."))),
         React.createElement(PickSeg, {
           options: DEPTH_OPTIONS,
           value: String(maxDepth),
-          label: '最大嵌套层数',
+          label: uiText('最大嵌套层数', "Maximum nesting depth", "Максимальная глубина вложенности"),
           onChange: (next) => setMaxDepth(Number(next) || QUICK_MENU_DEFAULT_DEPTH),
         }))),
-    React.createElement(Section, { title: '配置备份与迁移' }, backupRow()),
+    React.createElement(Section, { title: uiText('配置备份与迁移', "Configuration backup and migration", "Резервное копирование и перенос настроек") }, backupRow()),
     React.createElement(Section, {
-      title: '绑定状态',
-      hint: broken.length === 0 ? '全部可用' : String(broken.length) + ' 项失效',
+      title: uiText('绑定状态', "Binding status", "Состояние привязок"),
+      hint: broken.length === 0 ? uiText('全部可用', "All available", "Все доступны") : String(broken.length) + uiText(' 项失效', " invalid items", " недействительных элементов"),
     },
       broken.length > 0 ? React.createElement('ul', { className: 'edrv-qm-error-list' },
         broken.map((entry) => React.createElement('li', { key: entry.key }, entry.label))) : null,
       broken.length > 0 ? React.createElement('div', { className: 'edrv-qm-btn-row' },
-        React.createElement('button', { type: 'button', className: 'edrv-qm-btn', disabled: busy, onClick: () => { void onClean() } }, '清理失效绑定')) : null),
+        React.createElement('button', { type: 'button', className: 'edrv-qm-btn', disabled: busy, onClick: () => { void onClean() } }, uiText('清理失效绑定', "Remove invalid bindings", "Удалить недействительные привязки"))) : null),
     error !== '' ? React.createElement('div', { className: 'edrv-qm-error-list' }, error) : null,
-    React.createElement('div', { className: 'edrv-qm-field-hint' }, '左侧按钮 / 菜单项'
-      + (host.store.isMounted() ? '（当前界面已挂载）' : '（当前 DSH 未提供浮层槽，按钮不显示）')),
+    React.createElement('div', { className: 'edrv-qm-field-hint' }, uiText('左侧按钮 / 菜单项', "Left button / menu items", "Кнопка слева / элементы меню")
+      + (host.store.isMounted() ? uiText('（当前界面已挂载）', " (mounted in the current interface)", " (добавлено в текущий интерфейс)") : uiText('（当前 DSH 未提供浮层槽，按钮不显示）', " (this DSH provides no overlay slot; button is hidden)", " (эта версия DSH не предоставляет слот оверлея; кнопка скрыта)"))),
   )
 
   return React.createElement(ModalShell, {
@@ -768,8 +769,8 @@ export function MenuGlobalDialog(props: MenuGlobalDialogProps) {
   }, header, body,
   React.createElement('div', { className: 'edrv-qm-actions' },
     React.createElement('span', { className: 'edrv-qm-actions-grow' }),
-    React.createElement('button', { type: 'button', className: 'edrv-qm-btn', onClick: props.onClose }, '取消'),
-    React.createElement('button', { type: 'button', className: 'edrv-qm-btn edrv-qm-btn--primary', disabled: busy, onClick: () => { void onSave() } }, busy ? '保存中…' : '保存')))
+    React.createElement('button', { type: 'button', className: 'edrv-qm-btn', onClick: props.onClose }, uiText('取消', "Cancel", "Отмена")),
+    React.createElement('button', { type: 'button', className: 'edrv-qm-btn edrv-qm-btn--primary', disabled: busy, onClick: () => { void onSave() } }, busy ? uiText('保存中…', "Saving…", "Сохранение…") : uiText('保存', "Save", "Сохранить"))))
 }
 
 /**
@@ -821,7 +822,7 @@ async function onImport(event: React.ChangeEvent<HTMLInputElement>, host: QuickM
   try {
     text = await file.text()
   } catch (error) {
-    setError('读取文件失败：' + String(error))
+    setError(uiText('读取文件失败：', "Failed to read file: ", "Ошибка чтения файла: ") + String(error))
     return
   }
   const parsed = parseDoc(text)
@@ -830,6 +831,6 @@ async function onImport(event: React.ChangeEvent<HTMLInputElement>, host: QuickM
     return
   }
   const result = await host.store.save(parsed.doc)
-  if (!result.ok) setError(result.error ?? '导入失败')
-  else host.notify('已导入快捷菜单配置')
+  if (!result.ok) setError(result.error ?? uiText('导入失败', "Import failed", "Ошибка импорта"))
+  else host.notify(uiText('已导入快捷菜单配置', "Quick menu configuration imported", "Настройки быстрого меню импортированы"))
 }

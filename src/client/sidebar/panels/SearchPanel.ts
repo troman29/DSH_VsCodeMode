@@ -9,6 +9,7 @@
  * 执行前经 edrv:flush-all 让所有编辑器落盘，执行后派发 edrv:refresh 让面板与页签看到新内容。
  * 作者 ddj 2026-08-26 / 2026-11-15
  */
+import { uiText } from '../../uiLocale.js'
 import React from 'react'
 import { rpc } from '../../rpc.js'
 import type { SidebarCtx } from '../types.js'
@@ -23,7 +24,7 @@ import { featurePrefs, watchFeaturePrefs } from '../../featurePrefs.js'
 const DEBOUNCE_MS = 250
 /** 文件变更后的重搜去抖：合并一次写盘的 refresh+file-changed 双事件与批量保存。 */
 const REFRESH_DEBOUNCE_MS = 300
-const INCLUDE_PLACEHOLDER = '例如 *.ts, src/**/include'
+const includePlaceholder = () => uiText('例如 *.ts, src/**/include', "e.g. *.ts, src/**/include", "например *.ts, src/**/include")
 
 /**
  * 逗号切分 glob 列表（trim + 去空）。
@@ -111,11 +112,11 @@ export function replaceSummary(result) {
   if (!result) return ''
   const total = Number(result.totalReplaced ?? 0)
   const files = Number(result.totalFiles ?? 0)
-  const parts = [(result.dryRun === true ? '预览：' : '已替换 ') + total + ' 处 · ' + files + ' 个文件']
-  if (result.truncated === true) parts.push('超出单次上限已截断')
-  if (Number(result.skipped ?? 0) > 0) parts.push('跳过 ' + result.skipped + ' 个文件')
+  const parts = [(result.dryRun === true ? uiText('预览：', "Preview: ", "Предпросмотр: ") : uiText('已替换 ', "Replaced ", "Заменено ")) + total + uiText(' 处 · ', " matches · ", " совпадений · ") + files + uiText(' 个文件', " files", " файлов")]
+  if (result.truncated === true) parts.push(uiText('超出单次上限已截断', "Truncated at the per-operation limit", "Обрезано по лимиту операции"))
+  if (Number(result.skipped ?? 0) > 0) parts.push(uiText('跳过 ', "Skipped ", "Пропущено ") + result.skipped + uiText(' 个文件', " files", " файлов"))
   const failed = Array.isArray(result.failed) ? result.failed : []
-  if (failed.length > 0) parts.push('失败 ' + failed.length + ' 个（' + String(failed[0]?.reason ?? '') + '）')
+  if (failed.length > 0) parts.push(uiText('失败 ', "Failed ", "Ошибок: ") + failed.length + uiText(' 个（', " items (", " элементов (") + String(failed[0]?.reason ?? '') + uiText('）', ")", ")"))
   if (result.warning) parts.push(String(result.warning))
   return parts.join(' · ')
 }
@@ -259,13 +260,13 @@ export function SearchPanel(props) {
         setWarning(res?.warning ? String(res.warning) : '')
         setStatus('done')
       } else {
-        setError(res?.error ? String(res.error) : '搜索失败')
+        setError(res?.error ? String(res.error) : uiText('搜索失败', "Search failed", "Ошибка поиска"))
         setMatches(null)
         setStatus('error')
       }
     }).catch((e) => {
       if (s !== seqRef.current) return
-      setError('搜索异常:' + String(e))
+      setError(uiText('搜索异常:', "Search error: ", "Ошибка поиска: ") + String(e))
       setMatches(null)
       setStatus('error')
     })
@@ -349,12 +350,12 @@ export function SearchPanel(props) {
    */
   const callReplace = async ({ paths, dryRun }) => {
     const base = replaceBaseOf()
-    if (base.query.length < 2) throw new Error('请先输入至少 2 个字符的查找内容')
+    if (base.query.length < 2) throw new Error(uiText('请先输入至少 2 个字符的查找内容', "Enter at least 2 characters to search first", "Сначала введите не менее 2 символов для поиска"))
     const body = Object.assign({}, base, { replacement: replaceTextRef.current })
     if (dryRun === true) body.dryRun = true
     if (Array.isArray(paths) && paths.length > 0) body.paths = paths
     const res = await rpc('edrv.replaceContent', body)
-    if (!res || res.ok !== true) throw new Error(res?.error ? String(res.error) : '替换失败')
+    if (!res || res.ok !== true) throw new Error(res?.error ? String(res.error) : uiText('替换失败', "Replacement failed", "Ошибка замены"))
     return res
   }
 
@@ -374,7 +375,7 @@ export function SearchPanel(props) {
     try {
       const preview = await callReplace({ paths: targetScope === 'file' ? [path] : undefined, dryRun: true })
       if (Number(preview.totalReplaced ?? 0) === 0) {
-        setReplaceNotice('没有可替换的命中')
+        setReplaceNotice(uiText('没有可替换的命中', "No matches to replace", "Нет совпадений для замены"))
         return
       }
       setReplaceConfirm({ scope: targetScope, path, preview })
@@ -401,11 +402,11 @@ export function SearchPanel(props) {
     try {
       const flushed = await flushEditors()
       if (flushed.timedOut) {
-        setReplaceError('部分页签未能在 3 秒内落盘，已中止替换；请先手动保存后重试')
+        setReplaceError(uiText('部分页签未能在 3 秒内落盘，已中止替换；请先手动保存后重试', "Some tabs did not save within 3 seconds. Replacement aborted; save manually and retry.", "Некоторые вкладки не сохранились за 3 секунды. Замена отменена; сохраните вручную и повторите."))
         return
       }
       if (Array.isArray(flushed.failures) && flushed.failures.length > 0) {
-        setReplaceError('有页签保存失败（' + flushed.failures.join('、') + '），已中止替换；请先手动保存后重试')
+        setReplaceError(uiText('有页签保存失败（', "Some tabs failed to save (", "Не удалось сохранить вкладки (") + flushed.failures.join(uiText('、', ", ", ", ")) + uiText('），已中止替换；请先手动保存后重试', "). Replacement aborted; save manually and retry.", "). Замена отменена; сохраните вручную и повторите."))
         return
       }
       const result = await callReplace({ paths: target.scope === 'file' ? [target.path] : undefined })
@@ -528,35 +529,35 @@ export function SearchPanel(props) {
   const toggleGroup = (path) => setCollapsed((prev) => Object.assign({}, prev, { [path]: prev[path] === true ? false : true }))
 
   const optsBar = React.createElement('div', { className: 'edrv-search-opts' },
-    React.createElement('button', { className: 'edrv-search-opt' + (matchCase ? ' on' : ''), title: '区分大小写', 'aria-pressed': matchCase, onClick: () => toggleOpt('matchCase', !matchCase) }, 'Aa'),
-    React.createElement('button', { className: 'edrv-search-opt' + (wholeWord ? ' on' : ''), title: '全字匹配', 'aria-pressed': wholeWord, onClick: () => toggleOpt('wholeWord', !wholeWord) }, 'Ab'),
-    React.createElement('button', { className: 'edrv-search-opt' + (regex ? ' on' : ''), title: '使用正则表达式', 'aria-pressed': regex, onClick: () => toggleOpt('regex', !regex) }, '.*'),
+    React.createElement('button', { className: 'edrv-search-opt' + (matchCase ? ' on' : ''), title: uiText('区分大小写', "Match case", "Учитывать регистр"), 'aria-pressed': matchCase, onClick: () => toggleOpt('matchCase', !matchCase) }, 'Aa'),
+    React.createElement('button', { className: 'edrv-search-opt' + (wholeWord ? ' on' : ''), title: uiText('全字匹配', "Match whole word", "Слово целиком"), 'aria-pressed': wholeWord, onClick: () => toggleOpt('wholeWord', !wholeWord) }, 'Ab'),
+    React.createElement('button', { className: 'edrv-search-opt' + (regex ? ' on' : ''), title: uiText('使用正则表达式', "Use regular expression", "Регулярное выражение"), 'aria-pressed': regex, onClick: () => toggleOpt('regex', !regex) }, '.*'),
     React.createElement('span', { className: 'edrv-search-spacer' }),
-    React.createElement('button', { className: 'edrv-search-opt' + (sectionOpen ? ' on' : ''), title: sectionOpen ? '收起文件过滤' : '文件过滤（包含/排除）', 'aria-pressed': sectionOpen, onClick: () => setSectionOpen((v) => !v) }, '⚙'))
+    React.createElement('button', { className: 'edrv-search-opt' + (sectionOpen ? ' on' : ''), title: sectionOpen ? uiText('收起文件过滤', "Collapse file filters", "Свернуть фильтры файлов") : uiText('文件过滤（包含/排除）', "File filters (include/exclude)", "Фильтры файлов (включение/исключение)"), 'aria-pressed': sectionOpen, onClick: () => setSectionOpen((v) => !v) }, '⚙'))
 
   const filterRows = sectionOpen
     ? React.createElement('div', { className: 'edrv-search-rows' },
         React.createElement('div', { className: 'edrv-search-row' },
           React.createElement('input', {
-            className: 'edrv-search-field' + (onlyActive ? ' dim' : ''), placeholder: INCLUDE_PLACEHOLDER,
+            className: 'edrv-search-field' + (onlyActive ? ' dim' : ''), placeholder: includePlaceholder(),
             value: includeText, disabled: onlyActive,
-            title: onlyActive ? '已启用「仅当前打开文件」，忽略此输入' : '',
+            title: onlyActive ? uiText('已启用「仅当前打开文件」，忽略此输入', "Current-file-only mode is enabled; this input is ignored", "Включён поиск только в текущем файле; это поле не учитывается") : '',
             onChange: (e) => onChangeDebounced(setIncludeText, e.target.value),
           }),
           React.createElement('button', {
-            className: 'edrv-search-toggle' + (onlyActive ? ' on' : ''), title: activePath ? '仅在当前打开的文件中搜索' : onlyActive ? '无打开的文件（点击退出仅当前文件）' : '无打开的文件（需先打开文件）',
+            className: 'edrv-search-toggle' + (onlyActive ? ' on' : ''), title: activePath ? uiText('仅在当前打开的文件中搜索', "Search only in the current open file", "Искать только в текущем открытом файле") : onlyActive ? uiText('无打开的文件（点击退出仅当前文件）', "No open file (click to disable current-file-only mode)", "Нет открытого файла (нажмите для отключения этого режима)") : uiText('无打开的文件（需先打开文件）', "No open file (open a file first)", "Нет открытого файла (сначала откройте файл)"),
             'aria-pressed': onlyActive, disabled: !activePath && !onlyActive,
             onClick: () => toggleOpt('onlyActive', !onlyActive),
           }, '📖')),
         React.createElement('div', { className: 'edrv-search-row' },
           React.createElement('input', {
-            className: 'edrv-search-field' + (excludeOn ? '' : ' dim'), placeholder: INCLUDE_PLACEHOLDER,
+            className: 'edrv-search-field' + (excludeOn ? '' : ' dim'), placeholder: includePlaceholder(),
             value: excludeText, disabled: !excludeOn,
-            title: excludeOn ? '' : '排除功能未启用，先点击右侧按钮开启',
+            title: excludeOn ? '' : uiText('排除功能未启用，先点击右侧按钮开启', "Exclusions disabled; click the button on the right to enable", "Исключения отключены; нажмите кнопку справа для включения"),
             onChange: (e) => onChangeDebounced(setExcludeText, e.target.value),
           }),
           React.createElement('button', {
-            className: 'edrv-search-toggle' + (excludeOn ? ' on' : ''), title: '启用排除文件（忽略下方模式的命中）',
+            className: 'edrv-search-toggle' + (excludeOn ? ' on' : ''), title: uiText('启用排除文件（忽略下方模式的命中）', "Enable exclusions (ignore matches for these patterns)", "Включить исключения (игнорировать совпадения этих шаблонов)"),
             'aria-pressed': excludeOn,
             onClick: () => toggleOpt('excludeOn', !excludeOn),
           }, '⚙')))
@@ -565,8 +566,8 @@ export function SearchPanel(props) {
   const summary = status === 'done'
     ? React.createElement('div', { className: 'edrv-search-summary' },
         totalFiles > 0
-          ? totalFiles + ' 个文件 · ' + totalMatches + ' 处匹配' + (truncated ? '（已截断）' : '')
-          : '无匹配结果')
+          ? totalFiles + uiText(' 个文件 · ', " files · ", " файлов · ") + totalMatches + uiText(' 处匹配', " matches", " совпадений") + (truncated ? uiText('（已截断）', " (truncated)", " (обрезано)") : '')
+          : uiText('无匹配结果', "No matches", "Совпадений нет"))
     : null
 
   const warnBanner = warning
@@ -586,7 +587,7 @@ export function SearchPanel(props) {
     ? React.createElement('div', { className: 'edrv-search-replace-row' },
         React.createElement('input', {
           className: 'edrv-search-replace', autoComplete: 'off', spellCheck: false,
-          placeholder: '替换为',
+          placeholder: uiText('替换为', "Replace with", "Заменить на"),
           value: replaceText,
           onChange: (e) => setReplaceText(e.target.value),
           onKeyDown: (e) => {
@@ -598,34 +599,34 @@ export function SearchPanel(props) {
         React.createElement('button', {
           className: 'edrv-search-replace-btn danger',
           disabled: replaceBusy || !String(query).trim() || totalFiles === 0,
-          title: totalFiles === 0 ? '先搜索到命中再替换' : '预览后确认，把当前范围内的全部命中替换为上方文本',
+          title: totalFiles === 0 ? uiText('先搜索到命中再替换', "Find matches before replacing", "Сначала найдите совпадения") : uiText('预览后确认，把当前范围内的全部命中替换为上方文本', "Preview and confirm replacing all matches in the current scope with the text above", "Предпросмотр и подтверждение замены всех совпадений в текущей области указанным текстом"),
           onClick: () => void previewReplace('all'),
-        }, replaceBusy ? '处理中…' : '全部替换'))
+        }, replaceBusy ? uiText('处理中…', "Processing…", "Обработка…") : uiText('全部替换', "Replace all", "Заменить всё")))
     : null
 
   const confirmDialog = replaceConfirm
     ? React.createElement(ModalShell, { onClose: () => setReplaceConfirm(null) },
-        React.createElement('h3', null, replaceConfirm.scope === 'file' ? '确认替换此文件' : '确认全部替换'),
+        React.createElement('h3', null, replaceConfirm.scope === 'file' ? uiText('确认替换此文件', "Confirm replacement in this file", "Подтвердить замену в файле") : uiText('确认全部替换', "Confirm replace all", "Подтвердить замену всего")),
         React.createElement('ul', { className: 'edrv-search-confirm-list' },
-          React.createElement('li', null, '命中：' + Number(replaceConfirm.preview.totalReplaced ?? 0) + ' 处 · ' + Number(replaceConfirm.preview.totalFiles ?? 0) + ' 个文件'),
+          React.createElement('li', null, uiText('命中：', "Matches: ", "Совпадения: ") + Number(replaceConfirm.preview.totalReplaced ?? 0) + uiText(' 处 · ', " matches · ", " совпадений · ") + Number(replaceConfirm.preview.totalFiles ?? 0) + uiText(' 个文件', " files", " файлов")),
           replaceConfirm.scope === 'file'
-            ? React.createElement('li', null, '范围：' + String(replaceConfirm.path ?? ''))
-            : React.createElement('li', null, '范围：当前搜索条件与包含/排除过滤'),
+            ? React.createElement('li', null, uiText('范围：', "Scope: ", "Область: ") + String(replaceConfirm.path ?? ''))
+            : React.createElement('li', null, uiText('范围：当前搜索条件与包含/排除过滤', "Scope: current query and include/exclude filters", "Область: текущий запрос и фильтры включения/исключения")),
           Number(replaceConfirm.preview.skipped ?? 0) > 0
-            ? React.createElement('li', null, '将跳过 ' + replaceConfirm.preview.skipped + ' 个文件（过大/二进制/非普通文件）')
+            ? React.createElement('li', null, uiText('将跳过 ', "Will skip ", "Будет пропущено ") + replaceConfirm.preview.skipped + uiText(' 个文件（过大/二进制/非普通文件）', " files (too large/binary/non-regular)", " файлов (слишком большие/двоичные/необычные)"))
             : null),
         React.createElement('p', { className: 'edrv-search-confirm-note' },
-          '替换会直接改写磁盘，编辑器撤销无法撤回；执行前会先把已打开页签的未保存内容落盘。'),
+          uiText('替换会直接改写磁盘，编辑器撤销无法撤回；执行前会先把已打开页签的未保存内容落盘。', "Replacement writes directly to disk and cannot be undone in the editor. Unsaved open tabs are saved first.", "Замена записывается прямо на диск и не отменяется в редакторе. Несохранённые открытые вкладки сначала сохраняются.")),
         React.createElement('div', { className: 'edrv-search-confirm-actions' },
-          React.createElement('button', { className: 'edrv-search-replace-btn', onClick: () => setReplaceConfirm(null), autoFocus: true }, '取消'),
-          React.createElement('button', { className: 'edrv-search-replace-btn danger', onClick: () => void applyReplace() }, '确认替换')))
+          React.createElement('button', { className: 'edrv-search-replace-btn', onClick: () => setReplaceConfirm(null), autoFocus: true }, uiText('取消', "Cancel", "Отмена")),
+          React.createElement('button', { className: 'edrv-search-replace-btn danger', onClick: () => void applyReplace() }, uiText('确认替换', "Confirm replacement", "Подтвердить замену"))))
     : null
 
   const body = (() => {
-    if (status === 'searching') return React.createElement('div', { className: 'edrv-search-empty' }, '搜索中…')
+    if (status === 'searching') return React.createElement('div', { className: 'edrv-search-empty' }, uiText('搜索中…', "Searching…", "Поиск…"))
     if (status === 'error') return React.createElement('div', { className: 'edrv-search-error' }, error)
-    if (status === 'done' && !groups.length) return React.createElement('div', { className: 'edrv-search-empty' }, '无匹配结果')
-    if (status !== 'done') return React.createElement('div', { className: 'edrv-search-empty' }, '输入至少 2 个字符开始搜索')
+    if (status === 'done' && !groups.length) return React.createElement('div', { className: 'edrv-search-empty' }, uiText('无匹配结果', "No matches", "Совпадений нет"))
+    if (status !== 'done') return React.createElement('div', { className: 'edrv-search-empty' }, uiText('输入至少 2 个字符开始搜索', "Enter at least 2 characters to search", "Введите не менее 2 символов для поиска"))
     return React.createElement('div', { className: 'edrv-search-results' },
       groups.map((group) => {
         const open = collapsed[group.path] !== true
@@ -636,7 +637,7 @@ export function SearchPanel(props) {
             React.createElement('span', { className: 'edrv-search-fdir' }, String(group.path).split(/[\\/]/).slice(0, -1).join('/')),
             replaceEnabled
               ? React.createElement('button', {
-                  className: 'edrv-search-file-replace', title: '替换此文件中的全部命中',
+                  className: 'edrv-search-file-replace', title: uiText('替换此文件中的全部命中', "Replace all matches in this file", "Заменить все совпадения в файле"),
                   onClick: (event) => { event.stopPropagation(); void previewReplace('file', group.path) },
                 }, '✎')
               : null,
@@ -657,7 +658,7 @@ export function SearchPanel(props) {
     React.createElement('div', { className: 'edrv-search-qrow' },
       React.createElement('input', {
         ref: inputRef, className: 'edrv-search-input', autoFocus: true, autoComplete: 'off', spellCheck: false,
-        placeholder: '搜索',
+        placeholder: uiText('搜索', "Search", "Поиск"),
         value: query,
         onChange: (e) => onChange(e.target.value),
         onKeyDown: (e) => {
@@ -668,7 +669,7 @@ export function SearchPanel(props) {
       replaceEnabled
         ? React.createElement('button', {
             className: 'edrv-search-toggle' + (replaceOpen ? ' on' : ''),
-            title: replaceOpen ? '收起替换' : '显示替换',
+            title: replaceOpen ? uiText('收起替换', "Hide replacement", "Скрыть замену") : uiText('显示替换', "Show replacement", "Показать замену"),
             'aria-pressed': replaceOpen,
             onClick: () => setReplaceOpen((value) => !value),
           }, '⇄')

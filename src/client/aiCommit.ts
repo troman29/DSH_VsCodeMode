@@ -5,6 +5,7 @@
  * 生成态与错误文案不能混进对话框的渲染逻辑里，否则每次改文案都要动 UI。
  * @author ddj 2026年11月15号
  */
+import { uiText } from './uiLocale.js'
 import type { AiCommitStyle } from '../shared/svn.js'
 import { svnAiCommitMsg } from './svnCommit.js'
 
@@ -25,12 +26,12 @@ export interface AiCommitState {
 
 /** 风格展示名。 */
 export const AI_COMMIT_STYLE_LABEL: Record<AiCommitStyle, string> = {
-  plain: '中文模板',
+  get plain() { return uiText('中文模板', "Chinese template", "Шаблон на китайском") },
   conventional: 'Conventional',
 }
 
 /** 初始状态。 */
-export const AI_COMMIT_IDLE: AiCommitState = { phase: 'idle', note: '就绪' }
+export const AI_COMMIT_IDLE: AiCommitState = { phase: 'idle', get note() { return uiText('就绪', "Ready", "Готово") } }
 
 /**
  * 执行一次生成并返回下一状态与新文本（不修改任何外部状态）。
@@ -45,13 +46,13 @@ export async function runAiCommit(
   paths: string[],
   style: AiCommitStyle,
 ): Promise<{ state: AiCommitState; text: string }> {
-  if (!paths.length) return { state: { phase: 'failed', note: '未选择文件', error: '请先勾选要提交的文件（AI 只分析提交范围）' }, text: '' }
+  if (!paths.length) return { state: { phase: 'failed', note: uiText('未选择文件', "No files selected", "Файлы не выбраны"), error: uiText('请先勾选要提交的文件（AI 只分析提交范围）', "Select files to commit first (AI analyzes the commit scope only)", "Сначала отметьте файлы для коммита (AI анализирует только выбранную область)") }, text: '' }
   const outcome = await svnAiCommitMsg(sessionId, paths, style)
   if (!outcome.ok) {
-    return { state: { phase: 'failed', note: '生成失败', error: outcome.message }, text: '' }
+    return { state: { phase: 'failed', note: uiText('生成失败', "Generation failed", "Не удалось создать сообщение"), error: outcome.message }, text: '' }
   }
   return {
-    state: { phase: 'done', note: '已生成', ...(outcome.model ? { model: outcome.model } : {}) },
+    state: { phase: 'done', note: uiText('已生成', "Generated", "Создано"), ...(outcome.model ? { model: outcome.model } : {}) },
     text: outcome.text ?? '',
   }
 }

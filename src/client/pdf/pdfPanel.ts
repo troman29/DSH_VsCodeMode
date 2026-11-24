@@ -6,6 +6,7 @@
  * → base64 → edrv.saveBinary 回写原文件。接线方式对齐官方 viewer（web/app.js）。
  * 作者 ddj 2026-09-22
  */
+import { uiText } from '../uiLocale.js'
 import { rpc } from '../rpc.js'
 import { bytesToBase64 } from '../pdfPreview.js'
 import { loadPdfjs, PDFJS_CMAP_URL, PDFJS_FONT_URL } from './pdfLoader.js'
@@ -84,14 +85,14 @@ export function createPdfPanel(deps) {
    * @param key 模式符号键：none/freetext/ink/highlight
    */
   const applyMode = (key) => {
-    if (!pdfViewer || !pdfDocument) { status('PDF 未就绪'); return }
+    if (!pdfViewer || !pdfDocument) { status(uiText('PDF 未就绪', "PDF not ready", "PDF не готов")); return }
     const mode = modeValueOf(key)
     if (mode === null) return
     try {
       pdfViewer.annotationEditorMode = { mode }
-      status(key === 'none' ? '已退出编辑' : '编辑模式：' + (key === 'freetext' ? '文本框' : key === 'ink' ? '画笔' : '高亮'))
+      status(key === 'none' ? uiText('已退出编辑', "Editing exited", "Редактирование завершено") : uiText('编辑模式：', "Edit mode: ", "Режим редактирования: ") + (key === 'freetext' ? uiText('文本框', "Text box", "Текстовое поле") : key === 'ink' ? uiText('画笔', "Pen", "Перо") : uiText('高亮', "Highlight", "Выделение")))
     } catch (error) {
-      status('切换编辑模式失败：' + String(error))
+      status(uiText('切换编辑模式失败：', "Failed to switch edit mode: ", "Ошибка переключения режима: ") + String(error))
     }
   }
 
@@ -102,25 +103,25 @@ export function createPdfPanel(deps) {
    */
   const savePdf = async () => {
     if (saving) return false
-    if (!pdfDocument) { status('PDF 未就绪'); return false }
-    if (!dirty) { status('PDF 无未保存修改'); return true }
+    if (!pdfDocument) { status(uiText('PDF 未就绪', "PDF not ready", "PDF не готов")); return false }
+    if (!dirty) { status(uiText('PDF 无未保存修改', "PDF has no unsaved changes", "В PDF нет несохранённых изменений")); return true }
     saving = true
-    status('正在保存 PDF…')
+    status(uiText('正在保存 PDF…', "Saving PDF…", "Сохранение PDF…"))
     try {
       const data = await pdfDocument.saveDocument()
       const res = await rpc('edrv.saveBinary', { sessionId: deps.sessionId, path: deps.path, content: bytesToBase64(data), encoding: 'base64' })
       if (res && res.ok) {
         setDirty(false)
         try { pdfDocument.annotationStorage.resetModified() } catch { /* 重置失败仅影响下次保存判定 */ }
-        status('已保存 ' + new Date().toTimeString().slice(0, 8))
+        status(uiText('已保存 ', "Saved ", "Сохранено ") + new Date().toTimeString().slice(0, 8))
         return true
       }
-      status('保存失败')
-      try { deps.setError(res?.error ? String(res.error) : '保存失败') } catch { /* 错误回调异常忽略 */ }
+      status(uiText('保存失败', "Save failed", "Ошибка сохранения"))
+      try { deps.setError(res?.error ? String(res.error) : uiText('保存失败', "Save failed", "Ошибка сохранения")) } catch { /* 错误回调异常忽略 */ }
       return false
     } catch (error) {
-      status('保存失败')
-      try { deps.setError('PDF 保存异常:' + String(error)) } catch { /* 错误回调异常忽略 */ }
+      status(uiText('保存失败', "Save failed", "Ошибка сохранения"))
+      try { deps.setError(uiText('PDF 保存异常:', "PDF save error: ", "Ошибка сохранения PDF: ") + String(error)) } catch { /* 错误回调异常忽略 */ }
       return false
     } finally {
       saving = false
@@ -140,29 +141,29 @@ export function createPdfPanel(deps) {
       bar.appendChild(b)
       return b
     }
-    mkBtn('◀', '上一页', () => { if (pdfViewer) pdfViewer.currentPageNumber = Math.max(1, pdfViewer.currentPageNumber - 1) })
+    mkBtn('◀', uiText('上一页', "Previous page", "Предыдущая страница"), () => { if (pdfViewer) pdfViewer.currentPageNumber = Math.max(1, pdfViewer.currentPageNumber - 1) })
     pageLabel = document.createElement('span')
     pageLabel.className = 'edrv-pdf-page'
     pageLabel.textContent = '…'
     bar.appendChild(pageLabel)
-    mkBtn('▶', '下一页', () => { if (pdfViewer) pdfViewer.currentPageNumber = Math.min(pdfViewer.pagesCount, pdfViewer.currentPageNumber + 1) })
+    mkBtn('▶', uiText('下一页', "Next page", "Следующая страница"), () => { if (pdfViewer) pdfViewer.currentPageNumber = Math.min(pdfViewer.pagesCount, pdfViewer.currentPageNumber + 1) })
     // 缩放语义与图片预览对齐（0.1.7 官方统一缩放）：初始 page-width、edrv-pill 步进按钮与百分比指示同款
-    mkBtn('−', '缩小', () => { try { pdfViewer.decreaseScale() } catch { /* 缩放失败忽略 */ } }, 'edrv-pill edrv-pill-ghost edrv-pdf-zoom')
-    mkBtn('＋', '放大', () => { try { pdfViewer.increaseScale() } catch { /* 缩放失败忽略 */ } }, 'edrv-pill edrv-pill-ghost edrv-pdf-zoom')
+    mkBtn('−', uiText('缩小', "Zoom out", "Уменьшить"), () => { try { pdfViewer.decreaseScale() } catch { /* 缩放失败忽略 */ } }, 'edrv-pill edrv-pill-ghost edrv-pdf-zoom')
+    mkBtn('＋', uiText('放大', "Zoom in", "Увеличить"), () => { try { pdfViewer.increaseScale() } catch { /* 缩放失败忽略 */ } }, 'edrv-pill edrv-pill-ghost edrv-pdf-zoom')
     zoomLabel = document.createElement('span')
     zoomLabel.className = 'edrv-pdf-page'
     zoomLabel.textContent = '…'
     bar.appendChild(zoomLabel)
     bar.appendChild(document.createElement('span')).className = 'edrv-pdf-sep'
     const modes = {}
-    modes.freetext = mkBtn('✎ 文本框', '插入文本框注释', () => applyMode('freetext'))
-    modes.ink = mkBtn('🖌 画笔', '手绘画笔注释', () => applyMode('ink'))
-    modes.highlight = mkBtn('🖍 高亮', '高亮选中文本', () => applyMode('highlight'))
-    modes.none = mkBtn('☐ 选择', '退出编辑模式', () => applyMode('none'))
+    modes.freetext = mkBtn(uiText('✎ 文本框', "✎ Text box", "✎ Текстовое поле"), uiText('插入文本框注释', "Insert text annotation", "Вставить текстовую аннотацию"), () => applyMode('freetext'))
+    modes.ink = mkBtn(uiText('🖌 画笔', "🖌 Pen", "🖌 Перо"), uiText('手绘画笔注释', "Draw ink annotation", "Нарисовать аннотацию"), () => applyMode('ink'))
+    modes.highlight = mkBtn(uiText('🖍 高亮', "🖍 Highlight", "🖍 Выделение"), uiText('高亮选中文本', "Highlight selected text", "Выделить выбранный текст"), () => applyMode('highlight'))
+    modes.none = mkBtn(uiText('☐ 选择', "☐ Select", "☐ Выбор"), uiText('退出编辑模式', "Exit edit mode", "Выйти из редактирования"), () => applyMode('none'))
     modeButtons = { modes, save: null }
     bar.appendChild(document.createElement('span')).className = 'edrv-pdf-sep'
-    mkBtn('⟳', '重新加载文件', () => { try { deps.onReload() } catch { /* 刷新回调异常忽略 */ } })
-    modeButtons.save = mkBtn('💾 保存', '保存修改到文件 (Ctrl+S)', () => { void savePdf() })
+    mkBtn('⟳', uiText('重新加载文件', "Reload file", "Перезагрузить файл"), () => { try { deps.onReload() } catch { /* 刷新回调异常忽略 */ } })
+    modeButtons.save = mkBtn(uiText('💾 保存', "💾 Save", "💾 Сохранить"), uiText('保存修改到文件 (Ctrl+S)', "Save changes to file (Ctrl+S)", "Сохранить изменения в файл (Ctrl+S)"), () => { void savePdf() })
     root.appendChild(bar)
   }
 
@@ -221,12 +222,12 @@ export function createPdfPanel(deps) {
       storage.onResetModified = () => setDirty(false)
       pdfViewer.setDocument(pdfDocument)
       linkService.setDocument(pdfDocument)
-      status('PDF 已就绪（' + pdfDocument.numPages + ' 页）')
+      status(uiText('PDF 已就绪（', "PDF ready (", "PDF готов (") + pdfDocument.numPages + uiText(' 页）', " pages)", " страниц)"))
     } catch (error) {
       if (destroyed) return
       const message = String((error && (error.message || error.name)) || error)
-      const friendly = message.includes('password') ? '不支持加密 PDF' : 'PDF 加载失败：' + message
-      status('PDF 加载失败')
+      const friendly = message.includes('password') ? uiText('不支持加密 PDF', "Encrypted PDFs are not supported", "Зашифрованные PDF не поддерживаются") : uiText('PDF 加载失败：', "PDF load failed: ", "Ошибка загрузки PDF: ") + message
+      status(uiText('PDF 加载失败', "PDF load failed", "Ошибка загрузки PDF"))
       try { deps.setError(friendly) } catch { /* 错误回调异常忽略 */ }
     }
   }

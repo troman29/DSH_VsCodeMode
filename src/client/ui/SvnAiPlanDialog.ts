@@ -14,6 +14,7 @@
  * 作者 ddj 2026年09月23号
  */
 import React from 'react'
+import { uiText } from '../uiLocale.js'
 import { FloatingWindow } from './FloatingWindow.js'
 
 /**
@@ -75,7 +76,7 @@ function checkBoxEl(checked, onToggle, title) {
 /** 段头（全选框 + 标题 + 计数 + 副标题）。 */
 function sectionHeadEl(title, note, allChecked, onToggleAll, countText) {
   return React.createElement('div', { className: 'edrv-svnplan-sechead' },
-    checkBoxEl(allChecked, onToggleAll, '全选/全不选'),
+    checkBoxEl(allChecked, onToggleAll, uiText('全选/全不选', "Select all / none", "Выбрать всё / снять всё")),
     React.createElement('span', { className: 'edrv-svnplan-sectitle' }, title),
     React.createElement('span', { className: 'edrv-svn-count' }, countText),
     (note ? React.createElement('span', { className: 'edrv-svnplan-note' }, note) : null))
@@ -124,13 +125,13 @@ function previewBodyEl(sel, setSel, open, toggleOpen, commitGroups, onCommitGrou
       : null
     return React.createElement('div', { key: group.name, className: 'edrv-svnplan-card' },
       React.createElement('div', { className: 'edrv-svnplan-row' },
-        checkBoxEl(group.checked, () => toggleGroupAll(index, !group.checked), '全选该组'),
+        checkBoxEl(group.checked, () => toggleGroupAll(index, !group.checked), uiText('全选该组', "Select entire group", "Выбрать всю группу")),
         React.createElement('span', {
           className: 'edrv-svnplan-groupname',
-          title: '点击展开/收起成员',
+          title: uiText('点击展开/收起成员', "Click to expand/collapse members", "Нажмите для разворачивания/сворачивания элементов"),
           onClick: () => toggleOpen(group.name),
         }, (isOpen ? '▾ ' : '▸ ') + group.name),
-        React.createElement('span', { className: 'edrv-svn-count' }, done + '/' + group.paths.length + ' 项'),
+        React.createElement('span', { className: 'edrv-svn-count' }, done + '/' + group.paths.length + uiText(' 项', " items", " элементов")),
         (group.reason ? React.createElement('span', { className: 'edrv-svnplan-reason', title: group.reason }, group.reason) : null)),
       fileRows)
   })
@@ -147,37 +148,37 @@ function previewBodyEl(sel, setSel, open, toggleOpen, commitGroups, onCommitGrou
 
   return React.createElement(React.Fragment, null,
     React.createElement('div', { className: 'edrv-svnplan-sec' },
-      sectionHeadEl('建议分组（changelist）', '无副作用、可逆', groupsAll,
+      sectionHeadEl(uiText('建议分组（changelist）', "Suggested groups (changelist)", "Предлагаемые группы (changelist)"), uiText('无副作用、可逆', "Reversible, no side effects", "Обратимо, без побочных эффектов"), groupsAll,
         () => setSel((old) => ({
           ...old,
           groups: old.groups.map((group) => ({ ...group, checked: !groupsAll, paths: group.paths.map((p) => ({ ...p, checked: !groupsAll })) })),
-        })), sel.groups.length + ' 组'),
+        })), sel.groups.length + uiText(' 组', " groups", " групп")),
       React.createElement('div', { className: 'edrv-svnplan-list' }, groupCards)),
     React.createElement('div', { className: 'edrv-svnplan-sec' },
-      sectionHeadEl('建议还原（revert）', '放弃本地改动，默认不勾', revertsAll,
-        () => toggleItemsAll('reverts', !revertsAll), sel.reverts.length + ' 项'),
+      sectionHeadEl(uiText('建议还原（revert）', "Suggested reverts", "Предлагаемые восстановления (revert)"), uiText('放弃本地改动，默认不勾', "Discards local changes; unchecked by default", "Отбрасывает локальные изменения; по умолчанию не отмечено"), revertsAll,
+        () => toggleItemsAll('reverts', !revertsAll), sel.reverts.length + uiText(' 项', " items", " элементов")),
       React.createElement('div', { className: 'edrv-svnplan-list' }, itemRowsOf('reverts'))),
     React.createElement('div', { className: 'edrv-svnplan-sec' },
-      sectionHeadEl('建议忽略（svn:ignore）', '将写入 svn:ignore 属性，随提交进仓库，默认不勾', ignoresAll,
-        () => toggleItemsAll('ignores', !ignoresAll), sel.ignores.length + ' 项'),
+      sectionHeadEl(uiText('建议忽略（svn:ignore）', "Suggested ignores (svn:ignore)", "Предлагаемые исключения (svn:ignore)"), uiText('将写入 svn:ignore 属性，随提交进仓库，默认不勾', "Writes svn:ignore properties, included in the next commit; unchecked by default", "Записывает свойства svn:ignore, отправляемые при коммите; по умолчанию не отмечено"), ignoresAll,
+        () => toggleItemsAll('ignores', !ignoresAll), sel.ignores.length + uiText(' 项', " items", " элементов")),
       React.createElement('div', { className: 'edrv-svnplan-list' }, itemRowsOf('ignores'))),
     (Array.isArray(commitGroups) && commitGroups.length
       ? React.createElement('div', { className: 'edrv-svnplan-sec' },
           React.createElement('div', { className: 'edrv-svnplan-sechead' },
-            React.createElement('span', { className: 'edrv-svnplan-sectitle' }, '建议拆分提交（逐组预填提交框）'),
-            React.createElement('span', { className: 'edrv-svn-count' }, commitGroups.length + ' 组'),
-            React.createElement('span', { className: 'edrv-svnplan-note' }, '不自动提交：只预填，仍需在提交框确认')),
+            React.createElement('span', { className: 'edrv-svnplan-sectitle' }, uiText('建议拆分提交（逐组预填提交框）', "Suggested separate commits (prefill each group)", "Предлагаемые отдельные коммиты (заполнение по группам)")),
+            React.createElement('span', { className: 'edrv-svn-count' }, commitGroups.length + uiText(' 组', " groups", " групп")),
+            React.createElement('span', { className: 'edrv-svnplan-note' }, uiText('不自动提交：只预填，仍需在提交框确认', "Prefill only; confirm in the commit dialog (no automatic commit)", "Только заполнение; подтвердите в окне коммита (без автоматического коммита)"))),
           React.createElement('div', { className: 'edrv-svnplan-list' },
             ...commitGroups.map((group) => React.createElement('div', { key: 'commit-' + group.name, className: 'edrv-svnplan-card' },
               React.createElement('div', { className: 'edrv-svnplan-row' },
                 React.createElement('span', { className: 'edrv-svnplan-groupname' }, group.name),
-                React.createElement('span', { className: 'edrv-svn-count' }, group.paths.length + ' 项'),
+                React.createElement('span', { className: 'edrv-svn-count' }, group.paths.length + uiText(' 项', " items", " элементов")),
                 React.createElement('span', { style: { flex: 1 } }),
                 React.createElement('button', {
                   className: 'edrv-svn-act',
-                  title: '打开提交对话框并预填该组（不会自动提交）',
+                  title: uiText('打开提交对话框并预填该组（不会自动提交）', "Open commit dialog prefilled with this group (no automatic commit)", "Открыть окно коммита с этой группой (без автоматического коммита)"),
                   onClick: () => onCommitGroup?.(group),
-                }, '逐组提交…')),
+                }, uiText('逐组提交…', "Commit group…", "Коммит группы…"))),
               React.createElement('div', { className: 'edrv-svnplan-path', title: group.subject }, group.subject),
               (group.body ? React.createElement('div', { className: 'edrv-svnplan-reason' }, group.body) : null)))))
       : null))
@@ -191,11 +192,11 @@ function previewBodyEl(sel, setSel, open, toggleOpen, commitGroups, onCommitGrou
  */
 function progressBodyEl(run) {
   const pct = run.total > 0 ? Math.floor((run.index / run.total) * 100) : 0
-  const statusText = run.status === 'pausing' ? '等待当前步骤完成…（暂停在步骤边界生效）'
-    : run.status === 'paused' ? '已暂停'
-    : run.status === 'cancelling' ? '正在取消剩余步骤…'
-    : run.status === 'done' ? (run.cancelled ? '已取消剩余步骤' : '执行完毕')
-    : '执行中…'
+  const statusText = run.status === 'pausing' ? uiText('等待当前步骤完成…（暂停在步骤边界生效）', "Waiting for current step… (pause takes effect between steps)", "Ожидание текущего шага… (пауза действует между шагами)")
+    : run.status === 'paused' ? uiText('已暂停', "Paused", "Приостановлено")
+    : run.status === 'cancelling' ? uiText('正在取消剩余步骤…', "Cancelling remaining steps…", "Отмена оставшихся шагов…")
+    : run.status === 'done' ? (run.cancelled ? uiText('已取消剩余步骤', "Remaining steps cancelled", "Оставшиеся шаги отменены") : uiText('执行完毕', "Completed", "Выполнено"))
+    : uiText('执行中…', "Running…", "Выполнение…")
   const logRows = run.log.map((entry, index) => React.createElement('div', {
     key: index,
     className: 'edrv-svnplan-log' + (entry.ok ? '' : ' edrv-svnplan-log-bad'),
@@ -204,7 +205,7 @@ function progressBodyEl(run) {
     React.createElement('div', { className: 'edrv-svnplan-stage' },
       React.createElement('span', { className: 'edrv-svnplan-badge' }, statusText),
       (run.cur ? React.createElement('span', { className: 'edrv-svnplan-badge edrv-svnplan-badge-cur' }, run.cur) : null),
-      React.createElement('span', { className: 'edrv-svn-count' }, run.index + '/' + run.total + ' 步')),
+      React.createElement('span', { className: 'edrv-svn-count' }, run.index + '/' + run.total + uiText(' 步', " steps", " шагов"))),
     React.createElement('div', { className: 'edrv-svnplan-bar' },
       React.createElement('div', { className: 'edrv-svnplan-bar-in', style: { width: pct + '%' } })),
     React.createElement('div', { className: 'edrv-svnplan-logwrap' }, logRows))
@@ -240,25 +241,25 @@ export function SvnAiPlanDialog(props) {
 
   const running = run !== null && run.status !== 'done'
   const header = React.createElement('div', { className: 'edrv-svnplan-head' },
-    React.createElement('h3', { className: 'edrv-svnlog-title' }, 'AI 智能整理 SVN 变更'),
+    React.createElement('h3', { className: 'edrv-svnlog-title' }, uiText('AI 智能整理 SVN 变更', "AI organization of SVN changes", "Упорядочивание изменений SVN с AI")),
     // 混合通道来源标注（agent 深度分析 vs 快速通道直调）
     (meta?.source === 'agent'
-      ? React.createElement('span', { className: 'edrv-svnplan-badge', title: '会话 AI 助手深度分析（codegraph/读文件）产出' }, 'AI 助手深度分析')
+      ? React.createElement('span', { className: 'edrv-svnplan-badge', title: uiText('会话 AI 助手深度分析（codegraph/读文件）产出', "Produced by the session AI assistant using deep analysis (codegraph/file reading)", "Создано AI-ассистентом сессии при глубоком анализе (codegraph/чтение файлов)") }, uiText('AI 助手深度分析', "AI assistant deep analysis", "Глубокий анализ AI-ассистента"))
       : null),
-    (meta?.model ? React.createElement('span', { className: 'edrv-svn-count', title: '分析模型' }, meta.model) : null),
+    (meta?.model ? React.createElement('span', { className: 'edrv-svn-count', title: uiText('分析模型', "Analysis model", "Модель анализа") }, meta.model) : null),
     React.createElement('span', { style: { flex: 1 } }),
     React.createElement('button', {
       className: 'edrv-svn-act',
-      title: running ? '执行中不可关闭（可取消剩余）' : '关闭',
+      title: running ? uiText('执行中不可关闭（可取消剩余）', "Cannot close while running (remaining steps can be cancelled)", "Нельзя закрыть во время выполнения (можно отменить оставшиеся шаги)") : uiText('关闭', "Close", "Закрыть"),
       disabled: running,
       onClick: onClose,
     }, '✕'))
 
   const metaEl = React.createElement('div', { className: 'edrv-svnplan-meta' },
-    React.createElement('span', { className: 'edrv-svn-count' }, '分析条目 ' + (meta?.entriesCount ?? 0) + ' 项'),
-    ((meta?.dropped ?? 0) > 0 ? React.createElement('span', { className: 'edrv-svn-count' }, '已丢弃 AI 无效建议 ' + meta.dropped + ' 项') : null),
+    React.createElement('span', { className: 'edrv-svn-count' }, uiText('分析条目 ', "Analyzed entries: ", "Проанализировано записей: ") + (meta?.entriesCount ?? 0) + uiText(' 项', " items", " элементов")),
+    ((meta?.dropped ?? 0) > 0 ? React.createElement('span', { className: 'edrv-svn-count' }, uiText('已丢弃 AI 无效建议 ', "Invalid AI suggestions discarded: ", "Отброшено неверных предложений AI: ") + meta.dropped + uiText(' 项', " items", " элементов")) : null),
     (meta?.diffIncluded === false
-      ? React.createElement('span', { className: 'edrv-svnplan-note' }, '未含 diff 上下文，分析精度有限')
+      ? React.createElement('span', { className: 'edrv-svnplan-note' }, uiText('未含 diff 上下文，分析精度有限', "No diff context included; analysis accuracy is limited", "Контекст различий не включён; точность анализа ограничена"))
       : null))
 
   let body = null
@@ -266,15 +267,15 @@ export function SvnAiPlanDialog(props) {
   if (run === null) {
     body = previewBodyEl(sel, setSel, open, toggleOpen, plan?.commitGroups, onCommitGroup)
     footer = React.createElement('div', { className: 'edrv-svnplan-foot' },
-      React.createElement('span', { className: 'edrv-svn-count' }, '已选 ' + count + ' 项'),
+      React.createElement('span', { className: 'edrv-svn-count' }, uiText('已选 ', "Selected ", "Выбрано ") + count + uiText(' 项', " items", " элементов")),
       React.createElement('span', { style: { flex: 1 } }),
-      React.createElement('button', { className: 'edrv-svn-act', title: '不执行任何动作', onClick: onClose }, '取消'),
+      React.createElement('button', { className: 'edrv-svn-act', title: uiText('不执行任何动作', "Do not perform any actions", "Не выполнять действий"), onClick: onClose }, uiText('取消', "Cancel", "Отмена")),
       React.createElement('button', {
         className: 'edrv-svn-act edrv-svnplan-primary',
-        title: '执行全部勾选项（未勾选不动）',
+        title: uiText('执行全部勾选项（未勾选不动）', "Execute all checked items (unchecked items remain unchanged)", "Выполнить все отмеченные элементы (остальные не изменятся)"),
         disabled: count === 0,
         onClick: () => onExecute(selected),
-      }, '执行所选（' + count + ' 项）'))
+      }, uiText('执行所选（', "Execute selected (", "Выполнить выбранное (") + count + uiText(' 项）', " items)", " элементов)")))
   } else {
     body = progressBodyEl(run)
     footer = React.createElement('div', { className: 'edrv-svnplan-foot' },
@@ -282,28 +283,28 @@ export function SvnAiPlanDialog(props) {
       (run.status === 'done'
         ? React.createElement('button', {
             className: 'edrv-svn-act edrv-svnplan-primary',
-            title: '关闭弹窗并刷新变更列表',
+            title: uiText('关闭弹窗并刷新变更列表', "Close dialog and refresh changes", "Закрыть окно и обновить изменения"),
             onClick: onClose,
-          }, '关闭并刷新')
+          }, uiText('关闭并刷新', "Close and refresh", "Закрыть и обновить"))
         : React.createElement(React.Fragment, null,
             React.createElement('button', {
               className: 'edrv-svn-act',
               title: run.status === 'running' || run.status === 'pausing'
-                ? '暂停（当前步骤完成后生效）'
-                : '从断点继续执行',
+                ? uiText('暂停（当前步骤完成后生效）', "Pause (after the current step)", "Пауза (после текущего шага)")
+                : uiText('从断点继续执行', "Resume from the pause point", "Продолжить с места паузы"),
               disabled: run.status === 'pausing' || run.status === 'cancelling',
               onClick: run.status === 'paused' ? onResume : onPause,
-            }, run.status === 'paused' ? '继续' : '暂停'),
+            }, run.status === 'paused' ? uiText('继续', "Resume", "Продолжить") : uiText('暂停', "Pause", "Пауза")),
             React.createElement('button', {
               className: 'edrv-svn-act edrv-svn-act-danger',
-              title: '终止未执行步骤（已执行部分不回滚）',
+              title: uiText('终止未执行步骤（已执行部分不回滚）', "Cancel unexecuted steps (completed steps are not reverted)", "Отменить невыполненные шаги (выполненные не отменяются)"),
               disabled: run.status === 'cancelling',
               onClick: onCancelRest,
-            }, '取消剩余'))))
+            }, uiText('取消剩余', "Cancel remaining", "Отменить оставшееся")))))
   }
 
   return React.createElement(FloatingWindow, {
-    title: 'SVN 智能整理', height: 600,
+    title: uiText('SVN 智能整理', "SVN AI organization", "Упорядочивание SVN с AI"), height: 600,
     key: 'edrv-svn-plan',
     dialogClass: 'edrv-svnplan-dialog',
     width: 680,

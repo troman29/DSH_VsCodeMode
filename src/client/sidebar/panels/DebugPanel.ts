@@ -13,6 +13,7 @@
  * 断点行整行可点：除启停 checkbox 与删除 × 外，点击任一处即打开并定位到该断点行。
  * 作者 ddj 2026年09月29号 / 2026年09月21号
  */
+import { uiText } from '../../uiLocale.js'
 import React from 'react'
 import { DAP_LAUNCH_REL } from '../../../shared/dap.js'
 import { dapStore } from '../../dap/store.js'
@@ -54,7 +55,7 @@ const LAUNCH_TEMPLATE = `{
 }`
 
 /** 相位徽标文案。 */
-const PHASE_LABEL = { idle: '未启动', starting: '启动中…', waiting: '等待目标…', running: '运行中', paused: '已暂停', terminated: '已结束' }
+const PHASE_LABEL = { get idle() { return uiText('未启动', "Not started", "Не запущен") }, get starting() { return uiText('启动中…', "Starting…", "Запуск…") }, get waiting() { return uiText('等待目标…', "Waiting for target…", "Ожидание цели…") }, get running() { return uiText('运行中', "Running", "Выполняется") }, get paused() { return uiText('已暂停', "Paused", "Приостановлено") }, get terminated() { return uiText('已结束', "Terminated", "Завершено") } }
 
 /** 读取监视表达式列表（损坏安全）。 */
 function loadWatches(scope) {
@@ -278,7 +279,7 @@ export function DebugPanel({ ctx }) {
   const removeBp = (row) => dapStore.toggleAt(scope, cwd, row.path, row.entry.line)
   /** 删除所有断点（confirm 守卫；逐文件同步空载荷清空 Monaco 装饰与 host 断点）。 */
   const removeAllBps = () => {
-    if (ctx?.confirm && !ctx.confirm('删除所有断点？')) return
+    if (ctx?.confirm && !ctx.confirm(uiText('删除所有断点？', "Delete all breakpoints?", "Удалить все точки останова?"))) return
     dapStore.removeAllBps(scope, cwd)
     setBpEdit(null)
   }
@@ -308,7 +309,7 @@ export function DebugPanel({ ctx }) {
     if (!bpEdit) return
     dapStore.applyBpFields(scope, cwd, bpEdit.path, bpEdit.line, { ...bpEdit.drafts })
     setBpEdit(null)
-    ctx?.notify?.('断点已更新')
+    ctx?.notify?.(uiText('断点已更新', "Breakpoint updated", "Точка останова обновлена"))
   }
 
   /** 断点行右键菜单动作分发（菜单数据由 buildBpRowMenu 产出）。 */
@@ -330,7 +331,7 @@ export function DebugPanel({ ctx }) {
     const ed = ctx?.editor?.()
     const path = editorModelPathOf(ed)
     const line = ed?.getPosition?.()?.lineNumber
-    if (!path || !line || !Number.isFinite(line)) { ctx?.notify?.('无活动文件，无法添加断点'); return }
+    if (!path || !line || !Number.isFinite(line)) { ctx?.notify?.(uiText('无活动文件，无法添加断点', "No active file; cannot add a breakpoint", "Нет активного файла; нельзя добавить точку останова")); return }
     const existing = (dapStore.bpMapOf(scope)[path] ?? []).find((it) => it.line === line)
     if (!existing) dapStore.toggleAt(scope, cwd, path, line)
     const entry = (dapStore.bpMapOf(scope)[path] ?? []).find((it) => it.line === line)
@@ -339,20 +340,20 @@ export function DebugPanel({ ctx }) {
 
   /** ⚙ 打开/新建调试配置：存在即跳转；缺失经确认后写模板（edrv.save 无 rev 仅用于新建，绝不覆盖已有文件）。 */
   const openLaunchConfig = async () => {
-    if (!ctx?.cwd) { ctx?.notify?.('无工作区，无法定位 ' + LAUNCH_REL); return }
+    if (!ctx?.cwd) { ctx?.notify?.(uiText('无工作区，无法定位 ', "No workspace; cannot locate ", "Нет рабочего пространства; нельзя найти ") + LAUNCH_REL); return }
     try {
       const probe = await rpc('edrv.read', { sessionId: ctx?.sessionId, path: LAUNCH_REL }).catch(() => null)
       if (probe?.ok) { ctx?.openFile?.(LAUNCH_REL); return }
     } catch { /* 探活失败按缺失处理 */ }
-    if (ctx?.confirm && !ctx.confirm('未找到 ' + LAUNCH_REL + '，是否创建调试配置模板？')) return
+    if (ctx?.confirm && !ctx.confirm(uiText('未找到 ', "Not found: ", "Не найдено: ") + LAUNCH_REL + uiText('，是否创建调试配置模板？', ". Create a debug configuration template?", ". Создать шаблон конфигурации отладки?"))) return
     try {
       const saved = await rpc('edrv.save', { sessionId: ctx?.sessionId, path: LAUNCH_REL, content: LAUNCH_TEMPLATE })
-      if (!saved?.ok) { ctx?.notify?.(saved?.error || '创建 ' + LAUNCH_REL + ' 失败'); return }
+      if (!saved?.ok) { ctx?.notify?.(saved?.error || uiText('创建 ', "Create ", "Создать ") + LAUNCH_REL + uiText(' 失败', " failed", " — ошибка")); return }
       void dapStore.ensureConfigs(true)
       ctx?.openFile?.(LAUNCH_REL)
-      ctx?.notify?.('已创建 ' + LAUNCH_REL)
+      ctx?.notify?.(uiText('已创建 ', "Created ", "Создано ") + LAUNCH_REL)
     } catch (error) {
-      ctx?.notify?.('创建 ' + LAUNCH_REL + ' 失败：' + String(error))
+      ctx?.notify?.(uiText('创建 ', "Create ", "Создать ") + LAUNCH_REL + uiText(' 失败：', " failed: ", " — ошибка: ") + String(error))
     }
   }
 
@@ -367,7 +368,7 @@ export function DebugPanel({ ctx }) {
     const folded = folds.has(key)
     return React.createElement('div', { className: 'edrv-dapseg edrv-dapseg-' + variant, key },
       React.createElement('div', { className: 'edrv-dapseg-head', onClick: () => toggleFold(key) },
-        React.createElement('span', { className: 'edrv-dapseg-chevron', title: folded ? '展开' : '折叠' }, folded ? '▸' : '▾'),
+        React.createElement('span', { className: 'edrv-dapseg-chevron', title: folded ? uiText('展开', "Expand", "Развернуть") : uiText('折叠', "Collapse", "Свернуть") }, folded ? '▸' : '▾'),
         React.createElement('span', { className: 'edrv-dapseg-title' }, title),
         React.createElement('span', { style: { flex: 1 } }),
         ...(folded ? [] : (actions || []))),
@@ -380,7 +381,7 @@ export function DebugPanel({ ctx }) {
   const sash = (above: SplitKey, below: SplitKey) => (folds.has(above) || folds.has(below) ? null : React.createElement('div', {
     key: 'sash-' + above + '-' + below,
     className: 'edrv-dapseg-sash' + (splitDragging ? ' dragging' : ''),
-    title: '拖动调整上下两段高度占比',
+    title: uiText('拖动调整上下两段高度占比', "Drag to resize adjacent sections", "Перетащите для изменения высоты соседних разделов"),
     onPointerDown: startSplitDrag(above, below),
   }))
 
@@ -390,7 +391,7 @@ export function DebugPanel({ ctx }) {
     return React.createElement('div', { key: row.key, className: 'edrv-dapvar', style: { paddingLeft: 8 + depth * 12 } },
       v.ref > 0
         ? React.createElement('button', {
-            className: 'edrv-dapvar-tw', title: expanded.has(v.ref) ? '折叠' : '展开',
+            className: 'edrv-dapvar-tw', title: expanded.has(v.ref) ? uiText('折叠', "Collapse", "Свернуть") : uiText('展开', "Expand", "Развернуть"),
             onClick: () => { void expandVar(v.ref) },
           }, expanded.has(v.ref) ? '▾' : '▸')
         : React.createElement('span', { className: 'edrv-dapvar-tw' }, ''),
@@ -412,41 +413,41 @@ export function DebugPanel({ ctx }) {
       },
         React.createElement('span', { className: 'edrv-dapframe-name' }, f.name || '(anonymous)'),
         React.createElement('span', { className: 'edrv-dapframe-loc' }, (f.file || f.rawFile) + ':' + f.line)))
-    : [React.createElement('div', { key: 'empty', className: 'edrv-dapempty' }, paused ? '（无调用栈）' : '暂停时显示调用堆栈')]
+    : [React.createElement('div', { key: 'empty', className: 'edrv-dapempty' }, paused ? uiText('（无调用栈）', "(No call stack)", "(Стек вызовов пуст)") : uiText('暂停时显示调用堆栈', "Call stack appears when paused", "Стек вызовов отображается при остановке"))]
 
   const scopeRows = scopes.flatMap((s) => [
     React.createElement('div', { key: 'scope' + s.name, className: 'edrv-dapscope' }, s.name),
     ...flattenVariableRows(varCache.get(s.ref) ?? [], expanded, varCache, { maxRows: 800 }).map(renderVarRow),
   ])
-  const varRows = scopes.length ? scopeRows : [React.createElement('div', { key: 'e', className: 'edrv-dapempty' }, '暂停时显示变量')]
+  const varRows = scopes.length ? scopeRows : [React.createElement('div', { key: 'e', className: 'edrv-dapempty' }, uiText('暂停时显示变量', "Variables appear when paused", "Переменные отображаются при остановке"))]
 
   const watchRows = watches.flatMap((expr) => {
     const hit = watchHits[expr]
     const rows = [React.createElement('div', { key: expr, className: 'edrv-dapwatch' },
-      React.createElement('button', { className: 'edrv-dapwatch-x', title: '移除监视', onClick: () => removeWatch(expr) }, '×'),
+      React.createElement('button', { className: 'edrv-dapwatch-x', title: uiText('移除监视', "Remove watch", "Удалить наблюдение"), onClick: () => removeWatch(expr) }, '×'),
       (hit?.ref > 0
         ? React.createElement('button', {
-            className: 'edrv-dapvar-tw', title: expanded.has(hit.ref) ? '折叠 table' : '展开 table',
+            className: 'edrv-dapvar-tw', title: expanded.has(hit.ref) ? uiText('折叠 table', "Collapse table", "Свернуть таблицу") : uiText('展开 table', "Expand table", "Развернуть таблицу"),
             onClick: () => { void expandVar(hit.ref) },
           }, expanded.has(hit.ref) ? '▾' : '▸')
         : React.createElement('span', { className: 'edrv-dapvar-tw' }, '')),
       React.createElement('span', { className: 'edrv-dapvar-name', title: expr }, expr),
-      React.createElement('span', { className: 'edrv-dapvar-val', title: hit?.result || '' }, hit ? '= ' + hit.result : '= 不可用'),
+      React.createElement('span', { className: 'edrv-dapvar-val', title: hit?.result || '' }, hit ? '= ' + hit.result : uiText('= 不可用', "= unavailable", "= недоступно")),
       (hit?.type ? React.createElement('span', { className: 'edrv-dapvar-type' }, hit.type) : null))]
     if (hit?.ref > 0 && expanded.has(hit.ref)) {
       rows.push(...flattenVariableRows(varCache.get(hit.ref) ?? [], expanded, varCache, { maxRows: 500 }).map(renderVarRow))
     }
     return rows
   })
-  const watchSection = section('监视', 'watch', 'watch', [
-    segAct('watch-add', '＋', '新增监视表达式', focusWatchInput),
-    segAct('watch-clear', '🗑', '移除全部监视', clearWatches),
+  const watchSection = section(uiText('监视', "Watch", "Наблюдение"), 'watch', 'watch', [
+    segAct('watch-add', '＋', uiText('新增监视表达式', "Add watch expression", "Добавить выражение наблюдения"), focusWatchInput),
+    segAct('watch-clear', '🗑', uiText('移除全部监视', "Remove all watches", "Удалить все наблюдения"), clearWatches),
   ], [
     ...watchRows,
     React.createElement('div', { key: 'add', className: 'edrv-dapwatch-add' },
       React.createElement('input', {
         ref: watchInputRef,
-        className: 'edrv-daprepl-in', placeholder: '新增监视表达式，回车确认',
+        className: 'edrv-daprepl-in', placeholder: uiText('新增监视表达式，回车确认', "Add watch expression; Enter to confirm", "Добавьте выражение наблюдения; Enter для подтверждения"),
         value: watchDraft, onChange: (e) => setWatchDraft(e.target.value),
         onKeyDown: (e) => { if (e.key === 'Enter') addWatch() },
       })),
@@ -462,13 +463,13 @@ export function DebugPanel({ ctx }) {
         const editing = bpEdit && bpEdit.path === row.path && bpEdit.line === row.entry.line
         const rows = [React.createElement('div', {
           key: row.path + ':' + row.entry.line, className: 'edrv-dapbp',
-          title: '跳转到 ' + row.path + ':' + row.entry.line
-            + (unverified && ack.message ? '（' + ack.message + '）' : ''),
+          title: uiText('跳转到 ', "Go to ", "Перейти к ") + row.path + ':' + row.entry.line
+            + (unverified && ack.message ? uiText('（', " (", " (") + ack.message + uiText('）', ")", ")") : ''),
           onClick: () => jumpBp(row),
           onContextMenu: (e) => { e.preventDefault(); setBpMenu({ x: e.clientX, y: e.clientY, row }) },
         },
           React.createElement('input', {
-            type: 'checkbox', checked: row.entry.enabled, title: row.entry.enabled ? '禁用断点' : '启用断点',
+            type: 'checkbox', checked: row.entry.enabled, title: row.entry.enabled ? uiText('禁用断点', "Disable breakpoint", "Отключить точку останова") : uiText('启用断点', "Enable breakpoint", "Включить точку останова"),
             onChange: () => toggleBpEnabled(row),
             // 启停不连带跳转（整行可点后必须阻断冒泡）
             onClick: (e) => e.stopPropagation(),
@@ -483,7 +484,7 @@ export function DebugPanel({ ctx }) {
           React.createElement('span', { className: 'edrv-dapbp-dir', title: dir }, dir),
           React.createElement('span', { className: 'edrv-dapbp-line' }, row.entry.line),
           React.createElement('button', {
-            className: 'edrv-dapbp-x', title: '删除断点',
+            className: 'edrv-dapbp-x', title: uiText('删除断点', "Delete breakpoint", "Удалить точку останова"),
             // 删除不连带跳转
             onClick: (e) => { e.stopPropagation(); removeBp(row) },
           }, '×'))]
@@ -492,7 +493,7 @@ export function DebugPanel({ ctx }) {
           const modeItem = BP_WIDGET_MODES.find((m) => m.mode === bpEdit.mode) ?? BP_WIDGET_MODES[0]
           rows.push(React.createElement('div', { key: row.path + ':' + row.entry.line + ':edit', className: 'edrv-dapbp-edit' },
             React.createElement('select', {
-              className: 'edrv-bpwidget-mode', title: '断点类型', value: String(bpEdit.mode),
+              className: 'edrv-bpwidget-mode', title: uiText('断点类型', "Breakpoint type", "Тип точки останова"), value: String(bpEdit.mode),
               onChange: (e) => setBpEdit({ ...bpEdit, mode: Number(e.target.value) }),
             },
               BP_WIDGET_MODES.filter((m) => m.mode !== BP_MODE.WAIT).map((m) => React.createElement('option', { key: m.mode, value: String(m.mode) }, m.label))),
@@ -510,12 +511,12 @@ export function DebugPanel({ ctx }) {
         }
         return rows
       })
-    : [React.createElement('div', { key: 'e', className: 'edrv-dapempty' }, '在编辑器行首点击或 F9 添加断点')]
+    : [React.createElement('div', { key: 'e', className: 'edrv-dapempty' }, uiText('在编辑器行首点击或 F9 添加断点', "Click the editor gutter or press F9 to add a breakpoint", "Нажмите поле слева от строки или F9 для добавления точки останова"))]
 
-  const bpSection = section('断点', 'breakpoints', 'breakpoints', [
-    segAct('bp-new', '新建断点 ▾', '添加条件断点 / 记录点（落在当前编辑器光标行）', (e) => setNewBpMenu({ x: e.clientX, y: e.clientY })),
-    (bpRows.length ? segAct('bp-toggle', allBpEnabled ? '⊘' : '◉', allBpEnabled ? '禁用所有断点' : '启用所有断点', () => dapStore.setAllBpEnabled(scope, cwd, !allBpEnabled)) : null),
-    (bpRows.length ? segAct('bp-clear', '🗑', '删除所有断点', removeAllBps) : null),
+  const bpSection = section(uiText('断点', "Breakpoints", "Точки останова"), 'breakpoints', 'breakpoints', [
+    segAct('bp-new', uiText('新建断点 ▾', "New breakpoint ▾", "Новая точка останова ▾"), uiText('添加条件断点 / 记录点（落在当前编辑器光标行）', "Add conditional breakpoint / logpoint at the current cursor line", "Добавить условную точку останова / точку журнала на строке курсора"), (e) => setNewBpMenu({ x: e.clientX, y: e.clientY })),
+    (bpRows.length ? segAct('bp-toggle', allBpEnabled ? '⊘' : '◉', allBpEnabled ? uiText('禁用所有断点', "Disable all breakpoints", "Отключить все точки останова") : uiText('启用所有断点', "Enable all breakpoints", "Включить все точки останова"), () => dapStore.setAllBpEnabled(scope, cwd, !allBpEnabled)) : null),
+    (bpRows.length ? segAct('bp-clear', '🗑', uiText('删除所有断点', "Delete all breakpoints", "Удалить все точки останова"), removeAllBps) : null),
   ], bpSectionChildren)
 
   const outputRows = dapStore.outputs().slice(-60).map((ev, idx) => React.createElement('div', { key: ev.seq + ':' + idx, className: 'edrv-daprepl-line out' }, ev.text?.trimEnd() || ''))
@@ -541,8 +542,8 @@ export function DebugPanel({ ctx }) {
     ? React.createElement(ContextMenu, {
         x: newBpMenu.x, y: newBpMenu.y, onClose: () => setNewBpMenu(null),
         entries: [
-          { id: 'add-conditional', label: '添加条件断点...', onClick: () => addBpAtCursor(BP_MODE.EXPRESSION) },
-          { id: 'add-logpoint', label: '添加记录点...', onClick: () => addBpAtCursor(BP_MODE.LOG_MESSAGE) },
+          { id: 'add-conditional', label: uiText('添加条件断点...', "Add conditional breakpoint...", "Добавить условную точку останова..."), onClick: () => addBpAtCursor(BP_MODE.EXPRESSION) },
+          { id: 'add-logpoint', label: uiText('添加记录点...', "Add logpoint...", "Добавить точку журнала..."), onClick: () => addBpAtCursor(BP_MODE.LOG_MESSAGE) },
         ],
       })
     : null
@@ -552,18 +553,18 @@ export function DebugPanel({ ctx }) {
       ...(snap.candidates
         ? [
             React.createElement('select', {
-              key: 'pick', className: 'edrv-dappanel-cfg-select', title: '选择附加目标进程（processName 命中多个候选）',
+              key: 'pick', className: 'edrv-dappanel-cfg-select', title: uiText('选择附加目标进程（processName 命中多个候选）', "Select target process (multiple processName matches)", "Выберите целевой процесс (несколько совпадений processName)"),
               value: String(pickPid || snap.candidates[0]?.pid || ''),
               onChange: (e) => setPickPid(Number(e.target.value)),
             },
               snap.candidates.map((it) => React.createElement('option', { key: it.pid, value: String(it.pid) },
                 it.pid + ' : ' + it.name + (it.title ? ' — ' + it.title.slice(0, 44) : '')))),
-            toolbarBtn('pick-ok', '✓', '附加到选中进程', false, () => dapStore.confirmPick(pickPid || snap.candidates![0]?.pid || 0)),
-            toolbarBtn('pick-cancel', '✕', '取消', false, () => dapStore.cancelPick()),
+            toolbarBtn('pick-ok', '✓', uiText('附加到选中进程', "Attach to selected process", "Подключиться к выбранному процессу"), false, () => dapStore.confirmPick(pickPid || snap.candidates![0]?.pid || 0)),
+            toolbarBtn('pick-cancel', '✕', uiText('取消', "Cancel", "Отмена"), false, () => dapStore.cancelPick()),
           ]
         : [React.createElement('select', {
             key: 'cfg', className: 'edrv-dappanel-cfg-select',
-            title: '调试配置（读取工作区 .dsh/launch.json；适配器由扩展清单 contributes.debuggers 提供）',
+            title: uiText('调试配置（读取工作区 .dsh/launch.json；适配器由扩展清单 contributes.debuggers 提供）', "Debug configuration (workspace .dsh/launch.json; adapters from extension contributes.debuggers)", "Конфигурация отладки (.dsh/launch.json пространства; адаптеры из contributes.debuggers расширений)"),
             value: snap.selectedConfig ?? '',
             onChange: (e) => dapStore.selectConfig(e.target.value),
           },
@@ -571,39 +572,39 @@ export function DebugPanel({ ctx }) {
               ? snap.configs.map((c) => {
                   const adapter = snap.adapters.find((a) => a.type === c.type)
                   const ready = snap.adapters.length === 0 || adapter?.available === true
-                  const suffix = ready ? '' : '（' + (adapter?.reason || '未发现该类型适配器') + '）'
+                  const suffix = ready ? '' : uiText('（', " (", " (") + (adapter?.reason || uiText('未发现该类型适配器', "No adapter found for this type", "Адаптер этого типа не найден")) + uiText('）', ")", ")")
                   return React.createElement('option', { key: c.name, value: c.name, disabled: !ready }, c.name + suffix)
                 })
-              : React.createElement('option', { value: '' }, '无可用调试配置'))]),
-      toolbarBtn('run', '▶', paused ? '继续（F5）' : '启动调试（F5）', !paused && (!configReady || dapActive), () => dapStore.startOrContinue()),
-      toolbarBtn('cfg-gear', '⚙', '打开/新建调试配置（' + LAUNCH_REL + '）', !ctx?.cwd, () => { void openLaunchConfig() }),
-      toolbarBtn('pause', '⏸', '暂停', !dapActive, () => { void dapStore.action('pause') }),
-      toolbarBtn('next', '⤵', '单步跳过（F10）', !paused, () => { void dapStore.action('next') }),
-      toolbarBtn('stepin', '↓', '单步步入（F11）', !paused, () => { void dapStore.action('stepIn') }),
-      toolbarBtn('stepout', '↑', '单步步出（Shift+F11）', !paused, () => { void dapStore.action('stepOut') }),
-      toolbarBtn('stop', '⏹', '停止（Shift+F5）', !dapActive, () => { void dapStore.stop() }),
+              : React.createElement('option', { value: '' }, uiText('无可用调试配置', "No debug configurations available", "Нет доступных конфигураций отладки")))]),
+      toolbarBtn('run', '▶', paused ? uiText('继续（F5）', "Continue (F5)", "Продолжить (F5)") : uiText('启动调试（F5）', "Start debugging (F5)", "Начать отладку (F5)"), !paused && (!configReady || dapActive), () => dapStore.startOrContinue()),
+      toolbarBtn('cfg-gear', '⚙', uiText('打开/新建调试配置（', "Open/create debug configuration (", "Открыть/создать конфигурацию отладки (") + LAUNCH_REL + uiText('）', ")", ")"), !ctx?.cwd, () => { void openLaunchConfig() }),
+      toolbarBtn('pause', '⏸', uiText('暂停', "Pause", "Приостановить"), !dapActive, () => { void dapStore.action('pause') }),
+      toolbarBtn('next', '⤵', uiText('单步跳过（F10）', "Step over (F10)", "Шаг с обходом (F10)"), !paused, () => { void dapStore.action('next') }),
+      toolbarBtn('stepin', '↓', uiText('单步步入（F11）', "Step into (F11)", "Шаг с заходом (F11)"), !paused, () => { void dapStore.action('stepIn') }),
+      toolbarBtn('stepout', '↑', uiText('单步步出（Shift+F11）', "Step out (Shift+F11)", "Шаг с выходом (Shift+F11)"), !paused, () => { void dapStore.action('stepOut') }),
+      toolbarBtn('stop', '⏹', uiText('停止（Shift+F5）', "Stop (Shift+F5)", "Остановить (Shift+F5)"), !dapActive, () => { void dapStore.stop() }),
       React.createElement('span', { className: 'edrv-dappanel-phase' + (paused ? ' paused' : '') }, PHASE_LABEL[snap.phase] || snap.phase),
       (snap.pid ? React.createElement('span', { className: 'edrv-dappanel-pid' }, 'pid ' + snap.pid) : null),
       React.createElement('span', { style: { flex: 1 } }),
       (snap.error ? React.createElement('span', { className: 'edrv-dappanel-err', title: snap.error }, '⚠') : null)),
-    section('变量', 'variables', 'variables', [
-      segAct('var-reload', '⟳', '刷新变量', () => setReloadTick((t) => t + 1)),
+    section(uiText('变量', "Variables", "Переменные"), 'variables', 'variables', [
+      segAct('var-reload', '⟳', uiText('刷新变量', "Refresh variables", "Обновить переменные"), () => setReloadTick((t) => t + 1)),
     ], varRows),
     sash('variables', 'watch'),
     watchSection,
     sash('watch', 'stack'),
-    section('调用堆栈', 'stack', 'stack', [], stackRows),
+    section(uiText('调用堆栈', "Call stack", "Стек вызовов"), 'stack', 'stack', [], stackRows),
     sash('stack', 'breakpoints'),
     bpSection,
     React.createElement('div', { className: 'edrv-daprepl' },
-      React.createElement('div', { className: 'edrv-dapseg-head' }, '调试控制台'),
+      React.createElement('div', { className: 'edrv-dapseg-head' }, uiText('调试控制台', "Debug console", "Консоль отладки")),
       React.createElement('div', { className: 'edrv-daprepl-log' },
         ...replLog.map((row, idx) => React.createElement('div', { key: idx, className: 'edrv-daprepl-line' },
           React.createElement('span', { className: 'edrv-dapvar-name' }, row.expr),
           React.createElement('span', { className: 'edrv-dapvar-val' }, '= ' + row.result))),
         ...outputRows),
       React.createElement('input', {
-        className: 'edrv-daprepl-in', placeholder: paused ? '输入表达式求值，回车执行（如 self.itemId）' : '暂停时才可求值',
+        className: 'edrv-daprepl-in', placeholder: paused ? uiText('输入表达式求值，回车执行（如 self.itemId）', "Enter expression to evaluate; Enter to run (e.g. self.itemId)", "Введите выражение; Enter для вычисления (например self.itemId)") : uiText('暂停时才可求值', "Evaluation available only when paused", "Вычисление доступно только при остановке"),
         disabled: !paused, value: replDraft,
         onChange: (e) => setReplDraft(e.target.value),
         onKeyDown: (e) => { if (e.key === 'Enter') void runRepl() },

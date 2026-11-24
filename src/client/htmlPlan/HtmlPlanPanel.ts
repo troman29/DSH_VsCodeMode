@@ -6,6 +6,7 @@
  * 页面答复经桥接脚本回填对话输入框。iframe 一律 sandbox 且不给 allow-same-origin。
  * @author ddj 2026年11月21号
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { rpc } from '../rpc.js'
 import {
@@ -54,7 +55,7 @@ export function HtmlPlanPanel(props: HtmlPlanPanelProps) {
   const sessionId = String(props.sessionId ?? '')
   const declared = String(props.htmlPath ?? planPagePathOf(props.markdown) ?? '')
   const absPath = resolvePlanPagePath(props.cwd, declared)
-  const title = String(props.title ?? 'HTML 计划')
+  const title = String(props.title ?? uiText('HTML 计划', "HTML plan", "HTML-план"))
 
   const [html, setHtml] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
@@ -90,7 +91,7 @@ export function HtmlPlanPanel(props: HtmlPlanPanelProps) {
     setStaleRefs([])
     setMissing(false)
     if (!absPath) {
-      setError('计划未声明 HTML 页路径（计划正文缺少「HTML 计划页：…」一行）')
+      setError(uiText('计划未声明 HTML 页路径（计划正文缺少「HTML 计划页：…」一行）', "The plan declares no HTML page path (missing the “HTML 计划页: …” marker line).", "В плане не указан путь HTML-страницы (нет строки-маркера «HTML 计划页: …»)."))
       return () => { alive = false }
     }
     rpc('edrv.read', { sessionId, path: absPath }).then((raw) => {
@@ -99,7 +100,7 @@ export function HtmlPlanPanel(props: HtmlPlanPanelProps) {
       if (result?.ok !== true) {
         const pageMissing = isMissingPage(result)
         setMissing(pageMissing)
-        setError(pageMissing ? '计划页还没生成：' + absPath : '读取计划页失败：' + String(result?.error ?? '未知原因'))
+        setError(pageMissing ? uiText('计划页还没生成：', "Plan page not generated yet: ", "Страница плана ещё не создана: ") + absPath : uiText('读取计划页失败：', "Failed to read plan page: ", "Ошибка чтения страницы плана: ") + String(result?.error ?? uiText('未知原因', "Unknown reason", "Неизвестная причина")))
         return
       }
       const text = String(result.content ?? '')
@@ -107,7 +108,7 @@ export function HtmlPlanPanel(props: HtmlPlanPanelProps) {
       setHtml(text)
       setStaleRefs(unresolvedRuntimeRefs(text))
     }).catch((cause) => {
-      if (alive) setError('读取计划页失败：' + String(cause))
+      if (alive) setError(uiText('读取计划页失败：', "Failed to read plan page: ", "Ошибка чтения страницы плана: ") + String(cause))
     })
     return () => { alive = false }
   }, [absPath, sessionId, reloadToken])
@@ -179,8 +180,8 @@ export function HtmlPlanPanel(props: HtmlPlanPanelProps) {
     const result = await submitPlanResponse(sessionId, body)
     setBusy(false)
     setNotice(result.ok
-      ? hadReview ? '答复已随批准送进当前回合，agent 会带着答复开始执行' : '已回复并发送给 agent'
-      : String(result.error ?? '发送失败'))
+      ? hadReview ? uiText('答复已随批准送进当前回合，agent 会带着答复开始执行', "Response and approval delivered to the current turn. The agent will execute with your response.", "Ответ и одобрение доставлены в текущий ход. Агент начнёт выполнение с учётом ответа.") : uiText('已回复并发送给 agent', "Response sent to the agent", "Ответ отправлен агенту")
+      : String(result.error ?? uiText('发送失败', "Send failed", "Ошибка отправки")))
     try {
       frameRef.current?.contentWindow?.postMessage({
         source: 'edrv-plan-host',
@@ -206,7 +207,7 @@ export function HtmlPlanPanel(props: HtmlPlanPanelProps) {
       setBusy(true)
       const result = await fillComposer(sessionId, copied)
       setBusy(false)
-      setNotice(result.ok ? '已填入对话输入框（未发送）' : String(result.error ?? '填入失败'))
+      setNotice(result.ok ? uiText('已填入对话输入框（未发送）', "Filled conversation input (not sent)", "Поле диалога заполнено (без отправки)") : String(result.error ?? uiText('填入失败', "Failed to fill input", "Ошибка заполнения поля")))
       return
     }
     setBusy(true)
@@ -214,9 +215,9 @@ export function HtmlPlanPanel(props: HtmlPlanPanelProps) {
     setBusy(false)
     if (result.ok) {
       setActed(action)
-      setNotice(action === 'approved' ? '已批准，等待 agent 开始执行' : action === 'revising' ? '已提交「继续规划」，等待 agent 修订' : '已退出计划模式')
+      setNotice(action === 'approved' ? uiText('已批准，等待 agent 开始执行', "Approved; waiting for the agent to execute", "Одобрено; ожидание выполнения агентом") : action === 'revising' ? uiText('已提交「继续规划」，等待 agent 修订', "Keep planning submitted; waiting for the agent to revise", "Запрошено продолжение планирования; ожидание правок агента") : uiText('已退出计划模式', "Exited plan mode", "Режим планирования завершён"))
     } else {
-      setNotice(String(result.error ?? '操作失败'))
+      setNotice(String(result.error ?? uiText('操作失败', "Operation failed", "Ошибка операции")))
     }
     refresh()
   }
@@ -226,7 +227,7 @@ export function HtmlPlanPanel(props: HtmlPlanPanelProps) {
    * @author ddj 2026年11月21号
    */
   function reveal(): void {
-    setNotice(revealPlanReview(sessionId) ? '已请求打开官方审批卡片' : '未找到可打开的官方审批卡片，请直接在对话中操作')
+    setNotice(revealPlanReview(sessionId) ? uiText('已请求打开官方审批卡片', "Requested the official approval card", "Запрошена стандартная карточка согласования") : uiText('未找到可打开的官方审批卡片，请直接在对话中操作', "No official approval card found. Use the conversation directly.", "Стандартная карточка согласования не найдена. Используйте диалог напрямую."))
   }
 
   /**
@@ -245,7 +246,7 @@ export function HtmlPlanPanel(props: HtmlPlanPanelProps) {
       setError(null)
       setHtml(String(result.content ?? ''))
       setStaleRefs(unresolvedRuntimeRefs(result.content))
-      setNotice('计划页已生成')
+      setNotice(uiText('计划页已生成', "Plan page generated", "Страница плана создана"))
     } catch {
       /* 下一轮再试 */
     }
@@ -267,13 +268,13 @@ export function HtmlPlanPanel(props: HtmlPlanPanelProps) {
     const result = await submitPlanResponse(sessionId, planRepairInstruction(declared), false)
     setRepairing(false)
     if (!result.ok) {
-      setNotice(String(result.error ?? '发送失败'))
+      setNotice(String(result.error ?? uiText('发送失败', "Send failed", "Ошибка отправки")))
       return
     }
     refresh()
     setNotice(hadReview
-      ? '已提交「继续规划」并让 agent 生成计划页，等文件出现（最多 90 秒）…'
-      : '已让 agent 生成计划页，等文件出现（最多 90 秒）…')
+      ? uiText('已提交「继续规划」并让 agent 生成计划页，等文件出现（最多 90 秒）…', "Keep planning submitted; agent asked to generate the page. Waiting for the file (up to 90 seconds)…", "Запрошено продолжение планирования и создание страницы агентом. Ожидание файла (до 90 секунд)…")
+      : uiText('已让 agent 生成计划页，等文件出现（最多 90 秒）…', "Agent asked to generate the plan page. Waiting for the file (up to 90 seconds)…", "Агенту поручено создать страницу плана. Ожидание файла (до 90 секунд)…"))
     stopPolling()
     let waited = 0
     pollRef.current = window.setInterval(() => {
@@ -282,7 +283,7 @@ export function HtmlPlanPanel(props: HtmlPlanPanelProps) {
       if (waited >= 45) {
         stopPolling()
         setRepairing(false)
-        setNotice('还没等到计划页：可以再点一次「生成 HTML 计划页」，或让 agent 跑技能的 runtime/plan.mjs 打包')
+        setNotice(uiText('还没等到计划页：可以再点一次「生成 HTML 计划页」，或让 agent 跑技能的 runtime/plan.mjs 打包', "Plan page not found yet. Click “Generate HTML plan page” again, or ask the agent to package it with the skill's runtime/plan.mjs.", "Страница плана ещё не найдена. Повторите «Создать HTML-страницу плана» или попросите агента собрать её через runtime/plan.mjs навыка."))
       }
     }, 2000)
   }
@@ -294,35 +295,35 @@ export function HtmlPlanPanel(props: HtmlPlanPanelProps) {
     React.createElement('span', { style: { flex: 1 } }),
     React.createElement('button', {
       className: 'edrv-pill edrv-pill-ghost', disabled: !canAnswer,
-      title: review ? '用官方批准标签作答（等同对话审批卡片的「同意执行」）' : '没有待审批的计划',
+      title: review ? uiText('用官方批准标签作答（等同对话审批卡片的「同意执行」）', "Answer with the official approval label (same as Approve execution in the conversation card)", "Ответить стандартным вариантом одобрения (как «Одобрить выполнение» в карточке диалога)") : uiText('没有待审批的计划', "No plan awaiting approval", "Нет плана на согласовании"),
       onClick: () => { void run('approved') },
-    }, '同意执行'),
+    }, uiText('同意执行', "Approve execution", "Одобрить выполнение")),
     React.createElement('button', {
       className: 'edrv-pill edrv-pill-ghost', disabled: !canAnswer || !review?.keepLabel,
-      title: review?.keepLabel ? '用官方「继续规划」选项作答' : '官方审批没有继续规划选项，请在对话中要求修改',
+      title: review?.keepLabel ? uiText('用官方「继续规划」选项作答', "Answer with the official Keep planning option", "Ответить стандартным вариантом «Продолжить планирование»") : uiText('官方审批没有继续规划选项，请在对话中要求修改', "No Keep planning option in the official review; request changes in the conversation", "Нет варианта продолжения планирования; запросите изменения в диалоге"),
       onClick: () => { void run('revising') },
-    }, '继续规划'),
+    }, uiText('继续规划', "Keep planning", "Продолжить планирование")),
     React.createElement('button', {
       className: 'edrv-pill edrv-pill-ghost', disabled: busy || !state.active,
-      title: '等价 composer 计划徽标的 /plan off',
+      title: uiText('等价 composer 计划徽标的 /plan off', "Equivalent to /plan off from the composer plan badge", "Аналог /plan off через значок плана в поле диалога"),
       onClick: () => { void run('exited') },
-    }, '退出计划模式'),
+    }, uiText('退出计划模式', "Exit plan mode", "Выйти из режима планирования")),
     (review ? React.createElement('button', {
-      className: 'edrv-pill edrv-pill-ghost', title: '打开官方审批卡片', onClick: reveal,
-    }, '去对话审批') : null),
+      className: 'edrv-pill edrv-pill-ghost', title: uiText('打开官方审批卡片', "Open official approval card", "Открыть стандартную карточку согласования"), onClick: reveal,
+    }, uiText('去对话审批', "Review in conversation", "Согласовать в диалоге")) : null),
     React.createElement('button', {
       className: 'edrv-pill edrv-pill-ghost', disabled: busy || !copied,
-      title: copied ? '把页面答复填入对话输入框（不自动发送）' : '先在页面里点 Copy response',
+      title: copied ? uiText('把页面答复填入对话输入框（不自动发送）', "Fill conversation input with the page response (without sending)", "Вставить ответ страницы в поле диалога (без отправки)") : uiText('先在页面里点 Copy response', "Click Copy response on the page first", "Сначала нажмите Copy response на странице"),
       onClick: () => { void run('fill') },
-    }, '填入对话输入框'),
+    }, uiText('填入对话输入框', "Fill conversation input", "Заполнить поле диалога")),
     (missing || !absPath ? React.createElement('button', {
       className: 'edrv-pill edrv-pill-accent',
       disabled: repairing || !sessionId,
-      title: '让 agent 现在就写 plans/<slug>/plan.html 并打包（计划模式里允许写计划文件）',
+      title: uiText('让 agent 现在就写 plans/<slug>/plan.html 并打包（计划模式里允许写计划文件）', "Ask the agent to write and package plans/<slug>/plan.html now (plan files can be written in plan mode)", "Поручить агенту создать и собрать plans/<slug>/plan.html сейчас (файлы плана разрешено писать в режиме планирования)"),
       onClick: () => { void regenerate() },
-    }, repairing ? '生成中…' : '生成 HTML 计划页') : null),
+    }, repairing ? uiText('生成中…', "Generating…", "Создание…") : uiText('生成 HTML 计划页', "Generate HTML plan page", "Создать HTML-страницу плана")) : null),
     React.createElement('button', {
-      className: 'edrv-pill edrv-pill-ghost', title: '重新读取计划页',
+      className: 'edrv-pill edrv-pill-ghost', title: uiText('重新读取计划页', "Reload plan page", "Перечитать страницу плана"),
       onClick: () => { setCopied(''); setReloadToken((value) => value + 1) },
     }, '⟳'))
 
@@ -335,29 +336,29 @@ export function HtmlPlanPanel(props: HtmlPlanPanelProps) {
       React.createElement('div', null, error),
       React.createElement('div', { style: { fontSize: 12, opacity: 0.75 } },
         canRepair
-          ? '点下面的按钮让 agent 现在就写页面并打包；也可以关掉页签回到 Markdown 计划预览。'
-          : '可关闭页签回到 Markdown 计划预览；或让 agent 重新打包计划页。'),
+          ? uiText('点下面的按钮让 agent 现在就写页面并打包；也可以关掉页签回到 Markdown 计划预览。', "Click below to ask the agent to create and package the page now, or close the tab to return to the Markdown plan preview.", "Нажмите кнопку ниже для создания и сборки страницы агентом или закройте вкладку для возврата к Markdown-плану.")
+          : uiText('可关闭页签回到 Markdown 计划预览；或让 agent 重新打包计划页。', "Close the tab to return to the Markdown plan preview, or ask the agent to repackage the page.", "Закройте вкладку для возврата к Markdown-плану или попросите агента пересобрать страницу.")),
       canRepair ? React.createElement('button', {
         className: 'edrv-pill edrv-pill-accent', style: { marginTop: 10 },
         disabled: repairing || !sessionId,
-        title: '让 agent 写 plans/<slug>/plan.html 并打包（计划模式里允许写计划文件）',
+        title: uiText('让 agent 写 plans/<slug>/plan.html 并打包（计划模式里允许写计划文件）', "Ask the agent to write and package plans/<slug>/plan.html (plan mode permits plan files)", "Поручить агенту создать и собрать plans/<slug>/plan.html (режим планирования разрешает файлы плана)"),
         onClick: () => { void regenerate() },
-      }, repairing ? '生成中…' : '生成 HTML 计划页') : null)
+      }, repairing ? uiText('生成中…', "Generating…", "Создание…") : uiText('生成 HTML 计划页', "Generate HTML plan page", "Создать HTML-страницу плана")) : null)
   } else if (html === null) {
-    stage = React.createElement('div', { className: 'edrv-empty' }, '读取计划页…')
+    stage = React.createElement('div', { className: 'edrv-empty' }, uiText('读取计划页…', "Loading plan page…", "Загрузка страницы плана…"))
   } else {
     const warnLines: string[] = []
-    if (staleRefs.length) warnLines.push('页面未打包：仍引用 ' + staleRefs.join('、') + '。样式/脚本可能缺失，先重新打包再提交。')
-    if (attachments.pending) warnLines.push(String(attachments.pending) + ' 个附件没内联：点开是空链接，重新打包后再提交。')
+    if (staleRefs.length) warnLines.push(uiText('页面未打包：仍引用 ', "Page is not packaged; still references ", "Страница не собрана; остаются ссылки на ") + staleRefs.join(uiText('、', ", ", ", ")) + uiText('。样式/脚本可能缺失，先重新打包再提交。', ". Styles or scripts may be missing. Repackage before submitting.", ". Стили или скрипты могут отсутствовать. Пересоберите перед отправкой."))
+    if (attachments.pending) warnLines.push(String(attachments.pending) + uiText(' 个附件没内联：点开是空链接，重新打包后再提交。', " attachments are not embedded and open as empty links. Repackage before submitting.", " вложений не встроено; ссылки пусты. Пересоберите перед отправкой."))
     const warn = warnLines.length
       ? React.createElement('div', { className: 'edrv-htmlplan-warn' },
           warnLines.join(' '),
           React.createElement('button', {
             className: 'edrv-pill edrv-pill-accent', style: { marginLeft: 8 },
             disabled: repairing || !sessionId,
-            title: '让 agent 重新跑 plan.mjs 打包这一页',
+            title: uiText('让 agent 重新跑 plan.mjs 打包这一页', "Ask the agent to run plan.mjs again to package this page", "Попросить агента снова собрать страницу через plan.mjs"),
             onClick: () => { void regenerate() },
-          }, repairing ? '打包中…' : '重新打包'))
+          }, repairing ? uiText('打包中…', "Packaging…", "Сборка…") : uiText('重新打包', "Repackage", "Пересобрать")))
       : null
     stage = React.createElement(React.Fragment, null,
       warn,

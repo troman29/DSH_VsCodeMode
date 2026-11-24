@@ -8,6 +8,7 @@
  * 作者 ddj 2026-09-07
  */
 import React from 'react'
+import { uiText } from '../uiLocale.js'
 import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 import { SettingNotice } from './SettingsUi.js'
 import { rpc } from '../rpc.js'
@@ -15,39 +16,39 @@ import { SettingsContext } from '../settingsContext.js'
 
 /** launcher 状态文案。 */
 function launcherText(launcher) {
-  if (!launcher?.present) return '未安装'
-  return launcher.compiled ? '已编译 exe（无闪窗）' : '已安装'
+  if (!launcher?.present) return uiText('未安装', "Not installed", "Не установлено")
+  return launcher.compiled ? uiText('已编译 exe（无闪窗）', "Compiled exe (no console flash)", "Скомпилированный exe (без вспышки консоли)") : uiText('已安装', "Installed", "Установлено")
 }
 
 /** 注册条目状态文案（跨平台 entries）。 */
 function entriesText(entries) {
-  if (!entries?.length) return '本平台无自动注册入口'
+  if (!entries?.length) return uiText('本平台无自动注册入口', "Automatic registration is unavailable on this platform", "Автоматическая регистрация недоступна на этой платформе")
   return entries.map((entry) => entry.label + (entry.registered ? ' ✓' : ' ✗')).join(' · ')
 }
 
 /** macOS Automator 快速操作配方（复制到剪贴板，用户按步骤创建）。 */
 function automatorRecipe(launcherPath) {
   return [
-    'macOS Finder 快速操作（Automator）配置步骤：',
-    '1. Automator → 新建 → 快速操作',
-    '2. 「工作流程接收当前」选：文件或文件夹；位于：任何应用程序',
-    '3. 添加动作「运行 Shell 脚本」，Shell 选 /bin/bash，传递输入选「作为参数」',
-    '4. 脚本内容替换为：',
+    uiText('macOS Finder 快速操作（Automator）配置步骤：', "Set up a macOS Finder Quick Action (Automator):", "Настройка быстрого действия macOS Finder (Automator):"),
+    uiText('1. Automator → 新建 → 快速操作', "1. Automator → New → Quick Action", "1. Automator → Новый → Быстрое действие"),
+    uiText('2. 「工作流程接收当前」选：文件或文件夹；位于：任何应用程序', "2. Set “Workflow receives current” to files or folders in any application", "2. Выберите получение файлов или папок в любой программе"),
+    uiText('3. 添加动作「运行 Shell 脚本」，Shell 选 /bin/bash，传递输入选「作为参数」', "3. Add “Run Shell Script”; select /bin/bash and pass input as arguments", "3. Добавьте «Запустить shell-скрипт»; выберите /bin/bash и передачу ввода аргументами"),
+    uiText('4. 脚本内容替换为：', "4. Replace the script with:", "4. Замените скрипт следующим:"),
     '   exec "' + launcherPath + '" "$@"',
-    '5. 保存为：在 DSH 文件编辑中打开',
-    '完成后在 Finder 右键 → 快速操作/服务 中出现「在 DSH 文件编辑中打开」。',
+    uiText('5. 保存为：在 DSH 文件编辑中打开', "5. Save as: Open in DSH File Editor", "5. Сохраните как: Открыть в редакторе файлов DSH"),
+    uiText('完成后在 Finder 右键 → 快速操作/服务 中出现「在 DSH 文件编辑中打开」。', "Finder context menu → Quick Actions/Services will show “Open in DSH File Editor”.", "В контекстном меню Finder → Быстрые действия/Службы появится «Открыть в редакторе файлов DSH»."),
   ].join('\n')
 }
 
 /** 单个 Unity 项目行。 */
 function ProjectRow({ project, busy, onInstall, onRemove }) {
   const versionText = project.missingDir
-    ? '目录不存在'
+    ? uiText('目录不存在', "Directory missing", "Каталог отсутствует")
     : project.error
       ? project.error
       : project.installedVersion
-        ? '已装 v' + project.installedVersion + (project.upToDate ? '（最新）' : '（可更新）')
-        : '未安装'
+        ? uiText('已装 v', "Installed v", "Установлена v") + project.installedVersion + (project.upToDate ? uiText('（最新）', " (up to date)", " (актуальная)") : uiText('（可更新）', " (update available)", " (доступно обновление)"))
+        : uiText('未安装', "Not installed", "Не установлено")
   const installable = !project.missingDir && !project.error
   return React.createElement('div', { className: 'vsm-general-row', key: project.path },
     React.createElement('span', null,
@@ -57,10 +58,10 @@ function ProjectRow({ project, busy, onInstall, onRemove }) {
       React.createElement('button', {
         className: 'vsm-primary vsm-small',
         disabled: !installable || busy === 'install:' + project.path,
-        title: project.upToDate ? '重新安装（整目录替换）' : '安装/更新到该 Unity 项目',
+        title: project.upToDate ? uiText('重新安装（整目录替换）', "Reinstall (replace entire directory)", "Переустановить (заменить весь каталог)") : uiText('安装/更新到该 Unity 项目', "Install/update in this Unity project", "Установить/обновить в этом проекте Unity"),
         onClick: () => onInstall(project.path),
-      }, busy === 'install:' + project.path ? '安装中…' : project.installedVersion ? (project.upToDate ? '重装' : '更新') : '安装'),
-      React.createElement('button', { disabled: busy === 'remove:' + project.path, onClick: () => onRemove(project.path) }, '移除登记'),
+      }, busy === 'install:' + project.path ? uiText('安装中…', "Installing…", "Установка…") : project.installedVersion ? (project.upToDate ? uiText('重装', "Reinstall", "Переустановить") : uiText('更新', "Update", "Обновить")) : uiText('安装', "Install", "Установить")),
+      React.createElement('button', { disabled: busy === 'remove:' + project.path, onClick: () => onRemove(project.path) }, uiText('移除登记', "Remove registration", "Удалить регистрацию")),
     ),
   )
 }
@@ -69,8 +70,8 @@ function ProjectRow({ project, busy, onInstall, onRemove }) {
 function PlatformNote({ platform, registered }) {
   if (platform === 'win32') return null
   const text = platform === 'linux'
-    ? 'Linux 注册覆盖 GNOME Files（Nautilus）与 KDE Dolphin 两个主流文件管理器（文件写入即注册，无需管理员）；其他文件管理器暂未支持。'
-    : 'macOS：点「复制 Automator 配方」按提示创建快速操作（约 1 分钟），创建后此处自动显示 ✓；「移除注册」仅删除引用本插件 launcher 的快速操作。'
+    ? uiText('Linux 注册覆盖 GNOME Files（Nautilus）与 KDE Dolphin 两个主流文件管理器（文件写入即注册，无需管理员）；其他文件管理器暂未支持。', "Linux registration supports GNOME Files (Nautilus) and KDE Dolphin through file creation, without administrator rights. Other file managers are not yet supported.", "В Linux регистрация поддерживает GNOME Files (Nautilus) и KDE Dolphin через создание файлов, без прав администратора. Другие файловые менеджеры пока не поддерживаются.")
+    : uiText('macOS：点「复制 Automator 配方」按提示创建快速操作（约 1 分钟），创建后此处自动显示 ✓；「移除注册」仅删除引用本插件 launcher 的快速操作。', "macOS: copy the Automator instructions and create the Quick Action (about 1 minute). A ✓ appears automatically afterward. Remove registration deletes only Quick Actions referencing this plugin's launcher.", "macOS: скопируйте инструкцию Automator и создайте быстрое действие (около минуты). Затем автоматически появится ✓. Удаление регистрации удаляет только действия с launcher этого плагина.")
   return React.createElement('small', { className: 'vsm-devform-msg' }, text)
 }
 
@@ -118,14 +119,14 @@ export function IntegrationSettings() {
     }).catch((e) => setError(String(e?.message ?? e))).finally(() => setBusy(''))
   }
   const register = () => runMenu('register', 'edrv.integration.register',
-    onLinux ? '已注册：在 Nautilus / Dolphin 中右键文件或文件夹即可看到「在 DSH 文件编辑中打开」（首次出现可能需重启文件管理器）。' : '右键菜单已注册：右键文件/文件夹 →「在 DSH 文件编辑中打开」。')
-  const unregister = () => runMenu('unregister', 'edrv.integration.unregister', '右键菜单注册已移除。')
+    onLinux ? uiText('已注册：在 Nautilus / Dolphin 中右键文件或文件夹即可看到「在 DSH 文件编辑中打开」（首次出现可能需重启文件管理器）。', "Registered: right-click a file or folder in Nautilus / Dolphin and select “Open in DSH File Editor”. You may need to restart the file manager once.", "Зарегистрировано: нажмите правой кнопкой файл или папку в Nautilus / Dolphin и выберите «Открыть в редакторе файлов DSH». Может потребоваться перезапуск файлового менеджера.") : uiText('右键菜单已注册：右键文件/文件夹 →「在 DSH 文件编辑中打开」。', "Context menu registered: right-click a file/folder → “Open in DSH File Editor”.", "Контекстное меню зарегистрировано: правая кнопка по файлу/папке → «Открыть в редакторе файлов DSH»."))
+  const unregister = () => runMenu('unregister', 'edrv.integration.unregister', uiText('右键菜单注册已移除。', "Context menu registration removed.", "Регистрация контекстного меню удалена."))
 
   /** 复制 macOS Automator 配方（含 launcher 实际路径）。 */
   const copyRecipe = () => {
     const text = automatorRecipe(status?.launcher?.path ?? '$HOME/.dsh/dsh-vscode-mode/shell/dsh-open.sh')
     navigator.clipboard?.writeText(text)
-      .then(() => setMessage('配方已复制，粘贴到备忘录按步骤操作即可。'))
+      .then(() => setMessage(uiText('配方已复制，粘贴到备忘录按步骤操作即可。', "Instructions copied. Paste into a note and follow the steps.", "Инструкция скопирована. Вставьте её в заметку и выполните шаги.")))
       .catch(() => setMessage(text))
   }
 
@@ -133,10 +134,10 @@ export function IntegrationSettings() {
   const saveBase = () => {
     const next = String(baseDraft ?? '').trim()
     if (!next) return
-    if (!settings?.set) { setError('设置服务不可用'); return }
+    if (!settings?.set) { setError(uiText('设置服务不可用', "Settings service unavailable", "Сервис настроек недоступен")); return }
     setBusy('base'); setError(''); setMessage('')
     settings.set('integrationBaseUrl', next)
-      .then(() => { setBaseUrl(next); setMessage('深链基址已保存；如已注册右键菜单，请点「注册」刷新 launcher 配置。') })
+      .then(() => { setBaseUrl(next); setMessage(uiText('深链基址已保存；如已注册右键菜单，请点「注册」刷新 launcher 配置。', "Deep-link base URL saved. If the context menu is registered, click Register to refresh the launcher configuration.", "Базовый URL ссылок сохранён. Если контекстное меню зарегистрировано, нажмите «Зарегистрировать» для обновления настроек launcher.")) })
       .catch((e) => setError(String(e)))
       .finally(() => setBusy(''))
   }
@@ -147,7 +148,7 @@ export function IntegrationSettings() {
     rpc('edrv.unity.add', { path: rootDraft.trim() }).then((result) => {
       if (!result.ok) throw new Error(result.error)
       setRootDraft('')
-      setMessage('项目已登记，点「安装」把包复制进项目 Packages/ 目录。')
+      setMessage(uiText('项目已登记，点「安装」把包复制进项目 Packages/ 目录。', "Project registered. Click Install to copy the package into the project's Packages/ directory.", "Проект зарегистрирован. Нажмите «Установить» для копирования пакета в каталог Packages/ проекта."))
       return refreshUnity()
     }).catch((e) => setError(String(e?.message ?? e))).finally(() => setBusy(''))
   }
@@ -158,14 +159,14 @@ export function IntegrationSettings() {
     rpc('edrv.unity.install', { path }).then((result) => {
       if (!result.ok) throw new Error(result.error)
       const project = result.project
-      setMessage('已安装/更新：' + project.title + '（v' + project.installedVersion + '）。Unity 已打开时切回窗口即生效。')
+      setMessage(uiText('已安装/更新：', "Installed/updated: ", "Установлено/обновлено: ") + project.title + uiText('（v', " (v", " (v") + project.installedVersion + uiText('）。Unity 已打开时切回窗口即生效。', "). Switch back to an open Unity window to apply.", "). Переключитесь в открытое окно Unity для применения."))
       return refreshUnity()
     }).catch((e) => setError(String(e?.message ?? e))).finally(() => setBusy(''))
   }
 
   /** 移除登记（不删除已安装的包目录）。 */
   const removeProject = (path) => {
-    if (!window.confirm('移除该项目的登记？（不删除已安装的包目录）')) return
+    if (!window.confirm(uiText('移除该项目的登记？（不删除已安装的包目录）', "Remove this project's registration? The installed package directory will remain.", "Удалить регистрацию проекта? Каталог установленного пакета останется."))) return
     setBusy('remove:' + path); setError(''); setMessage('')
     rpc('edrv.unity.remove', { path })
       .then(refreshUnity)
@@ -178,48 +179,48 @@ export function IntegrationSettings() {
     const text = unity?.sourcePath ?? ''
     if (!text) return
     navigator.clipboard?.writeText(text)
-      .then(() => setMessage('已复制包源路径：' + text))
-      .catch(() => setMessage('包源路径：' + text))
+      .then(() => setMessage(uiText('已复制包源路径：', "Package source path copied: ", "Путь к исходному пакету скопирован: ") + text))
+      .catch(() => setMessage(uiText('包源路径：', "Package source path: ", "Путь к исходному пакету: ") + text))
   }
 
   return React.createElement('section', { className: 'vsm-panel' },
-    React.createElement('h3', { className: 'vsm-panel-title' }, '系统集成'),
+    React.createElement('h3', { className: 'vsm-panel-title' }, uiText('系统集成', "System integration", "Системная интеграция")),
     React.createElement('div', { className: 'vsm-panel-body' },
       React.createElement('p', { style: { margin: '0 0 8px' } },
-        '从文件管理器或 Unity 直接打开 DSH 编辑器。Unity 使用内嵌包，无需修改项目 manifest。'),
+        uiText('从文件管理器或 Unity 直接打开 DSH 编辑器。Unity 使用内嵌包，无需修改项目 manifest。', "Open the DSH editor directly from your file manager or Unity. Unity uses an embedded package without changing the project manifest.", "Открывайте редактор DSH из файлового менеджера или Unity. Unity использует встроенный пакет без изменения манифеста проекта.")),
       React.createElement(SettingNotice, { message: error, error: true }),
       React.createElement(SettingNotice, { message }),
       status && !onWin && React.createElement(PlatformNote, { platform, registered: anyRegistered }),
       React.createElement('label', { className: 'vsm-general-row' },
-        React.createElement('span', null, 'DSH 服务地址'),
+        React.createElement('span', null, uiText('DSH 服务地址', "DSH service URL", "Адрес сервиса DSH")),
         React.createElement(Input, {
           value: baseDraft ?? baseUrl,
           placeholder: 'http://127.0.0.1:3080',
           onChange: (event) => setBaseDraft(event.target.value),
           onKeyDown: (event) => { if (event.key === 'Enter') saveBase() },
         }),
-        React.createElement(Button, { variant: 'outline', size: 'sm', disabled: busy === 'base' || baseDraft === null, onClick: saveBase }, '保存地址'),
+        React.createElement(Button, { variant: 'outline', size: 'sm', disabled: busy === 'base' || baseDraft === null, onClick: saveBase }, uiText('保存地址', "Save URL", "Сохранить адрес")),
       ),
       React.createElement('label', { className: 'vsm-general-row' },
         React.createElement('span', null,
-          '右键菜单 ',
+          uiText('右键菜单 ', "Context menu ", "Контекстное меню "),
           React.createElement('small', { className: 'vsm-devform-note' },
             status
-              ? entriesText(status.entries) + ' · launcher：' + launcherText(status.launcher)
-              : statusError ? '状态获取失败：' + statusError : '读取中…')),
+              ? entriesText(status.entries) + uiText(' · launcher：', " · launcher: ", " · launcher: ") + launcherText(status.launcher)
+              : statusError ? uiText('状态获取失败：', "Failed to load status: ", "Ошибка загрузки состояния: ") + statusError : uiText('读取中…', "Loading…", "Загрузка…"))),
         React.createElement('div', { className: 'vsm-devform-actions' },
-          (onWin || onLinux) && React.createElement('button', { className: 'vsm-primary vsm-small', disabled: busy === 'register', onClick: register }, busy === 'register' ? '注册中…' : '注册'),
-          onMac && React.createElement('button', { className: 'vsm-primary vsm-small', onClick: copyRecipe }, '复制 Automator 配方'),
-          status && React.createElement('button', { disabled: busy === 'unregister' || (!anyRegistered && !onMac), onClick: unregister }, '移除注册'),
+          (onWin || onLinux) && React.createElement('button', { className: 'vsm-primary vsm-small', disabled: busy === 'register', onClick: register }, busy === 'register' ? uiText('注册中…', "Registering…", "Регистрация…") : uiText('注册', "Register", "Зарегистрировать")),
+          onMac && React.createElement('button', { className: 'vsm-primary vsm-small', onClick: copyRecipe }, uiText('复制 Automator 配方', "Copy Automator instructions", "Скопировать инструкцию Automator")),
+          status && React.createElement('button', { disabled: busy === 'unregister' || (!anyRegistered && !onMac), onClick: unregister }, uiText('移除注册', "Remove registration", "Удалить регистрацию")),
         ),
       ),
       React.createElement('div', { className: 'vsm-general-row', style: { alignItems: 'flex-start' } },
         React.createElement('span', null,
-          'Unity 一键安装 ',
+          uiText('Unity 一键安装 ', "Unity automatic installation ", "Автоматическая установка Unity "),
           React.createElement('small', { className: 'vsm-devform-note' },
-            unity ? '包 v' + (unity.sourceVersion ?? '?') + ' · ' + unity.sourcePath : '读取中…')),
+            unity ? uiText('包 v', "Package v", "Пакет v") + (unity.sourceVersion ?? '?') + ' · ' + unity.sourcePath : uiText('读取中…', "Loading…", "Загрузка…"))),
         React.createElement('div', { className: 'vsm-devform-actions' },
-          React.createElement('button', { onClick: copySource }, '复制包源路径'),
+          React.createElement('button', { onClick: copySource }, uiText('复制包源路径', "Copy package source path", "Скопировать путь к исходному пакету")),
         ),
       ),
       (unity?.projects ?? []).map((project) => React.createElement(ProjectRow, {
@@ -230,16 +231,16 @@ export function IntegrationSettings() {
         onRemove: removeProject,
       })),
       React.createElement('label', { className: 'vsm-general-row' },
-        React.createElement('span', null, '添加 Unity 项目'),
+        React.createElement('span', null, uiText('添加 Unity 项目', "Add Unity project", "Добавить проект Unity")),
         React.createElement(Input, {
           value: rootDraft,
-          placeholder: '项目根目录（含 Assets 与 ProjectSettings）',
+          placeholder: uiText('项目根目录（含 Assets 与 ProjectSettings）', "Project root (containing Assets and ProjectSettings)", "Корень проекта (с Assets и ProjectSettings)"),
           onChange: (event) => setRootDraft(event.target.value),
           onKeyDown: (event) => { if (event.key === 'Enter') addProject() },
         }),
-        React.createElement('button', { className: 'vsm-primary vsm-small', disabled: busy === 'add' || !rootDraft.trim(), onClick: addProject }, busy === 'add' ? '校验中…' : '添加'),
+        React.createElement('button', { className: 'vsm-primary vsm-small', disabled: busy === 'add' || !rootDraft.trim(), onClick: addProject }, busy === 'add' ? uiText('校验中…', "Validating…", "Проверка…") : uiText('添加', "Add", "Добавить")),
       ),
-      React.createElement('small', null, '安装 = 复制到 <项目>/Packages/com.dsh.editor（内嵌包）；更新 = 整目录替换；卸载 = 删除该目录。Unity 打开时切回窗口自动刷新生效。插件卸载/重载时会自动清理并恢复右键菜单注册（「移除注册」后不再恢复）。'),
+      React.createElement('small', null, uiText('安装 = 复制到 <项目>/Packages/com.dsh.editor（内嵌包）；更新 = 整目录替换；卸载 = 删除该目录。Unity 打开时切回窗口自动刷新生效。插件卸载/重载时会自动清理并恢复右键菜单注册（「移除注册」后不再恢复）。', "Install copies to <project>/Packages/com.dsh.editor (embedded package). Update replaces the entire directory; uninstall deletes it. Switch back to Unity to refresh. Plugin uninstall/reload cleans up and restores context menu registration (not restored after Remove registration).", "Установка копирует пакет в <проект>/Packages/com.dsh.editor. Обновление заменяет весь каталог; удаление удаляет его. Переключитесь в Unity для обновления. При удалении/перезагрузке плагина регистрация меню очищается и восстанавливается (кроме явно удалённой регистрации).")),
     ),
   )
 }

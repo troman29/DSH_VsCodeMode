@@ -7,6 +7,7 @@
  * 作者 ddj 2026年08月22号 / 2026年08月26号 / 2026年08月27号 / 2026年10月
  */
 import React from 'react'
+import { uiText } from '../uiLocale.js'
 import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 import { SettingRow, SettingNotice } from './SettingsUi.js'
 import { rpc } from '../rpc.js'
@@ -37,14 +38,14 @@ function ServerCard({ server, busy, onRefresh, onToggle, onRemove, onConnect, on
     React.createElement('div', { className: 'vsm-mcp-card-head' },
       React.createElement('div', { className: 'vsm-mcp-title' }, React.createElement('span', { className: 'vsm-mcp-dot ' + statusTone(server) }), server.serverName),
       React.createElement('div', { className: 'vsm-mcp-actions' },
-        React.createElement('button', { disabled: !!busy, onClick: () => onRefresh(server.id), title: '重新装配会话实例' }, '↻'),
-        React.createElement('button', { disabled: !!busy, className: 'vsm-danger', onClick: () => onRemove(server.id), title: '删除 MCP' }, '⌫'),
-        React.createElement('button', { disabled: !!busy, className: 'vsm-switch ' + (server.enabled ? 'on' : ''), onClick: () => onToggle(server), title: '配置启用不代表连接在线', 'aria-label': server.enabled ? '禁用配置（不代表在线）' : '启用配置（不代表在线）', 'aria-pressed': !!server.enabled }, server.enabled ? '●' : '○'),
+        React.createElement('button', { disabled: !!busy, onClick: () => onRefresh(server.id), title: uiText('重新装配会话实例', "Recreate session instance", "Пересоздать экземпляр сеанса") }, '↻'),
+        React.createElement('button', { disabled: !!busy, className: 'vsm-danger', onClick: () => onRemove(server.id), title: uiText('删除 MCP', "Delete MCP", "Удалить MCP") }, '⌫'),
+        React.createElement('button', { disabled: !!busy, className: 'vsm-switch ' + (server.enabled ? 'on' : ''), onClick: () => onToggle(server), title: uiText('配置启用不代表连接在线', "Enabled configuration does not mean connected", "Включённая конфигурация не означает подключение"), 'aria-label': server.enabled ? uiText('禁用配置（不代表在线）', "Disable configuration (not connection status)", "Отключить конфигурацию (не статус подключения)") : uiText('启用配置（不代表在线）', "Enable configuration (not connection status)", "Включить конфигурацию (не статус подключения)"), 'aria-pressed': !!server.enabled }, server.enabled ? '●' : '○'),
       ),
     ),
-    React.createElement('div', { className: 'vsm-mcp-meta' }, statusOf(server), ' · ', server.toolCount, ' 个工具 · ', server.transport,
-      server.instanceCount !== undefined ? ' · ' + server.instanceCount + ' 个连接实例' : '',
-      server.sessionCount !== undefined ? ' · ' + server.sessionCount + ' 个会话使用' : ''),
+    React.createElement('div', { className: 'vsm-mcp-meta' }, statusOf(server), ' · ', server.toolCount, uiText(' 个工具 · ', " tools · ", " инструментов · "), server.transport,
+      server.instanceCount !== undefined ? ' · ' + server.instanceCount + uiText(' 个连接实例', " connection instances", " экземпляров подключения") : '',
+      server.sessionCount !== undefined ? ' · ' + server.sessionCount + uiText(' 个会话使用', " sessions using it", " использующих сеансов") : ''),
     server.policy && React.createElement(ProjectPolicy, { server, busy, onConnect, onPolicy }),
     server.error && React.createElement('div', { className: 'vsm-mcp-error' }, server.error),
     React.createElement('div', { className: 'vsm-mcp-tools' }, server.tools.map((tool) => React.createElement('span', { key: tool.name, className: 'vsm-mcp-chip', title: tool.description || tool.name }, tool.name))),
@@ -58,16 +59,16 @@ function ProjectPolicy({ server, busy, onConnect, onPolicy }) {
   /** @author ddj 2026年10月20号 @param event Sharing selection. Requires acknowledgement before state sharing. */
   const sharing = (event) => {
     const mode = event.target.value
-    if (mode === 'workspace' && !window.confirm('同一工作区的会话将共享此 MCP 的连接和内部状态；工具串行不等于业务状态隔离。确认服务适合共享？')) return
+    if (mode === 'workspace' && !window.confirm(uiText('同一工作区的会话将共享此 MCP 的连接和内部状态；工具串行不等于业务状态隔离。确认服务适合共享？', "Sessions in this workspace will share this MCP connection and internal state. Serial tool execution does not isolate application state. Is this service safe to share?", "Сеансы этого рабочего пространства разделят подключение и внутреннее состояние MCP. Последовательный вызов инструментов не изолирует состояние. Сервис допускает совместное использование?"))) return
     onPolicy?.(server, { ...server.policy, sharing: mode })
   }
   return React.createElement('div', { className: 'vsm-mcp-meta' },
-    React.createElement('label', null, '启动 ', React.createElement('select', { disabled: !!busy, value: server.policy.startup, onChange: startup },
-      React.createElement('option', { value: 'on-demand' }, '按需启动'), React.createElement('option', { value: 'background' }, '后台预热'))),
-    React.createElement('label', null, ' 连接 ', React.createElement('select', { disabled: !!busy, value: server.policy.sharing, onChange: sharing },
-      React.createElement('option', { value: 'agent' }, '逐会话隔离'), React.createElement('option', { value: 'workspace' }, '工作区共享（共享状态）'))),
-    React.createElement('button', { disabled: !!busy || !server.enabled, onClick: onConnect }, '连接当前活跃会话'),
-    React.createElement('small', null, '默认按需启动，不阻塞新对话；首次使用仍需等待。共享仅显式启用。'))
+    React.createElement('label', null, uiText('启动 ', "Startup ", "Запуск "), React.createElement('select', { disabled: !!busy, value: server.policy.startup, onChange: startup },
+      React.createElement('option', { value: 'on-demand' }, uiText('按需启动', "On demand", "По требованию")), React.createElement('option', { value: 'background' }, uiText('后台预热', "Background warm-up", "Фоновый прогрев")))),
+    React.createElement('label', null, uiText(' 连接 ', " Connection ", " Подключение "), React.createElement('select', { disabled: !!busy, value: server.policy.sharing, onChange: sharing },
+      React.createElement('option', { value: 'agent' }, uiText('逐会话隔离', "Isolated per session", "Изоляция по сеансам")), React.createElement('option', { value: 'workspace' }, uiText('工作区共享（共享状态）', "Shared workspace (shared state)", "Общее для пространства (общее состояние)")))),
+    React.createElement('button', { disabled: !!busy || !server.enabled, onClick: onConnect }, uiText('连接当前活跃会话', "Connect current active session", "Подключить текущий активный сеанс")),
+    React.createElement('small', null, uiText('默认按需启动，不阻塞新对话；首次使用仍需等待。共享仅显式启用。', "Starts on demand by default without blocking new conversations. First use still requires waiting. Sharing requires explicit activation.", "По умолчанию запускается по требованию, не блокируя новые диалоги. Первый вызов требует ожидания. Совместный доступ включается явно.")))
 }
 
 /** 按项目标题或路径过滤，大小写不敏感。 */
@@ -108,12 +109,12 @@ function ProjectPicker({ projects, value, onChange }) {
   }
   return React.createElement('div', { className: 'vsm-project-picker', ref: rootRef },
     React.createElement('button', { className: 'vsm-project-picker-trigger', role: 'combobox', 'aria-expanded': open, onClick: () => setOpen((old) => !old) },
-      React.createElement('span', { className: 'vsm-project-picker-label' }, selected?.title || '选择项目', selected && React.createElement('small', null, selected.workspacePath)),
+      React.createElement('span', { className: 'vsm-project-picker-label' }, selected?.title || uiText('选择项目', "Select project", "Выберите проект"), selected && React.createElement('small', null, selected.workspacePath)),
       React.createElement('span', { className: 'vsm-project-picker-arrow' }, open ? '⌃' : '⌄'),
     ),
     open && React.createElement('div', { className: 'vsm-project-picker-menu' },
-      React.createElement('input', { autoFocus: true, className: 'vsm-project-picker-search', value: query, placeholder: '搜索项目名称或路径…', onChange: (event) => { setQuery(event.target.value); setHighlight(0) }, onKeyDown: keyDown }),
-      React.createElement('div', { className: 'vsm-project-picker-options', role: 'listbox' }, filtered.length ? filtered.map((project, index) => React.createElement('button', { key: project.workspacePath, role: 'option', 'aria-selected': project.workspacePath === value, className: 'vsm-project-option ' + (index === highlight ? 'highlight' : '') + (project.workspacePath === value ? ' selected' : ''), onMouseEnter: () => setHighlight(index), onClick: () => choose(project) }, React.createElement('span', null, project.title), React.createElement('small', null, project.workspacePath, ' · ', project.servers.length, ' 个 MCP'))) : React.createElement('div', { className: 'vsm-project-picker-empty' }, '没有匹配的项目')),
+      React.createElement('input', { autoFocus: true, className: 'vsm-project-picker-search', value: query, placeholder: uiText('搜索项目名称或路径…', "Search project name or path…", "Поиск по имени или пути проекта…"), onChange: (event) => { setQuery(event.target.value); setHighlight(0) }, onKeyDown: keyDown }),
+      React.createElement('div', { className: 'vsm-project-picker-options', role: 'listbox' }, filtered.length ? filtered.map((project, index) => React.createElement('button', { key: project.workspacePath, role: 'option', 'aria-selected': project.workspacePath === value, className: 'vsm-project-option ' + (index === highlight ? 'highlight' : '') + (project.workspacePath === value ? ' selected' : ''), onMouseEnter: () => setHighlight(index), onClick: () => choose(project) }, React.createElement('span', null, project.title), React.createElement('small', null, project.workspacePath, ' · ', project.servers.length, uiText(' 个 MCP', " MCP servers", " серверов MCP")))) : React.createElement('div', { className: 'vsm-project-picker-empty' }, uiText('没有匹配的项目', "No matching projects", "Подходящих проектов нет"))),
     ),
   )
 }
@@ -122,12 +123,12 @@ function ProjectPicker({ projects, value, onChange }) {
 function ProjectGroup({ project, busy, onAdd, onRefresh, onToggle, onRemove, onConnect, onPolicy }) {
   const head = React.createElement('div', { className: 'vsm-project-head' },
     React.createElement('div', { className: 'vsm-project-title' }, React.createElement('span', { className: 'vsm-project-icon' }, '▣'), React.createElement('div', null, React.createElement('span', { className: 'vsm-project-name' }, project.title), React.createElement('span', { className: 'vsm-project-path' }, project.workspacePath))),
-    React.createElement('button', { className: 'vsm-primary vsm-small', disabled: !!busy, onClick: () => onAdd(project) }, '+ 添加 MCP'),
+    React.createElement('button', { className: 'vsm-primary vsm-small', disabled: !!busy, onClick: () => onAdd(project) }, uiText('+ 添加 MCP', "+ Add MCP", "+ Добавить MCP")),
   )
   let body
-  if (project.missingDir) body = React.createElement('div', { className: 'vsm-project-empty' }, '项目目录已不存在，无法管理 MCP')
+  if (project.missingDir) body = React.createElement('div', { className: 'vsm-project-empty' }, uiText('项目目录已不存在，无法管理 MCP', "Project directory no longer exists; MCP management is unavailable", "Каталог проекта отсутствует; управление MCP недоступно"))
   else if (project.fileError) body = React.createElement('div', { className: 'vsm-mcp-error vsm-mcp-banner' }, project.fileError)
-  else if (!project.servers.length) body = React.createElement('div', { className: 'vsm-project-empty' }, '此项目未配置 MCP')
+  else if (!project.servers.length) body = React.createElement('div', { className: 'vsm-project-empty' }, uiText('此项目未配置 MCP', "No MCP configured for this project", "MCP для этого проекта не настроен"))
   else body = project.servers.map((server) => React.createElement(ServerCard, { key: server.serverName, server, busy, onConnect: () => onConnect(project, server), onPolicy: (server, policy) => onPolicy(project, server, policy), onRefresh: (id) => onRefresh(project, server, id), onToggle: () => onToggle(project, server), onRemove: (id) => onRemove(project, server, id) }))
   return React.createElement('section', { className: 'vsm-project' }, head, body)
 }
@@ -183,14 +184,14 @@ function GeneralSettings({ registry, getShortcuts }) {
   }, [])
   const save = (value) => {
     setTool(value); setBusy(true); setError('')
-    if (!settings?.set) { setError('设置服务不可用'); setBusy(false); return }
+    if (!settings?.set) { setError(uiText('设置服务不可用', "Settings service unavailable", "Сервис настроек недоступен")); setBusy(false); return }
     settings.set('fileOpenTool', value).catch((e) => setError(String(e))).finally(() => setBusy(false))
   }
   /** 提交侧边栏最小宽度（归一化夹取 180–560 后持久化）。 */
   const saveMinW = (raw) => {
     const next = normalizeSidebarMinWidth(raw)
     setMinW(next); setBusy(true); setError('')
-    if (!settings?.set) { setError('设置服务不可用'); setBusy(false); return }
+    if (!settings?.set) { setError(uiText('设置服务不可用', "Settings service unavailable", "Сервис настроек недоступен")); setBusy(false); return }
     settings.set('sidebarMinWidth', next).catch((e) => setError(String(e))).finally(() => setBusy(false))
   }
   /** 结束输入（blur/Enter）时提交草稿。 */
@@ -203,7 +204,7 @@ function GeneralSettings({ registry, getShortcuts }) {
   const saveLimit = (raw) => {
     const next = normalizeMaxOpenEditors(raw)
     setLimit(next); setBusy(true); setError('')
-    if (!settings?.set) { setError('设置服务不可用'); setBusy(false); return }
+    if (!settings?.set) { setError(uiText('设置服务不可用', "Settings service unavailable", "Сервис настроек недоступен")); setBusy(false); return }
     settings.set('maxOpenEditors', next).catch((e) => setError(String(e))).finally(() => setBusy(false))
   }
   /** 结束输入（blur/Enter）时提交页签上限草稿。 */
@@ -216,7 +217,7 @@ function GeneralSettings({ registry, getShortcuts }) {
   const saveNative = (raw) => {
     const next = String(raw ?? '').trim() || DEFAULT_NATIVE_CSV
     setNativeSaved(next); setNativeDraft(null); setBusy(true); setError('')
-    if (!settings?.set) { setError('设置服务不可用'); setBusy(false); return }
+    if (!settings?.set) { setError(uiText('设置服务不可用', "Settings service unavailable", "Сервис настроек недоступен")); setBusy(false); return }
     settings.set('nativeOpenExts', next).catch((e) => setError(String(e))).finally(() => setBusy(false))
   }
   /** 结束输入（blur/Enter）时提交原生打开范围草稿。 */
@@ -238,7 +239,7 @@ function GeneralSettings({ registry, getShortcuts }) {
     setBusy(true)
     setError('')
     if (!settings?.set) {
-      setError('设置服务不可用')
+      setError(uiText('设置服务不可用', "Settings service unavailable", "Сервис настроек недоступен"))
       apply(!value)
       setBusy(false)
       return
@@ -249,35 +250,35 @@ function GeneralSettings({ registry, getShortcuts }) {
     }).finally(() => setBusy(false))
   }
   const closeDevForm = () => {
-    if (!window.confirm('关闭开发形态：插件将切换为正式版安装（版本依赖 + 删除工作区链接），pnpm 装配后需重启 DSH 生效。确认关闭？')) return
+    if (!window.confirm(uiText('关闭开发形态：插件将切换为正式版安装（版本依赖 + 删除工作区链接），pnpm 装配后需重启 DSH 生效。确认关闭？', "Disable development mode? This switches to a release installation (version dependency and removal of the workspace link). Restart DSH after pnpm assembly to apply.", "Отключить режим разработки? Плагин перейдёт на релизную установку (зависимость версии вместо ссылки на рабочее пространство). После сборки pnpm перезапустите DSH."))) return
     setDevBusy(true)
     setDevMessage('')
     rpc('vscode.devFormSet', { enabled: false }).then((result) => {
-      if (!result.ok) { setDevMessage('关闭失败：' + String(result.error)); return }
+      if (!result.ok) { setDevMessage(uiText('关闭失败：', "Failed to disable: ", "Не удалось отключить: ") + String(result.error)); return }
       setDevForm(result.devForm)
-      setDevMessage(result.restart ? '已切换为正式版，重启 DSH 后生效。' : '已关闭开发形态。')
-    }).catch((e) => setDevMessage('关闭失败：' + String(e))).finally(() => setDevBusy(false))
+      setDevMessage(result.restart ? uiText('已切换为正式版，重启 DSH 后生效。', "Switched to release mode. Restart DSH to apply.", "Выбран релизный режим. Перезапустите DSH для применения.") : uiText('已关闭开发形态。', "Development mode disabled.", "Режим разработки отключён."))
+    }).catch((e) => setDevMessage(uiText('关闭失败：', "Failed to disable: ", "Не удалось отключить: ") + String(e))).finally(() => setDevBusy(false))
   }
   /** 检查 npm registry 是否有比当前版本更新的发布（结果落 updateState）。 */
   const runUpdateCheck = () => {
     setUpdateBusy(true)
     setUpdateMessage('')
     rpc('vscode.updateCheck', {}).then((result) => {
-      if (!result.ok) { setUpdateMessage('检查失败：' + String(result.error)); return }
+      if (!result.ok) { setUpdateMessage(uiText('检查失败：', "Check failed: ", "Ошибка проверки: ") + String(result.error)); return }
       setUpdateState({ current: result.current ?? '', latest: result.latest ?? '', hasUpdate: result.hasUpdate === true })
-      setUpdateMessage(result.hasUpdate ? '发现新版本 v' + result.latest : '已是最新版本。')
-    }).catch((e) => setUpdateMessage('检查失败：' + String(e))).finally(() => setUpdateBusy(false))
+      setUpdateMessage(result.hasUpdate ? uiText('发现新版本 v', "New version available: v", "Доступна новая версия v") + result.latest : uiText('已是最新版本。', "Already up to date.", "Установлена актуальная версия."))
+    }).catch((e) => setUpdateMessage(uiText('检查失败：', "Check failed: ", "Ошибка проверки: ") + String(e))).finally(() => setUpdateBusy(false))
   }
   /** 触发官方 pluginManager「先删后装」自我更新（页面会断开，成功与否均不再回报本页）。 */
   const runSelfUpdate = () => {
     const target = updateState?.latest ?? ''
-    if (!window.confirm('更新到 v' + target + '：更新中插件会先卸载再安装，页面将短暂断开，完成后请刷新页面或重启 DSH。\n注意：若安装失败（如断网），插件会保持未安装状态，可在官方插件管理页重新安装恢复。确认更新？')) return
+    if (!window.confirm(uiText('更新到 v', "Update to v", "Обновить до v") + target + uiText('：更新中插件会先卸载再安装，页面将短暂断开，完成后请刷新页面或重启 DSH。\n注意：若安装失败（如断网），插件会保持未安装状态，可在官方插件管理页重新安装恢复。确认更新？', ": the plugin is uninstalled before reinstalling, briefly disconnecting this page. Refresh or restart DSH afterward.\nWarning: if installation fails (e.g. offline), the plugin stays uninstalled. Reinstall it from official plugin management to recover. Confirm update?", ": плагин будет удалён перед повторной установкой, страница временно отключится. Затем обновите страницу или перезапустите DSH.\nВнимание: при ошибке установки (например без сети) плагин останется удалённым. Восстановите его через стандартное управление плагинами. Подтвердить обновление?"))) return
     setUpdateBusy(true)
     setUpdateMessage('')
     rpc('vscode.updateSelf', {}).then((result) => {
-      if (!result.ok) { setUpdateMessage('更新失败：' + String(result.error)); setUpdateBusy(false); return }
-      setUpdateMessage('更新已开始，页面即将断开；完成后请刷新页面或重启 DSH。')
-    }).catch((e) => { setUpdateMessage('更新失败：' + String(e)); setUpdateBusy(false) })
+      if (!result.ok) { setUpdateMessage(uiText('更新失败：', "Update failed: ", "Ошибка обновления: ") + String(result.error)); setUpdateBusy(false); return }
+      setUpdateMessage(uiText('更新已开始，页面即将断开；完成后请刷新页面或重启 DSH。', "Update started; the page will disconnect. Refresh the page or restart DSH when complete.", "Обновление началось; страница отключится. После завершения обновите страницу или перезапустите DSH."))
+    }).catch((e) => { setUpdateMessage(uiText('更新失败：', "Update failed: ", "Ошибка обновления: ") + String(e)); setUpdateBusy(false) })
   }
   /**
    * 唤起官方快捷键弹窗（键位统一归官方机制；入口不可用时展示手动打开方式）。
@@ -287,67 +288,67 @@ function GeneralSettings({ registry, getShortcuts }) {
     const probe = typeof getShortcuts === 'function' ? getShortcuts : () => null
     setKbMessage(openOfficialShortcuts(probe()))
   }
-  const options = [{ id: AUTO_OPEN_TOOL, label: '自动选择', description: '按当前已注册工具自动选择' }, ...availableOpeners(registry).map((item) => ({ id: item.id, label: item.label, description: item.description }))]
+  const options = [{ id: AUTO_OPEN_TOOL, label: uiText('自动选择', "Automatic", "Автоматически"), description: uiText('按当前已注册工具自动选择', "Automatically select a registered tool", "Автоматический выбор зарегистрированного инструмента") }, ...availableOpeners(registry).map((item) => ({ id: item.id, label: item.label, description: item.description }))]
   const currentOption = options.some((item) => item.id === tool) ? tool : AUTO_OPEN_TOOL
   const devFormRow = devForm?.enabled ? React.createElement('div', { className: 'vsm-general-row' },
-    React.createElement('span', null, '开发形态', React.createElement('small', { className: 'vsm-devform-note' }, '工作区链接安装：' + devForm.path)),
+    React.createElement('span', null, uiText('开发形态', "Development mode", "Режим разработки"), React.createElement('small', { className: 'vsm-devform-note' }, uiText('工作区链接安装：', "Workspace-link installation: ", "Установка через ссылку на рабочее пространство: ") + devForm.path)),
     React.createElement('div', { className: 'vsm-devform-actions' },
       devMessage && React.createElement('small', { className: 'vsm-devform-msg' }, devMessage),
-      React.createElement('button', { className: 'vsm-devform-close', disabled: devBusy, onClick: closeDevForm }, devBusy ? '切换中…' : '关闭开发形态'),
+      React.createElement('button', { className: 'vsm-devform-close', disabled: devBusy, onClick: closeDevForm }, devBusy ? uiText('切换中…', "Switching…", "Переключение…") : uiText('关闭开发形态', "Disable development mode", "Отключить режим разработки")),
     ),
   ) : null
   const updateRow = React.createElement('div', { className: 'vsm-general-row' },
-    React.createElement('span', null, '插件更新',
+    React.createElement('span', null, uiText('插件更新', "Plugin updates", "Обновления плагина"),
       React.createElement('small', { className: 'vsm-devform-note' },
-        '当前版本 v' + (updateState?.current ?? '') + (devForm?.enabled ? '；开发形态下请走工作区同步流程' : ''))),
+        uiText('当前版本 v', "Current version v", "Текущая версия v") + (updateState?.current ?? '') + (devForm?.enabled ? uiText('；开发形态下请走工作区同步流程', "; use workspace synchronization in development mode", "; в режиме разработки используйте синхронизацию рабочего пространства") : ''))),
     React.createElement('div', { className: 'vsm-devform-actions' },
       updateMessage && React.createElement('small', { className: 'vsm-devform-msg' }, updateMessage),
       updateState?.hasUpdate
-        ? React.createElement('button', { disabled: updateBusy || devForm?.enabled === true, onClick: runSelfUpdate, title: devForm?.enabled ? '开发形态下请走工作区同步流程' : undefined }, updateBusy ? '更新中…' : '更新到 v' + (updateState.latest ?? ''))
-        : React.createElement('button', { disabled: updateBusy || devForm?.enabled === true, onClick: runUpdateCheck, title: devForm?.enabled ? '开发形态下请走工作区同步流程' : undefined }, updateBusy ? '检查中…' : '检查更新'),
+        ? React.createElement('button', { disabled: updateBusy || devForm?.enabled === true, onClick: runSelfUpdate, title: devForm?.enabled ? uiText('开发形态下请走工作区同步流程', "Use workspace synchronization in development mode", "В режиме разработки используйте синхронизацию рабочего пространства") : undefined }, updateBusy ? uiText('更新中…', "Updating…", "Обновление…") : uiText('更新到 v', "Update to v", "Обновить до v") + (updateState.latest ?? ''))
+        : React.createElement('button', { disabled: updateBusy || devForm?.enabled === true, onClick: runUpdateCheck, title: devForm?.enabled ? uiText('开发形态下请走工作区同步流程', "Use workspace synchronization in development mode", "В режиме разработки используйте синхронизацию рабочего пространства") : undefined }, updateBusy ? uiText('检查中…', "Checking…", "Проверка…") : uiText('检查更新', "Check for updates", "Проверить обновления")),
     ),
   )
   return React.createElement('section', { className: 'vsm-general-page' },
 
-    unavailable && React.createElement('div', { className: 'vsm-mcp-error vsm-mcp-banner' }, '设置服务暂不可用，当前使用自动选择。'),
+    unavailable && React.createElement('div', { className: 'vsm-mcp-error vsm-mcp-banner' }, uiText('设置服务暂不可用，当前使用自动选择。', "Settings service is temporarily unavailable. Automatic selection is active.", "Сервис настроек временно недоступен. Используется автоматический выбор.")),
     error && React.createElement('div', { className: 'vsm-mcp-error vsm-mcp-banner' }, error),
     React.createElement('section', { className: 'vsm-panel' },
-      React.createElement('h3', { className: 'vsm-panel-title' }, '文件打开'),
+      React.createElement('h3', { className: 'vsm-panel-title' }, uiText('文件打开', "Opening files", "Открытие файлов")),
       React.createElement('div', { className: 'vsm-panel-body' },
-        React.createElement('label', { className: 'vsm-general-row' }, React.createElement('span', null, '文件链接使用工具'), React.createElement('select', { value: currentOption, disabled: loading || unavailable || notReady || busy || snapshot?.writable === false, onChange: (event) => save(event.target.value) }, options.map((item) => React.createElement('option', { key: item.id, value: item.id }, item.label))), loading && React.createElement('small', null, '读取中…')),
+        React.createElement('label', { className: 'vsm-general-row' }, React.createElement('span', null, uiText('文件链接使用工具', "Tool for file links", "Инструмент для файловых ссылок")), React.createElement('select', { value: currentOption, disabled: loading || unavailable || notReady || busy || snapshot?.writable === false, onChange: (event) => save(event.target.value) }, options.map((item) => React.createElement('option', { key: item.id, value: item.id }, item.label))), loading && React.createElement('small', null, uiText('读取中…', "Loading…", "Загрузка…"))),
 
       ),
     ),
     React.createElement('section', { className: 'vsm-panel' },
-      React.createElement('h3', { className: 'vsm-panel-title' }, '编辑器'),
+      React.createElement('h3', { className: 'vsm-panel-title' }, uiText('编辑器', "Editor", "Редактор")),
       React.createElement('div', { className: 'vsm-panel-body' },
-        React.createElement(SettingRow, { label: '侧边栏最小宽度', description: '180–560 px；拖拽低于此宽度时自动隐藏。' },
+        React.createElement(SettingRow, { label: uiText('侧边栏最小宽度', "Minimum sidebar width", "Минимальная ширина боковой панели"), description: uiText('180–560 px；拖拽低于此宽度时自动隐藏。', "180–560 px; dragging below this width hides the sidebar.", "180–560 px; при уменьшении ниже этой ширины панель скрывается.") },
           React.createElement(Input, {
             type: 'number', min: 180, max: 560, step: 10,
             value: minDraft ?? minW,
             disabled: loading || unavailable || notReady || busy || snapshot?.writable === false,
-            title: '180–560 px；拖拽侧边栏低于该宽度时自动隐藏',
+            title: uiText('180–560 px；拖拽侧边栏低于该宽度时自动隐藏', "180–560 px; hide the sidebar when dragged below this width", "180–560 px; скрывать панель при уменьшении ниже этой ширины"),
             onChange: (event) => setMinDraft(event.target.value),
             onBlur: commitMinW,
             onKeyDown: (event) => { if (event.key === 'Enter') commitMinW() },
           })),
-        React.createElement(SettingRow, { label: '页签数量上限', description: '0 表示不限制；超限时关闭最久未使用的页签，固定页签除外。' },
+        React.createElement(SettingRow, { label: uiText('页签数量上限', "Maximum open tabs", "Максимум открытых вкладок"), description: uiText('0 表示不限制；超限时关闭最久未使用的页签，固定页签除外。', "0 means unlimited. Above the limit, close the least recently used unpinned tab.", "0 — без ограничения. При превышении закрывается самая давно неиспользованная незакреплённая вкладка.") },
           React.createElement(Input, {
             type: 'number', min: 0, max: EDITOR_LIMIT_CEIL, step: 1,
             value: limitDraft ?? limit,
             disabled: loading || unavailable || notReady || busy || snapshot?.writable === false,
-            title: '0 = 不限制；超出上限时自动关闭最久未使用的页签（固定页签不受影响）',
+            title: uiText('0 = 不限制；超出上限时自动关闭最久未使用的页签（固定页签不受影响）', "0 = unlimited; exceeding the limit closes the least recently used tab (pinned tabs are unaffected)", "0 = без ограничения; при превышении закрывается самая давно неиспользованная вкладка (кроме закреплённых)"),
             onChange: (event) => setLimitDraft(event.target.value),
             onBlur: commitLimit,
             onKeyDown: (event) => { if (event.key === 'Enter') commitLimit() },
           })),
-        React.createElement(SettingRow, { label: '原生预览文件类型', description: '后缀以逗号分隔；留空恢复默认 Office 与二进制类型。CSV、TSV 需显式加入。' },
+        React.createElement(SettingRow, { label: uiText('原生预览文件类型', "Native preview file types", "Типы файлов для встроенного просмотра"), description: uiText('后缀以逗号分隔；留空恢复默认 Office 与二进制类型。CSV、TSV 需显式加入。', "Comma-separated extensions; leave empty to restore default Office and binary types. Add CSV and TSV explicitly.", "Расширения через запятую; пустое поле восстанавливает типы Office и двоичные файлы по умолчанию. CSV и TSV добавляются явно.") },
           React.createElement(Input, {
             type: 'text',
             value: nativeDraft ?? nativeSaved,
             disabled: loading || unavailable || notReady || busy || snapshot?.writable === false,
-            title: '逗号分隔后缀（如 doc,xlsx）：文件树点击命中时用 DSH 官方预览原生打开；留空 = 默认让位清单（Office + 不可预览二进制）',
-            placeholder: 'doc,xlsx,…（留空恢复默认）',
+            title: uiText('逗号分隔后缀（如 doc,xlsx）：文件树点击命中时用 DSH 官方预览原生打开；留空 = 默认让位清单（Office + 不可预览二进制）', "Comma-separated extensions (e.g. doc,xlsx): matching files open in DSH native preview. Empty = defaults (Office and non-previewable binaries).", "Расширения через запятую (например doc,xlsx): соответствующие файлы открываются встроенным просмотром DSH. Пустое поле = Office и двоичные файлы по умолчанию."),
+            placeholder: uiText('doc,xlsx,…（留空恢复默认）', "doc,xlsx,… (empty restores defaults)", "doc,xlsx,… (пустое поле восстанавливает значения)"),
             onChange: (event) => setNativeDraft(event.target.value),
             onBlur: commitNative,
             onKeyDown: (event) => { if (event.key === 'Enter') commitNative() },
@@ -355,15 +356,15 @@ function GeneralSettings({ registry, getShortcuts }) {
       ),
     ),
     React.createElement('section', { className: 'vsm-panel' },
-      React.createElement('h3', { className: 'vsm-panel-title' }, '交互'),
+      React.createElement('h3', { className: 'vsm-panel-title' }, uiText('交互', "Interaction", "Взаимодействие")),
       React.createElement('div', { className: 'vsm-panel-body' },
-        React.createElement(SettingRow, { label: '引用接入', description: '资源管理器拖入的文件、编辑器里复制的行选区、粘贴的文件会落成对话引用 chip；关闭后完全走原生行为。' },
+        React.createElement(SettingRow, { label: uiText('引用接入', "Reference intake", "Добавление ссылок в диалог"), description: uiText('资源管理器拖入的文件、编辑器里复制的行选区、粘贴的文件会落成对话引用 chip；关闭后完全走原生行为。', "Dragged files, copied editor line selections, and pasted files become conversation reference chips. Disable to use native behavior.", "Перетаскиваемые файлы, скопированные строки редактора и вставленные файлы становятся ссылками в диалоге. Отключите для стандартного поведения.") },
           React.createElement('input', {
             type: 'checkbox', checked: refIntakeOn,
             disabled: loading || unavailable || notReady || busy || snapshot?.writable === false,
             onChange: (event) => saveToggle('refIntake', event.target.checked, setRefIntakeOn),
           })),
-        React.createElement(SettingRow, { label: '搜索替换', description: '搜索面板显示替换入口（先预览命中再确认写盘）；关闭后只保留搜索。' },
+        React.createElement(SettingRow, { label: uiText('搜索替换', "Search and replace", "Поиск и замена"), description: uiText('搜索面板显示替换入口（先预览命中再确认写盘）；关闭后只保留搜索。', "Show replacement controls in search (preview matches before confirming writes). Disable to keep search only.", "Показывать замену в панели поиска (предпросмотр совпадений перед подтверждением записи). При отключении остаётся только поиск.") },
           React.createElement('input', {
             type: 'checkbox', checked: searchReplaceOn,
             disabled: loading || unavailable || notReady || busy || snapshot?.writable === false,
@@ -372,15 +373,15 @@ function GeneralSettings({ registry, getShortcuts }) {
       ),
     ),
     React.createElement('section', { className: 'vsm-panel' },
-      React.createElement('h3', { className: 'vsm-panel-title' }, '改动捕获'),
+      React.createElement('h3', { className: 'vsm-panel-title' }, uiText('改动捕获', "Change capture", "Отслеживание изменений")),
       React.createElement('div', { className: 'vsm-panel-body' },
-        React.createElement(SettingRow, { label: '实时捕获', description: 'agent 用 shell 或脚本（node -e、prettier、生成器）写文件时，改动也会进审查面板；关闭后只认 edit/write 等写工具。' },
+        React.createElement(SettingRow, { label: uiText('实时捕获', "Live capture", "Отслеживание в реальном времени"), description: uiText('agent 用 shell 或脚本（node -e、prettier、生成器）写文件时，改动也会进审查面板；关闭后只认 edit/write 等写工具。', "Include changes written by agents through shell commands or scripts (node -e, prettier, generators) in the review panel. Disable to track only write tools such as edit/write.", "Включать в проверку изменения агента через shell и скрипты (node -e, prettier, генераторы). При отключении учитываются только инструменты записи, например edit/write.") },
           React.createElement('input', {
             type: 'checkbox', checked: extWatchOn,
             disabled: loading || unavailable || notReady || busy || snapshot?.writable === false,
             onChange: (event) => saveToggle('externalWatch', event.target.checked, setExtWatchOn),
           })),
-        React.createElement(SettingRow, { label: '补扫对齐', description: '启动时与每 10 分钟用版本库比对一次，把漏采的改动补录进来；关闭后仍可手动补扫。' },
+        React.createElement(SettingRow, { label: uiText('补扫对齐', "Catch-up scan", "Дополнительное сканирование"), description: uiText('启动时与每 10 分钟用版本库比对一次，把漏采的改动补录进来；关闭后仍可手动补扫。', "Compare with version control at startup and every 10 minutes to capture missed changes. Manual scans remain available when disabled.", "Сравнивать с репозиторием при запуске и каждые 10 минут для поиска пропущенных изменений. Ручное сканирование доступно и при отключении.") },
           React.createElement('input', {
             type: 'checkbox', checked: extScanOn,
             disabled: loading || unavailable || notReady || busy || snapshot?.writable === false,
@@ -389,17 +390,17 @@ function GeneralSettings({ registry, getShortcuts }) {
       ),
     ),
     React.createElement('section', { className: 'vsm-panel' },
-      React.createElement('h3', { className: 'vsm-panel-title' }, '快捷键'),
+      React.createElement('h3', { className: 'vsm-panel-title' }, uiText('快捷键', "Keyboard shortcuts", "Сочетания клавиш")),
       React.createElement('div', { className: 'vsm-panel-body' },
         React.createElement('label', { className: 'vsm-general-row' },
-          React.createElement('span', null, '键位配置',
+          React.createElement('span', null, uiText('键位配置', "Shortcut configuration", "Настройка сочетаний клавиш"),
             React.createElement('small', { className: 'vsm-devform-note' },
-              '在官方快捷键面板统一配置插件与 DSH 命令，支持录键、冲突检查及恢复默认。')),
-          React.createElement(Button, { variant: 'outline', size: 'sm', onClick: openShortcuts }, '配置快捷键')),
+              uiText('在官方快捷键面板统一配置插件与 DSH 命令，支持录键、冲突检查及恢复默认。', "Configure plugin and DSH commands in the official shortcut panel, with key recording, conflict checks, and reset to defaults.", "Настройте команды плагина и DSH в стандартной панели сочетаний клавиш: запись клавиш, проверка конфликтов и сброс настроек."))),
+          React.createElement(Button, { variant: 'outline', size: 'sm', onClick: openShortcuts }, uiText('配置快捷键', "Configure shortcuts", "Настроить сочетания клавиш"))),
         kbMessage && React.createElement('small', { className: 'vsm-devform-msg' }, kbMessage)),
     ),
     React.createElement('section', { className: 'vsm-panel' },
-      React.createElement('h3', { className: 'vsm-panel-title' }, '安装与更新'),
+      React.createElement('h3', { className: 'vsm-panel-title' }, uiText('安装与更新', "Installation and updates", "Установка и обновления")),
       React.createElement('div', { className: 'vsm-panel-body' }, devFormRow, updateRow)),
     React.createElement(SvnSettingsSection, null),
     React.createElement(IntegrationSettings, null),
@@ -408,11 +409,11 @@ function GeneralSettings({ registry, getShortcuts }) {
 
 /** 检测快照 → 一行状态文案（未检测/未检出/能力可用性）。 */
 function svnStatusText(info) {
-  if (!info) return '未检测（打开编辑器后自动检测）'
-  if (!info.managed) return '当前工作区不受 SVN 管理（SVN 入口隐藏）'
-  const parts = [info.svnCli ? 'svn CLI 可用' : 'svn CLI 不可用（更新不可用）']
-  parts.push(info.tortoise ? 'TortoiseSVN 可用' : 'TortoiseSVN 不可用（仅 Windows）')
-  return '受 SVN 管理 · ' + parts.join(' · ')
+  if (!info) return uiText('未检测（打开编辑器后自动检测）', "Not checked (checked automatically when the editor opens)", "Не проверено (проверка при открытии редактора)")
+  if (!info.managed) return uiText('当前工作区不受 SVN 管理（SVN 入口隐藏）', "Workspace is not managed by SVN (SVN controls hidden)", "Рабочее пространство не использует SVN (элементы SVN скрыты)")
+  const parts = [info.svnCli ? uiText('svn CLI 可用', "svn CLI available", "svn CLI доступен") : uiText('svn CLI 不可用（更新不可用）', "svn CLI unavailable (update unavailable)", "svn CLI недоступен (обновление недоступно)")]
+  parts.push(info.tortoise ? uiText('TortoiseSVN 可用', "TortoiseSVN available", "TortoiseSVN доступен") : uiText('TortoiseSVN 不可用（仅 Windows）', "TortoiseSVN unavailable (Windows only)", "TortoiseSVN недоступен (только Windows)"))
+  return uiText('受 SVN 管理 · ', "Managed by SVN · ", "Под управлением SVN · ") + parts.join(' · ')
 }
 
 /**
@@ -468,7 +469,7 @@ function SvnSettingsSection() {
   /** 提交路径字段（blur/Enter 共用；成功后强制重测反映新路径）。 */
   const savePath = (key, value, apply) => {
     setBusy(true); setError('')
-    if (!settings?.set) { setError('设置服务不可用'); setBusy(false); return }
+    if (!settings?.set) { setError(uiText('设置服务不可用', "Settings service unavailable", "Сервис настроек недоступен")); setBusy(false); return }
     settings.set(key, value).then(() => { apply(); probe() }).catch((e) => setError(String(e))).finally(() => setBusy(false))
   }
   const commitSvn = () => {
@@ -486,7 +487,7 @@ function SvnSettingsSection() {
   /** 通用设置写入（布尔/数字/枚举；失败就地报错，不吞）。 */
   const saveValue = (key, value, apply) => {
     setBusy(true); setError('')
-    if (!settings?.set) { setError('设置服务不可用'); setBusy(false); return }
+    if (!settings?.set) { setError(uiText('设置服务不可用', "Settings service unavailable", "Сервис настроек недоступен")); setBusy(false); return }
     settings.set(key, value).then(() => { apply() }).catch((e) => setError(String(e))).finally(() => setBusy(false))
   }
   const disabled = loading || unavailable || notReady || busy || snapshot?.writable === false
@@ -494,20 +495,20 @@ function SvnSettingsSection() {
     React.createElement('h3', { className: 'vsm-panel-title' }, 'SVN'),
     React.createElement('div', { className: 'vsm-panel-body' },
       React.createElement('div', { className: 'vsm-general-row' },
-        React.createElement('span', null, '检测状态'),
+        React.createElement('span', null, uiText('检测状态', "Detection status", "Статус обнаружения")),
         React.createElement('small', null, svnStatusText(svnInfo)),
-        React.createElement('button', { className: 'vsm-primary vsm-small', disabled: busy, onClick: probe, title: '重新检测' }, '重测')),
+        React.createElement('button', { className: 'vsm-primary vsm-small', disabled: busy, onClick: probe, title: uiText('重新检测', "Detect again", "Повторить обнаружение") }, uiText('重测', "Retest", "Проверить снова"))),
       error && React.createElement('small', { className: 'vsm-mcp-error' }, error),
       React.createElement('label', { className: 'vsm-general-row' },
-        React.createElement('span', null, 'svn 可执行路径'),
+        React.createElement('span', null, uiText('svn 可执行路径', "svn executable path", "Путь к исполняемому файлу svn")),
         React.createElement('input', {
-          value: svnDraft ?? svnPath, placeholder: '空 = 使用 PATH 中的 svn', disabled,
+          value: svnDraft ?? svnPath, placeholder: uiText('空 = 使用 PATH 中的 svn', "Empty = use svn from PATH", "Пусто = использовать svn из PATH"), disabled,
           onChange: (event) => setSvnDraft(event.target.value),
           onBlur: commitSvn,
           onKeyDown: (event) => { if (event.key === 'Enter') commitSvn() },
         })),
       React.createElement('label', { className: 'vsm-general-row' },
-        React.createElement('span', null, 'TortoiseSVN 目录'),
+        React.createElement('span', null, uiText('TortoiseSVN 目录', "TortoiseSVN directory", "Каталог TortoiseSVN")),
         React.createElement('input', {
           value: tortoiseDraft ?? tortoisePath, placeholder: TORTOISE_DIR_DEFAULT, disabled,
           onChange: (event) => setTortoiseDraft(event.target.value),
@@ -515,9 +516,9 @@ function SvnSettingsSection() {
           onKeyDown: (event) => { if (event.key === 'Enter') commitTortoise() },
         })),
       React.createElement('label', { className: 'vsm-general-row' },
-        React.createElement('span', null, '超时倍数'),
+        React.createElement('span', null, uiText('超时倍数', "Timeout multiplier", "Множитель тайм-аута")),
         React.createElement('input', {
-          value: String(scale), placeholder: '1', disabled, title: 'SVN 命令超时倍数（0.2–20；仓库慢或工作副本大时调到 2–3）',
+          value: String(scale), placeholder: '1', disabled, title: uiText('SVN 命令超时倍数（0.2–20；仓库慢或工作副本大时调到 2–3）', "SVN command timeout multiplier (0.2–20; use 2–3 for slow repositories or large working copies)", "Множитель тайм-аута SVN (0.2–20; 2–3 для медленных репозиториев или больших рабочих копий)"),
           onChange: (event) => {
             const next = Number(event.target.value)
             if (Number.isFinite(next)) setScale(next)
@@ -525,37 +526,37 @@ function SvnSettingsSection() {
           onBlur: () => saveValue('svnCommandTimeoutScale', Math.min(20, Math.max(0.2, scale)), () => {}),
         })),
       React.createElement('label', { className: 'vsm-general-row' },
-        React.createElement('span', null, '只读模式'),
+        React.createElement('span', null, uiText('只读模式', "Read-only mode", "Режим только чтения")),
         React.createElement('input', {
           type: 'checkbox', checked: readOnly, disabled,
-          title: '开启后拒绝全部写操作（提交/还原/更新/属性写入），只保留查看与比对',
+          title: uiText('开启后拒绝全部写操作（提交/还原/更新/属性写入），只保留查看与比对', "Reject all writes (commit/revert/update/property changes); allow viewing and comparison only", "Запретить запись (коммиты, откат, обновление, свойства); оставить просмотр и сравнение"),
           onChange: () => saveValue('svnReadOnly', !readOnly, () => setReadOnly(!readOnly)),
         })),
       React.createElement('label', { className: 'vsm-general-row' },
-        React.createElement('span', null, '提交前自动加入'),
+        React.createElement('span', null, uiText('提交前自动加入', "Auto-add before commit", "Автодобавление перед коммитом")),
         React.createElement('input', {
           type: 'checkbox', checked: autoAdd, disabled,
-          title: '提交时对勾选的未版本控制文件自动 svn add（关闭后这些文件会被跳过并在结果里列出）',
+          title: uiText('提交时对勾选的未版本控制文件自动 svn add（关闭后这些文件会被跳过并在结果里列出）', "Run svn add for selected unversioned files before commit (otherwise skip them and list them in the result)", "Выполнять svn add для выбранных неотслеживаемых файлов перед коммитом (иначе пропустить и указать в результате)"),
           onChange: () => saveValue('svnAutoAddUnversioned', !autoAdd, () => setAutoAdd(!autoAdd)),
         })),
       React.createElement('label', { className: 'vsm-general-row' },
-        React.createElement('span', null, '提交前自动删除'),
+        React.createElement('span', null, uiText('提交前自动删除', "Auto-delete before commit", "Автоудаление перед коммитом")),
         React.createElement('input', {
           type: 'checkbox', checked: autoDelete, disabled,
-          title: '提交时对勾选的已删除文件自动 svn delete（关闭后这些文件会被跳过并在结果里列出）',
+          title: uiText('提交时对勾选的已删除文件自动 svn delete（关闭后这些文件会被跳过并在结果里列出）', "Run svn delete for selected missing files before commit (otherwise skip them and list them in the result)", "Выполнять svn delete для выбранных удалённых файлов перед коммитом (иначе пропустить и указать в результате)"),
           onChange: () => saveValue('svnAutoDeleteMissing', !autoDelete, () => setAutoDelete(!autoDelete)),
         })),
       React.createElement('label', { className: 'vsm-general-row' },
-        React.createElement('span', null, 'AI 提交信息风格'),
+        React.createElement('span', null, uiText('AI 提交信息风格', "AI commit message style", "Стиль сообщения коммита ИИ")),
         React.createElement('select', {
           value: commitStyle, disabled,
-          title: 'plain = 中文「<模块>：<标题>」；conventional = type(scope): subject',
+          title: uiText('plain = 中文「<模块>：<标题>」；conventional = type(scope): subject', "plain = Chinese “<module>: <title>”; conventional = type(scope): subject", "plain = китайский шаблон «<модуль>: <заголовок>»; conventional = type(scope): subject"),
           onChange: (event) => {
             const next = event.target.value === 'conventional' ? 'conventional' : 'plain'
             saveValue('aiCommitStyle', next, () => setCommitStyle(next))
           },
         },
-          React.createElement('option', { value: 'plain' }, '中文模板'),
+          React.createElement('option', { value: 'plain' }, uiText('中文模板', "Chinese template", "Китайский шаблон")),
           React.createElement('option', { value: 'conventional' }, 'Conventional Commits'))),
     ),
   )
@@ -576,7 +577,7 @@ function CompatSection({ getSummary }) {
   }, [])
   const renderItems = (list) => (list ?? []).map((item) => React.createElement('div', { key: item.name, className: 'vsm-compat-item ' + (item.active ? 'ok' : 'warn') },
     React.createElement('span', { className: 'vsm-compat-name' }, item.name),
-    React.createElement('span', { className: 'vsm-compat-note' }, item.note ?? (item.active ? '正常' : '未生效')),
+    React.createElement('span', { className: 'vsm-compat-note' }, item.note ?? (item.active ? uiText('正常', "OK", "Работает") : uiText('未生效', "Inactive", "Не действует"))),
   ))
   /** 兼容性分组面板：标题 + 线框内容区。 */
   const group = (title, children) => React.createElement('section', { className: 'vsm-panel' },
@@ -586,26 +587,26 @@ function CompatSection({ getSummary }) {
   const warnings = report?.warnings ?? []
   const devForm = report?.devForm
   const versionText = report?.dshVersion
-    ? '（DSH ' + report.dshVersion + ' · 插件 ' + (report?.pluginVersion ?? '') + '）'
-    : report?.pluginVersion ? '（插件版本 ' + report.pluginVersion + '）' : ''
+    ? uiText('（DSH ', "(DSH ", "(DSH ") + report.dshVersion + uiText(' · 插件 ', " · Plugin ", " · Плагин ") + (report?.pluginVersion ?? '') + uiText('）', ")", ")")
+    : report?.pluginVersion ? uiText('（插件版本 ', "(Plugin version ", "(Версия плагина ") + report.pluginVersion + uiText('）', ")", ")") : ''
   return React.createElement('section', { className: 'vsm-general-page' },
-    React.createElement('h2', null, '兼容性'),
-    React.createElement('p', null, '检测与其他插件 / DSH 版本的适配状态与已知问题。' + versionText),
+    React.createElement('h2', null, uiText('兼容性', "Compatibility", "Совместимость")),
+    React.createElement('p', null, uiText('检测与其他插件 / DSH 版本的适配状态与已知问题。', "Check compatibility with other plugins and DSH versions, including known issues.", "Проверка совместимости с другими плагинами и версиями DSH, включая известные проблемы.") + versionText),
     error && React.createElement('div', { className: 'vsm-mcp-error vsm-mcp-banner' }, error),
-    devForm?.enabled && group('开发形态', React.createElement('div', { className: 'vsm-compat-item ok' }, React.createElement('span', { className: 'vsm-compat-name' }, '开发形态开启（工作区链接安装）'), React.createElement('span', { className: 'vsm-compat-note' }, devForm.path))),
-    group('版本适配', renderItems(report?.adapters)),
-    group('外部插件与服务', renderItems(report?.external)),
-    group('客户端适配', renderItems(getSummary?.(report?.dshVersion ?? '') ?? [])),
-    group('护栏', renderItems(report?.guards)),
-    group('警告', warnings.length ? warnings.map((w, index) => React.createElement('div', { key: index, className: 'vsm-mcp-error vsm-mcp-banner' }, w)) : React.createElement('div', { className: 'vsm-compat-item ok' }, React.createElement('span', { className: 'vsm-compat-name' }, '未检测到兼容性问题'), React.createElement('span', { className: 'vsm-compat-note' }, ''))),
+    devForm?.enabled && group(uiText('开发形态', "Development mode", "Режим разработки"), React.createElement('div', { className: 'vsm-compat-item ok' }, React.createElement('span', { className: 'vsm-compat-name' }, uiText('开发形态开启（工作区链接安装）', "Development mode enabled (workspace-link installation)", "Режим разработки включён (ссылка на рабочее пространство)")), React.createElement('span', { className: 'vsm-compat-note' }, devForm.path))),
+    group(uiText('版本适配', "Version adapters", "Адаптеры версий"), renderItems(report?.adapters)),
+    group(uiText('外部插件与服务', "External plugins and services", "Внешние плагины и сервисы"), renderItems(report?.external)),
+    group(uiText('客户端适配', "Client adapters", "Клиентские адаптеры"), renderItems(getSummary?.(report?.dshVersion ?? '') ?? [])),
+    group(uiText('护栏', "Guardrails", "Защитные ограничения"), renderItems(report?.guards)),
+    group(uiText('警告', "Warnings", "Предупреждения"), warnings.length ? warnings.map((w, index) => React.createElement('div', { key: index, className: 'vsm-mcp-error vsm-mcp-banner' }, w)) : React.createElement('div', { className: 'vsm-compat-item ok' }, React.createElement('span', { className: 'vsm-compat-name' }, uiText('未检测到兼容性问题', "No compatibility issues detected", "Проблем совместимости не обнаружено")), React.createElement('span', { className: 'vsm-compat-note' }, ''))),
   )
 }
 
 /** MCP 管理子页签定义（我的 / 项目 / 市场）。 */
 const MCP_TABS = [
-  { id: 'mine', label: '我的 MCP' },
-  { id: 'projects', label: '项目 MCP' },
-  { id: 'market', label: 'MCP 市场' },
+  { id: 'mine', get label() { return uiText('我的 MCP', "My MCP", "Мои MCP") } },
+  { id: 'projects', get label() { return uiText('项目 MCP', "Project MCP", "MCP проекта") } },
+  { id: 'market', get label() { return uiText('MCP 市场', "MCP marketplace", "Каталог MCP") } },
 ]
 
 /**
@@ -656,14 +657,14 @@ function McpManagePanel(props) {
   const body = manageBody(props, mcpTab, selectedPath, setSelectedPath, addProject)
 
   const form = showForm
-    ? React.createElement(McpForm, { title: '添加全局 MCP', draft, busy, edit, save: () => saveGlobal(closeGlobalForm), close: closeGlobalForm })
+    ? React.createElement(McpForm, { title: uiText('添加全局 MCP', "Add global MCP", "Добавить глобальный MCP"), draft, busy, edit, save: () => saveGlobal(closeGlobalForm), close: closeGlobalForm })
     : projectForm
-      ? React.createElement(McpForm, { project: true, title: '添加项目 MCP · ' + projectForm.title, draft, busy, edit, save: () => saveProject(projectForm.workspacePath, closeProjectForm), close: closeProjectForm })
+      ? React.createElement(McpForm, { project: true, title: uiText('添加项目 MCP · ', "Add project MCP · ", "Добавить MCP проекта · ") + projectForm.title, draft, busy, edit, save: () => saveProject(projectForm.workspacePath, closeProjectForm), close: closeProjectForm })
       : null
   return React.createElement(React.Fragment, null,
     React.createElement('div', { className: 'vsm-mcp-subhead' },
       React.createElement('nav', { className: 'vsm-mcp-subtabs' }, MCP_TABS.map((item) => React.createElement('button', { key: item.id, className: mcpTab === item.id ? 'active' : '', onClick: () => setMcpTab(item.id) }, item.label))),
-      React.createElement('button', { className: 'vsm-primary vsm-small', disabled: !!busy, onClick: addGlobal }, '+ 添加全局 MCP'),
+      React.createElement('button', { className: 'vsm-primary vsm-small', disabled: !!busy, onClick: addGlobal }, uiText('+ 添加全局 MCP', "+ Add global MCP", "+ Добавить глобальный MCP")),
     ),
     body,
     form,
@@ -673,17 +674,17 @@ function McpManagePanel(props) {
 /** @private @author ddj 2026年10月08号 @param props Current view and actions. @param tab Selected MCP subtab. @param path Selected project. @param select Project setter. @param add Project form opener. @returns Selected global/project/market content. */
 function manageBody(props, tab, path, select, add) {
   const { servers, projects, busy, refreshGlobal, toggleGlobal, removeGlobal, refreshProject, toggleProject, removeProject } = props
-  if (tab === 'market') return React.createElement('div', { className: 'vsm-mcp-empty' }, 'MCP 市场暂未接入')
+  if (tab === 'market') return React.createElement('div', { className: 'vsm-mcp-empty' }, uiText('MCP 市场暂未接入', "MCP marketplace is not connected yet", "Каталог MCP пока не подключён"))
   if (tab !== 'projects') {
     return servers.length
       ? servers.map((server) => React.createElement(ServerCard, { key: server.id, server, busy, onRefresh: refreshGlobal, onToggle: toggleGlobal, onRemove: removeGlobal }))
-      : React.createElement('div', { className: 'vsm-mcp-empty' }, '还没有配置全局 MCP')
+      : React.createElement('div', { className: 'vsm-mcp-empty' }, uiText('还没有配置全局 MCP', "No global MCP configured", "Глобальные MCP не настроены"))
   }
-  if (!projects.length) return React.createElement('div', { className: 'vsm-mcp-empty' }, '还没有项目')
+  if (!projects.length) return React.createElement('div', { className: 'vsm-mcp-empty' }, uiText('还没有项目', "No projects yet", "Проектов пока нет"))
   const project = projects.find((item) => item.workspacePath === path)
   return React.createElement(React.Fragment, null,
     React.createElement(ProjectPicker, { projects, value: path, onChange: select }),
-    project ? React.createElement(ProjectGroup, { project, busy, onAdd: add, onRefresh: refreshProject, onToggle: toggleProject, onRemove: removeProject, onConnect: props.connectProject, onPolicy: props.policyProject }) : React.createElement('div', { className: 'vsm-mcp-empty' }, '请选择项目'),
+    project ? React.createElement(ProjectGroup, { project, busy, onAdd: add, onRefresh: refreshProject, onToggle: toggleProject, onRemove: removeProject, onConnect: props.connectProject, onPolicy: props.policyProject }) : React.createElement('div', { className: 'vsm-mcp-empty' }, uiText('请选择项目', "Select a project", "Выберите проект")),
   )
 }
 
@@ -744,17 +745,17 @@ function cardActions(ref, getSession) {
   /** @author ddj 2026年10月08号 @param server Current configuration. @returns Locked enable change. */
   const toggleGlobal = (server) => globalAction(ref.current, server.id, 'mcp.toggle', { id: server.id, enabled: !server.enabled })
   /** @author ddj 2026年10月08号 @param id Global identity from ServerCard. @returns Confirmed locked deletion. */
-  const removeGlobal = (id) => !ref.current?.view.busy && window.confirm('确认删除此 MCP 服务？') && globalAction(ref.current, id, 'mcp.remove', { id })
+  const removeGlobal = (id) => !ref.current?.view.busy && window.confirm(uiText('确认删除此 MCP 服务？', "Delete this MCP service?", "Удалить этот сервис MCP?")) && globalAction(ref.current, id, 'mcp.remove', { id })
   /** @author ddj 2026年10月08号 @param project Project. @param server Configuration. @returns Locked refresh. */
   const refreshProject = (project, server) => projectAction(ref.current, project.workspacePath, server.serverName, 'mcp.projectRefresh')
   /** @author ddj 2026年10月08号 @param project Project. @param server Configuration. @returns Locked enable change. */
   const toggleProject = (project, server) => projectAction(ref.current, project.workspacePath, server.serverName, 'mcp.projectToggle', { enabled: !server.enabled })
   /** @author ddj 2026年10月08号 @param project Project. @param server Configuration. @returns Confirmed locked deletion. */
-  const removeProject = (project, server) => !ref.current?.view.busy && window.confirm('确认删除此项目的 MCP「' + server.serverName + '」？') && projectAction(ref.current, project.workspacePath, server.serverName, 'mcp.projectRemove')
+  const removeProject = (project, server) => !ref.current?.view.busy && window.confirm(uiText('确认删除此项目的 MCP「', "Delete this project's MCP “", "Удалить MCP этого проекта «") + server.serverName + uiText('」？', "”?", "»?")) && projectAction(ref.current, project.workspacePath, server.serverName, 'mcp.projectRemove')
   /** @author ddj 2026年10月20号 @param project Owner workspace. @param server Enabled service. @returns Explicit connection for an already-active current session. */
   const connectProject = (project, server) => {
     const sessionId = getSession?.()
-    if (!sessionId) return ref.current?.mutate('connect', async () => ({ ok: false, error: '请先打开此项目的活跃会话' }), () => undefined)
+    if (!sessionId) return ref.current?.mutate('connect', async () => ({ ok: false, error: uiText('请先打开此项目的活跃会话', "Open an active session for this project first", "Сначала откройте активный сеанс этого проекта") }), () => undefined)
     return projectAction(ref.current, project.workspacePath, server.serverName, 'mcp.projectConnect', { sessionId })
   }
   /** @author ddj 2026年10月20号 @param project Owner. @param server Masked editable config. @param policy Explicit user strategy. @returns Serialized strategy persistence. */
@@ -812,7 +813,7 @@ export function McpSettings(props) {
   /** @author ddj 2026年10月08号 @description Reset the draft when no mutation is pending. */
   const resetDraft = () => { if (!ref.current?.view.busy) setDraft(EMPTY) }
   let body
-  if (tab === 'mcp' && loading) body = React.createElement('div', { className: 'vsm-mcp-empty' }, '正在读取 MCP 服务…')
+  if (tab === 'mcp' && loading) body = React.createElement('div', { className: 'vsm-mcp-empty' }, uiText('正在读取 MCP 服务…', "Loading MCP services…", "Загрузка сервисов MCP…"))
   else if (tab === 'general') body = React.createElement(React.Fragment, null,
     React.createElement(GeneralSettings, { registry: openerRegistry, getShortcuts }),
     React.createElement(UniverCacheSettings, { getSession: props?.getMcpSession ?? (() => undefined) }))
@@ -824,9 +825,9 @@ export function McpSettings(props) {
   else if (tab === 'ai') body = React.createElement(AiSettings, null)
   else body = React.createElement(PerfSettings, null)
   return React.createElement('section', { className: 'vsm-mcp-page' },
-    React.createElement('header', { className: 'vsm-mcp-header' }, React.createElement('div', null, React.createElement('h2', null, 'VSCodeMode'), React.createElement('p', null, '编辑器偏好、开发工具与系统集成。'))),
-    React.createElement('nav', { className: 'vsm-mcp-tabs', 'aria-label': 'VSCodeMode 设置分类' },
-      [['general', '通用'], ['mcp', 'MCP 管理'], ['lsp', '语言服务器'], ['ai', 'AI 补全'], ['perf', '性能优化'], ['compat', '兼容性']].map(([id, label]) =>
+    React.createElement('header', { className: 'vsm-mcp-header' }, React.createElement('div', null, React.createElement('h2', null, 'VSCodeMode'), React.createElement('p', null, uiText('编辑器偏好、开发工具与系统集成。', "Editor preferences, developer tools, and system integration.", "Настройки редактора, инструменты разработки и системная интеграция.")))),
+    React.createElement('nav', { className: 'vsm-mcp-tabs', 'aria-label': uiText('VSCodeMode 设置分类', "VSCodeMode settings categories", "Категории настроек VSCodeMode") },
+      [['general', uiText('通用', "General", "Общие")], ['mcp', uiText('MCP 管理', "MCP management", "Управление MCP")], ['lsp', uiText('语言服务器', "Language servers", "Языковые серверы")], ['ai', uiText('AI 补全', "AI completion", "ИИ-дополнение")], ['perf', uiText('性能优化', "Performance", "Производительность")], ['compat', uiText('兼容性', "Compatibility", "Совместимость")]].map(([id, label]) =>
         React.createElement('button', { key: id, type: 'button', className: tab === id ? 'active' : '', 'aria-current': tab === id ? 'page' : undefined, 'aria-controls': 'vsm-settings-content', onClick: () => setTab(id) }, label))),
     tab === 'mcp' && React.createElement(SettingNotice, { message: error, error: true }),
     React.createElement('div', { className: 'vsm-settings-content', id: 'vsm-settings-content' }, body),
@@ -842,23 +843,23 @@ function McpForm({ title, draft, busy, edit, save, close, project }) {
   /** @author ddj 2026年10月08号 @param key Draft field. @returns Disabled-while-busy text area. */
   const textarea = (key) => React.createElement('textarea', { disabled: !!busy, value: draft[key], onChange: change(key) })
   const fields = draft.transport === 'stdio' ? React.createElement(React.Fragment, null,
-    React.createElement('label', null, '命令', input('command', 'npx')),
-    React.createElement('label', null, '参数（JSON string[] 或每行一个；保留空格，空参数用 JSON）', textarea('args')),
-    React.createElement('label', null, '工作目录（可选）', input('cwd', '')),
+    React.createElement('label', null, uiText('命令', "Command", "Команда"), input('command', 'npx')),
+    React.createElement('label', null, uiText('参数（JSON string[] 或每行一个；保留空格，空参数用 JSON）', "Arguments (JSON string[] or one per line; preserves spaces; use JSON for empty arguments)", "Аргументы (JSON string[] или по одному на строку; пробелы сохраняются; пустые аргументы задаются через JSON)"), textarea('args')),
+    React.createElement('label', null, uiText('工作目录（可选）', "Working directory (optional)", "Рабочий каталог (необязательно)"), input('cwd', '')),
   ) : React.createElement(React.Fragment, null,
     React.createElement('label', null, 'URL', input('url', 'http://localhost:3000/mcp')),
-    React.createElement('label', null, '请求头（每行 key=value，键不可重复）', textarea('headers')),
+    React.createElement('label', null, uiText('请求头（每行 key=value，键不可重复）', "Headers (key=value per line; unique keys)", "Заголовки (key=value по одному на строку; ключи уникальны)"), textarea('headers')),
   )
   return React.createElement('div', { className: 'vsm-mcp-modal' }, React.createElement('div', { className: 'vsm-mcp-dialog' },
     React.createElement('h3', null, title),
-    React.createElement('label', null, '名称', input('serverName', '例如 codegraph')),
-    React.createElement('label', null, '传输方式', React.createElement('select', { disabled: !!busy, value: draft.transport, onChange: change('transport') }, React.createElement('option', { value: 'stdio' }, 'stdio'), React.createElement('option', { value: 'streamable-http' }, 'streamable-http'))),
+    React.createElement('label', null, uiText('名称', "Name", "Название"), input('serverName', uiText('例如 codegraph', "e.g. codegraph", "например codegraph"))),
+    React.createElement('label', null, uiText('传输方式', "Transport", "Транспорт"), React.createElement('select', { disabled: !!busy, value: draft.transport, onChange: change('transport') }, React.createElement('option', { value: 'stdio' }, 'stdio'), React.createElement('option', { value: 'streamable-http' }, 'streamable-http'))),
     fields,
-    project && React.createElement('label', null, '启动策略', React.createElement('select', { disabled: !!busy, value: draft.startup, onChange: change('startup') }, React.createElement('option', { value: 'on-demand' }, '按需启动（默认）'), React.createElement('option', { value: 'background' }, '后台预热'))),
-    project && React.createElement('label', null, '连接模式', React.createElement('select', { disabled: !!busy, value: draft.sharing, onChange: change('sharing') }, React.createElement('option', { value: 'agent' }, '逐会话隔离（默认）'), React.createElement('option', { value: 'workspace' }, '工作区共享（共享服务内部状态）'))),
-    project && React.createElement('label', null, '初始化预算（毫秒，1000–300000）', input('startupTimeoutMs', '60000')),
-    React.createElement('label', null, '工具加载（DSH 0.2.3+）', React.createElement('select', { disabled: !!busy, value: draft.toolLoading ?? 'eager', onChange: change('toolLoading') }, React.createElement('option', { value: 'eager' }, '随连接加载（默认）'), React.createElement('option', { value: 'on-demand' }, '按需加载（省上下文）'))),
-    project && React.createElement('small', null, '新对话不等待连接。共享必须确认服务适合共享状态；不为 CodeGraph 自动启用。'),
-    React.createElement('div', { className: 'vsm-mcp-dialog-actions' }, React.createElement('button', { disabled: !!busy, onClick: close }, '取消'), React.createElement('button', { className: 'vsm-primary', disabled: !!busy, onClick: save }, '保存配置')),
+    project && React.createElement('label', null, uiText('启动策略', "Startup policy", "Политика запуска"), React.createElement('select', { disabled: !!busy, value: draft.startup, onChange: change('startup') }, React.createElement('option', { value: 'on-demand' }, uiText('按需启动（默认）', "On demand (default)", "По требованию (по умолчанию)")), React.createElement('option', { value: 'background' }, uiText('后台预热', "Background warm-up", "Фоновый прогрев")))),
+    project && React.createElement('label', null, uiText('连接模式', "Connection mode", "Режим подключения"), React.createElement('select', { disabled: !!busy, value: draft.sharing, onChange: change('sharing') }, React.createElement('option', { value: 'agent' }, uiText('逐会话隔离（默认）', "Isolated per session (default)", "Изоляция по сеансам (по умолчанию)")), React.createElement('option', { value: 'workspace' }, uiText('工作区共享（共享服务内部状态）', "Shared workspace (shares internal service state)", "Общее для пространства (общее внутреннее состояние сервиса)")))),
+    project && React.createElement('label', null, uiText('初始化预算（毫秒，1000–300000）', "Initialization budget (ms, 1000–300000)", "Лимит инициализации (мс, 1000–300000)"), input('startupTimeoutMs', '60000')),
+    React.createElement('label', null, uiText('工具加载（DSH 0.2.3+）', "Tool loading (DSH 0.2.3+)", "Загрузка инструментов (DSH 0.2.3+)"), React.createElement('select', { disabled: !!busy, value: draft.toolLoading ?? 'eager', onChange: change('toolLoading') }, React.createElement('option', { value: 'eager' }, uiText('随连接加载（默认）', "Load on connection (default)", "При подключении (по умолчанию)")), React.createElement('option', { value: 'on-demand' }, uiText('按需加载（省上下文）', "Load on demand (saves context)", "По требованию (экономит контекст)")))),
+    project && React.createElement('small', null, uiText('新对话不等待连接。共享必须确认服务适合共享状态；不为 CodeGraph 自动启用。', "New conversations do not wait for connection. Enable sharing only if the service supports shared state; it is not enabled automatically for CodeGraph.", "Новые диалоги не ждут подключения. Включайте общий доступ только для сервисов с поддержкой общего состояния; для CodeGraph он не включается автоматически.")),
+    React.createElement('div', { className: 'vsm-mcp-dialog-actions' }, React.createElement('button', { disabled: !!busy, onClick: close }, uiText('取消', "Cancel", "Отмена")), React.createElement('button', { className: 'vsm-primary', disabled: !!busy, onClick: save }, uiText('保存配置', "Save configuration", "Сохранить настройки"))),
   ))
 }

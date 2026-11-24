@@ -8,6 +8,7 @@
  * 动作：svnUpdate / svnTortoise / svnRevert / svnAdd / svnDiffBase 统一执行与反馈文案。
  * 作者 ddj 2026年09月16号
  */
+import { uiText } from './uiLocale.js'
 import type { SvnAction, SvnAiPlan, SvnChangeEntry, SvnIgnoreItem, SvnItemStatus, SvnPathKind, SvnStatusPayload, SvnUpdateEntry } from '../shared/svn.js'
 import { SVN_TORTOISE_LABELS, SVN_UPDATE_LABEL } from '../shared/svn.js'
 import { svnActionOn, svnActionsFor } from '../shared/svnActions.js'
@@ -170,12 +171,12 @@ export interface SvnActionOutcome {
 export async function svnUpdate(sessionId: string | undefined, path: string): Promise<SvnActionOutcome> {
   try {
     const res = await rpc('svn.update', { sessionId, path })
-    if (!res.ok) return { ok: false, message: 'SVN 更新失败：' + res.error }
-    const conflicts = res.conflicts.length ? '；冲突：' + res.conflicts.join('、') : ''
+    if (!res.ok) return { ok: false, message: uiText('SVN 更新失败：', "SVN update failed: ", "Ошибка обновления SVN: ") + res.error }
+    const conflicts = res.conflicts.length ? uiText('；冲突：', "; conflicts: ", "; конфликты: ") + res.conflicts.join(uiText('、', ", ", ", ")) : ''
     // P3：附带条目级明细，供编辑区结果条逐条展示（冲突高亮）
-    return { ok: true, message: 'SVN 更新：' + res.summary + conflicts, entries: res.entries ?? [], conflicts: res.conflicts ?? [] }
+    return { ok: true, message: uiText('SVN 更新：', "SVN update: ", "Обновление SVN: ") + res.summary + conflicts, entries: res.entries ?? [], conflicts: res.conflicts ?? [] }
   } catch (error) {
-    return { ok: false, message: 'SVN 更新失败：' + String(error) }
+    return { ok: false, message: uiText('SVN 更新失败：', "SVN update failed: ", "Ошибка обновления SVN: ") + String(error) }
   }
 }
 
@@ -190,10 +191,10 @@ export async function svnUpdate(sessionId: string | undefined, path: string): Pr
 export async function svnTortoise(sessionId: string | undefined, action: SvnAction, path: string): Promise<SvnActionOutcome> {
   try {
     const res = await rpc('svn.tortoise', { sessionId, action, path })
-    if (!res.ok) return { ok: false, message: 'TortoiseSVN 启动失败：' + res.error }
-    return { ok: true, message: '已打开：' + SVN_TORTOISE_LABELS[action] }
+    if (!res.ok) return { ok: false, message: uiText('TortoiseSVN 启动失败：', "TortoiseSVN launch failed: ", "Ошибка запуска TortoiseSVN: ") + res.error }
+    return { ok: true, message: uiText('已打开：', "Opened: ", "Открыто: ") + SVN_TORTOISE_LABELS[action] }
   } catch (error) {
-    return { ok: false, message: 'TortoiseSVN 启动失败：' + String(error) }
+    return { ok: false, message: uiText('TortoiseSVN 启动失败：', "TortoiseSVN launch failed: ", "Ошибка запуска TortoiseSVN: ") + String(error) }
   }
 }
 
@@ -227,16 +228,16 @@ export interface SvnDiffBaseOutcome {
 export async function svnDiffBase(sessionId: string | undefined, path: string): Promise<SvnDiffBaseOutcome> {
   try {
     const res = await rpc('svn.diffBase', { sessionId, path })
-    if (!res.ok) return { ok: false, base: null, working: '', message: '读取基线失败：' + res.error }
+    if (!res.ok) return { ok: false, base: null, working: '', message: uiText('读取基线失败：', "Failed to read baseline: ", "Ошибка чтения базовой версии: ") + res.error }
     if (res.base === null) {
       const message = res.reason === 'no-pristine'
-        ? '该文件尚无基线版本（未提交的新增文件）'
-        : '读取基线失败' + (res.error ? '：' + res.error : '')
+        ? uiText('该文件尚无基线版本（未提交的新增文件）', "This file has no baseline yet (new uncommitted file)", "У файла ещё нет базовой версии (новый файл без коммита)")
+        : uiText('读取基线失败', "Failed to read baseline", "Ошибка чтения базовой версии") + (res.error ? uiText('：', ": ", ": ") + res.error : '')
       return { ok: true, base: null, working: res.working, message, binary: res.binary === true, encodingHint: res.encodingHint === true }
     }
-    return { ok: true, base: res.base, working: res.working, message: '已打开基线差异', binary: res.binary === true, encodingHint: res.encodingHint === true }
+    return { ok: true, base: res.base, working: res.working, message: uiText('已打开基线差异', "Baseline diff opened", "Сравнение с базовой версией открыто"), binary: res.binary === true, encodingHint: res.encodingHint === true }
   } catch (error) {
-    return { ok: false, base: null, working: '', message: '读取基线失败：' + String(error) }
+    return { ok: false, base: null, working: '', message: uiText('读取基线失败：', "Failed to read baseline: ", "Ошибка чтения базовой версии: ") + String(error) }
   }
 }
 
@@ -250,10 +251,10 @@ export async function svnDiffBase(sessionId: string | undefined, path: string): 
 export async function svnRevert(sessionId: string | undefined, paths: string[]): Promise<SvnActionOutcome> {
   try {
     const res = await rpc('svn.revert', { sessionId, paths })
-    if (!res.ok) return { ok: false, message: 'SVN 还原失败：' + res.error }
-    return { ok: true, message: 'SVN 还原：' + res.summary }
+    if (!res.ok) return { ok: false, message: uiText('SVN 还原失败：', "SVN revert failed: ", "Ошибка отката SVN: ") + res.error }
+    return { ok: true, message: uiText('SVN 还原：', "SVN revert: ", "Откат SVN: ") + res.summary }
   } catch (error) {
-    return { ok: false, message: 'SVN 还原失败：' + String(error) }
+    return { ok: false, message: uiText('SVN 还原失败：', "SVN revert failed: ", "Ошибка отката SVN: ") + String(error) }
   }
 }
 
@@ -267,10 +268,10 @@ export async function svnRevert(sessionId: string | undefined, paths: string[]):
 export async function svnAdd(sessionId: string | undefined, paths: string[]): Promise<SvnActionOutcome> {
   try {
     const res = await rpc('svn.add', { sessionId, paths })
-    if (!res.ok) return { ok: false, message: '加入版本控制失败：' + res.error }
-    return { ok: true, message: '加入版本控制：' + res.summary }
+    if (!res.ok) return { ok: false, message: uiText('加入版本控制失败：', "Failed to add to version control: ", "Ошибка добавления под контроль версий: ") + res.error }
+    return { ok: true, message: uiText('加入版本控制：', "Add to version control: ", "Добавление под контроль версий: ") + res.summary }
   } catch (error) {
-    return { ok: false, message: '加入版本控制失败：' + String(error) }
+    return { ok: false, message: uiText('加入版本控制失败：', "Failed to add to version control: ", "Ошибка добавления под контроль версий: ") + String(error) }
   }
 }
 
@@ -293,13 +294,13 @@ export async function svnChangelist(
   const remove = name === null
   try {
     const res = await rpc('svn.changelist', remove ? { sessionId, paths, remove: true } : { sessionId, paths, name: name ?? undefined })
-    if (!res.ok) return { ok: false, message: '分区操作失败：' + res.error }
+    if (!res.ok) return { ok: false, message: uiText('分区操作失败：', "Changelist operation failed: ", "Ошибка операции со списком изменений: ") + res.error }
     return {
       ok: true,
-      message: remove ? '已移出分区（' + count + ' 项）' : '已移入分区「' + name + '」（' + count + ' 项）',
+      message: remove ? uiText('已移出分区（', "Removed from changelist (", "Удалено из списка изменений (") + count + uiText(' 项）', " items)", " элементов)") : uiText('已移入分区「', "Moved to changelist “", "Перемещено в список изменений «") + name + uiText('」（', "” (", "» (") + count + uiText(' 项）', " items)", " элементов)"),
     }
   } catch (error) {
-    return { ok: false, message: '分区操作失败：' + String(error) }
+    return { ok: false, message: uiText('分区操作失败：', "Changelist operation failed: ", "Ошибка операции со списком изменений: ") + String(error) }
   }
 }
 
@@ -333,7 +334,7 @@ export interface SvnAiPlanOutcome {
 export async function svnAiPlan(sessionId: string | undefined, paths?: string[]): Promise<SvnAiPlanOutcome> {
   try {
     const res = await rpc('svn.aiPlan', { sessionId, ...(paths && paths.length ? { paths } : {}) })
-    if (!res.ok) return { ok: false, message: 'AI 分析失败：' + res.error }
+    if (!res.ok) return { ok: false, message: uiText('AI 分析失败：', "AI analysis failed: ", "Ошибка анализа ИИ: ") + res.error }
     return {
       ok: true,
       plan: res.plan,
@@ -342,10 +343,10 @@ export async function svnAiPlan(sessionId: string | undefined, paths?: string[])
       diffIncluded: res.diffIncluded,
       dropped: res.dropped,
       model: res.model,
-      message: 'AI 分析完成',
+      message: uiText('AI 分析完成', "AI analysis completed", "Анализ ИИ завершён"),
     }
   } catch (error) {
-    return { ok: false, message: 'AI 分析失败：' + String(error) }
+    return { ok: false, message: uiText('AI 分析失败：', "AI analysis failed: ", "Ошибка анализа ИИ: ") + String(error) }
   }
 }
 
@@ -359,10 +360,10 @@ export async function svnAiPlan(sessionId: string | undefined, paths?: string[])
 export async function svnIgnore(sessionId: string | undefined, items: SvnIgnoreItem[]): Promise<SvnActionOutcome> {
   try {
     const res = await rpc('svn.ignore', { sessionId, items })
-    if (!res.ok) return { ok: false, message: 'SVN 忽略失败：' + res.error }
+    if (!res.ok) return { ok: false, message: uiText('SVN 忽略失败：', "SVN ignore failed: ", "Ошибка игнорирования SVN: ") + res.error }
     return { ok: true, message: res.summary }
   } catch (error) {
-    return { ok: false, message: 'SVN 忽略失败：' + String(error) }
+    return { ok: false, message: uiText('SVN 忽略失败：', "SVN ignore failed: ", "Ошибка игнорирования SVN: ") + String(error) }
   }
 }
 
@@ -389,10 +390,10 @@ export interface SvnAiPendingOutcome {
 export async function svnAiPlanPending(sessionId: string | undefined, since: number): Promise<SvnAiPendingOutcome> {
   try {
     const res = await rpc('svn.aiPlanPending', { sessionId, since })
-    if (!res.ok) return { ok: false, message: '取件失败：' + res.error }
-    return { ok: true, plan: res.plan, dropped: res.dropped, at: res.at, message: res.plan ? '方案已送达' : '暂无方案' }
+    if (!res.ok) return { ok: false, message: uiText('取件失败：', "Failed to retrieve plan: ", "Ошибка получения плана: ") + res.error }
+    return { ok: true, plan: res.plan, dropped: res.dropped, at: res.at, message: res.plan ? uiText('方案已送达', "Plan delivered", "План доставлен") : uiText('暂无方案', "No plan yet", "Плана пока нет") }
   } catch (error) {
-    return { ok: false, message: '取件失败：' + String(error) }
+    return { ok: false, message: uiText('取件失败：', "Failed to retrieve plan: ", "Ошибка получения плана: ") + String(error) }
   }
 }
 
@@ -474,7 +475,7 @@ export async function runPlanSteps(
     } catch (error) {
       outcome = { ok: false, message: String(error) }
     }
-    log.push({ ok: outcome.ok, text: step.label + '：' + outcome.message })
+    log.push({ ok: outcome.ok, text: step.label + uiText('：', ": ", ": ") + outcome.message })
     tick(index + 1)
   }
   return { log, cancelled }
@@ -499,10 +500,10 @@ export async function svnPatchText(
 ): Promise<{ ok: boolean; text?: string; truncated?: boolean; binary?: boolean; message: string }> {
   try {
     const res = await rpc('svn.patchText', { sessionId, path, ...opts })
-    if (!res.ok) return { ok: false, message: '生成补丁失败：' + res.error }
-    return { ok: true, text: res.text, truncated: res.truncated, binary: res.binary, message: '已生成补丁' }
+    if (!res.ok) return { ok: false, message: uiText('生成补丁失败：', "Failed to generate patch: ", "Ошибка создания патча: ") + res.error }
+    return { ok: true, text: res.text, truncated: res.truncated, binary: res.binary, message: uiText('已生成补丁', "Patch generated", "Патч создан") }
   } catch (error) {
-    return { ok: false, message: '生成补丁失败：' + String(error) }
+    return { ok: false, message: uiText('生成补丁失败：', "Failed to generate patch: ", "Ошибка создания патча: ") + String(error) }
   }
 }
 
@@ -523,10 +524,10 @@ export async function svnDiffSum(
 ): Promise<{ ok: boolean; entries?: Array<{ path: string; item: string; kind: string; props: string }>; message: string }> {
   try {
     const res = await rpc('svn.diffSum', { sessionId, path, revA, revB })
-    if (!res.ok) return { ok: false, message: '目录对比失败：' + res.error }
-    return { ok: true, entries: res.entries, message: '已读取 ' + res.entries.length + ' 条变更' }
+    if (!res.ok) return { ok: false, message: uiText('目录对比失败：', "Directory comparison failed: ", "Ошибка сравнения каталогов: ") + res.error }
+    return { ok: true, entries: res.entries, message: uiText('已读取 ', "Read ", "Прочитано ") + res.entries.length + uiText(' 条变更', " changes", " изменений") }
   } catch (error) {
-    return { ok: false, message: '目录对比失败：' + String(error) }
+    return { ok: false, message: uiText('目录对比失败：', "Directory comparison failed: ", "Ошибка сравнения каталогов: ") + String(error) }
   }
 }
 
@@ -543,10 +544,10 @@ export async function svnRemoteStatus(
 ): Promise<{ ok: boolean; outdated?: Array<{ path: string; item: string }>; againstRev?: number | null; message: string }> {
   try {
     const res = await rpc('svn.remoteStatus', { sessionId, path })
-    if (!res.ok) return { ok: false, message: '远端检查失败：' + res.error }
-    return { ok: true, outdated: res.outdated, againstRev: res.againstRev, message: '远端检查完成' }
+    if (!res.ok) return { ok: false, message: uiText('远端检查失败：', "Remote check failed: ", "Ошибка удалённой проверки: ") + res.error }
+    return { ok: true, outdated: res.outdated, againstRev: res.againstRev, message: uiText('远端检查完成', "Remote check completed", "Удалённая проверка завершена") }
   } catch (error) {
-    return { ok: false, message: '远端检查失败：' + String(error) }
+    return { ok: false, message: uiText('远端检查失败：', "Remote check failed: ", "Ошибка удалённой проверки: ") + String(error) }
   }
 }
 
@@ -563,10 +564,10 @@ export async function svnConflictArtifacts(
 ): Promise<{ ok: boolean; artifacts?: Array<{ path: string; name: string; kind: 'mine' | 'working' | 'rev'; rev?: number }>; message: string }> {
   try {
     const res = await rpc('svn.conflictArtifacts', { sessionId, path })
-    if (!res.ok) return { ok: false, message: '扫描冲突副本失败：' + res.error }
-    return { ok: true, artifacts: res.artifacts, message: '发现 ' + res.artifacts.length + ' 个冲突副本' }
+    if (!res.ok) return { ok: false, message: uiText('扫描冲突副本失败：', "Failed to scan conflict copies: ", "Ошибка поиска конфликтных копий: ") + res.error }
+    return { ok: true, artifacts: res.artifacts, message: uiText('发现 ', "Found ", "Найдено ") + res.artifacts.length + uiText(' 个冲突副本', " conflict copies", " конфликтных копий") }
   } catch (error) {
-    return { ok: false, message: '扫描冲突副本失败：' + String(error) }
+    return { ok: false, message: uiText('扫描冲突副本失败：', "Failed to scan conflict copies: ", "Ошибка поиска конфликтных копий: ") + String(error) }
   }
 }
 
@@ -585,10 +586,10 @@ export async function svnDiffLocalPair(
 ): Promise<{ ok: boolean; leftText?: string | null; rightText?: string | null; binary?: boolean; encodingHint?: boolean; message: string }> {
   try {
     const res = await rpc('svn.diffLocalPair', { sessionId, left, right })
-    if (!res.ok) return { ok: false, message: '读取冲突副本失败：' + res.error }
-    return { ok: true, leftText: res.left, rightText: res.right, binary: res.binary === true, encodingHint: res.encodingHint === true, message: '已读取双侧内容' }
+    if (!res.ok) return { ok: false, message: uiText('读取冲突副本失败：', "Failed to read conflict copies: ", "Ошибка чтения конфликтных копий: ") + res.error }
+    return { ok: true, leftText: res.left, rightText: res.right, binary: res.binary === true, encodingHint: res.encodingHint === true, message: uiText('已读取双侧内容', "Both sides loaded", "Обе стороны загружены") }
   } catch (error) {
-    return { ok: false, message: '读取冲突副本失败：' + String(error) }
+    return { ok: false, message: uiText('读取冲突副本失败：', "Failed to read conflict copies: ", "Ошибка чтения конфликтных копий: ") + String(error) }
   }
 }
 

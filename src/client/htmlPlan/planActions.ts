@@ -6,6 +6,7 @@
  * 官方命令（remote.commands.execute('/plan off')），与 composer 计划徽标同源。
  * @author ddj 2026年11月21号
  */
+import { uiText } from '../uiLocale.js'
 import { createAddToConversation } from '../addToConversation.js'
 import { findPendingReview, reviewAnswerOf, reviewLabelsOf, type PendingReview } from './planPage.js'
 
@@ -30,7 +31,7 @@ let host: {
 /** 取异常的展示文案。 */
 function messageOf(error: unknown): string {
   if (error instanceof Error) return error.message
-  return String(error ?? '未知错误')
+  return String(error ?? uiText('未知错误', "Unknown error", "Неизвестная ошибка"))
 }
 
 /** 失败结果。 */
@@ -201,11 +202,11 @@ export function subscribePlanFaces(sessionId: string, listener: () => void): () 
 
 /** 官方 Typert 结果解包：{ ok, value } / { ok:false, error } / 裸值。 */
 function unwrap(result: unknown): PlanActionResult {
-  if (result === null || typeof result !== 'object') return result === false ? fail('官方服务拒绝了本次操作') : ok()
+  if (result === null || typeof result !== 'object') return result === false ? fail(uiText('官方服务拒绝了本次操作', "The official service rejected this operation", "Стандартный сервис отклонил операцию")) : ok()
   const row = result as { ok?: unknown; error?: unknown }
   if (row.ok === false) {
     const detail = row.error as { message?: unknown } | string | undefined
-    const message = typeof detail === 'string' ? detail : (typeof detail?.message === 'string' ? detail.message : '官方服务拒绝了本次操作')
+    const message = typeof detail === 'string' ? detail : (typeof detail?.message === 'string' ? detail.message : uiText('官方服务拒绝了本次操作', "The official service rejected this operation", "Стандартный сервис отклонил операцию"))
     return fail(message)
   }
   return ok()
@@ -231,18 +232,18 @@ export interface HtmlPlanActionOptions {
  */
 function sendResultOf(raw: unknown): PlanActionResult {
   if (raw === true) return ok()
-  if (raw === false) return fail('会话拒绝接收答复')
-  if (raw === null || typeof raw !== 'object') return fail('发送结果未知')
+  if (raw === false) return fail(uiText('会话拒绝接收答复', "The session rejected the response", "Сеанс отклонил ответ"))
+  if (raw === null || typeof raw !== 'object') return fail(uiText('发送结果未知', "Send result unknown", "Результат отправки неизвестен"))
   const row = raw as { status?: unknown; message?: unknown; ok?: unknown }
   if (row.ok === true) return ok()
-  if (row.ok === false) return fail(typeof row.message === 'string' ? row.message : '发送失败')
+  if (row.ok === false) return fail(typeof row.message === 'string' ? row.message : uiText('发送失败', "Send failed", "Ошибка отправки"))
   const status = typeof row.status === 'string' ? row.status : ''
   if (status === 'accepted' || status === 'submitted') return ok()
-  const detail = typeof row.message === 'string' && row.message ? '：' + row.message : ''
-  if (status === 'rejected') return fail('会话拒绝接收答复' + detail)
-  if (status === 'unavailable') return fail('对话输入不可用' + detail)
-  if (status === 'cancelled') return fail('发送已取消' + detail)
-  return fail('发送结果未知' + detail)
+  const detail = typeof row.message === 'string' && row.message ? uiText('：', ": ", ": ") + row.message : ''
+  if (status === 'rejected') return fail(uiText('会话拒绝接收答复', "The session rejected the response", "Сеанс отклонил ответ") + detail)
+  if (status === 'unavailable') return fail(uiText('对话输入不可用', "Conversation input unavailable", "Поле ввода диалога недоступно") + detail)
+  if (status === 'cancelled') return fail(uiText('发送已取消', "Send cancelled", "Отправка отменена") + detail)
+  return fail(uiText('发送结果未知', "Send result unknown", "Результат отправки неизвестен") + detail)
 }
 
 /**
@@ -267,7 +268,7 @@ export function installHtmlPlanActions(ctx: PlanActionCtx, options: HtmlPlanActi
     mode: 'queue' | 'steer',
   ): Promise<PlanActionResult> => {
     const send = conversations?.sendTaskResult
-    if (typeof send !== 'function') return fail('当前 DSH 不支持直接发送，请用「填入对话输入框」')
+    if (typeof send !== 'function') return fail(uiText('当前 DSH 不支持直接发送，请用「填入对话输入框」', "This DSH does not support direct sending. Use “Fill conversation input”.", "Эта версия DSH не поддерживает прямую отправку. Используйте «Заполнить поле диалога»."))
     return sendResultOf(await send.call(conversations, sessionId, text, mode))
   }
 
@@ -309,12 +310,12 @@ const steeredReplies = new Map<string, { callId: string; text: string }>()
 async function steerIntoRun(sessionId: string, callId: string, body: string): Promise<PlanActionResult> {
   const previous = steeredReplies.get(sessionId)
   if (previous && previous.callId === callId && previous.text === body) return ok()
-  if (!host) return fail('计划动作桥未就绪')
+  if (!host) return fail(uiText('计划动作桥未就绪', "Plan action bridge is not ready", "Мост действий плана не готов"))
   let result: PlanActionResult
   try {
     result = await host.steerTask(sessionId, body)
   } catch (error) {
-    return fail('送进当前回合失败：' + messageOf(error))
+    return fail(uiText('送进当前回合失败：', "Failed to deliver to the current turn: ", "Ошибка доставки в текущий ход: ") + messageOf(error))
   }
   if (result.ok) steeredReplies.set(sessionId, { callId, text: body })
   return result
@@ -328,34 +329,34 @@ async function steerIntoRun(sessionId: string, callId: string, body: string): Pr
  * @returns 动作结果
  */
 export async function answerPlanReview(sessionId: string, approve: boolean): Promise<PlanActionResult> {
-  if (!host) return fail('计划动作桥未就绪，请在对话审批卡片中操作')
-  if (!sessionId) return fail('当前没有活动会话')
+  if (!host) return fail(uiText('计划动作桥未就绪，请在对话审批卡片中操作', "Plan action bridge is not ready. Use the approval card in the conversation.", "Мост действий плана не готов. Используйте карточку согласования в диалоге."))
+  if (!sessionId) return fail(uiText('当前没有活动会话', "No active session", "Нет активного сеанса"))
   const live = liveReviewOf(sessionId)
   if (live) {
     const label = approve ? live.labels.approveLabel : live.labels.keepLabel
-    if (!label) return fail(approve ? '该审批没有可用的批准选项' : '官方审批没有「继续规划」选项，请在对话中要求修改')
+    if (!label) return fail(approve ? uiText('该审批没有可用的批准选项', "No approval option is available for this review", "В этом согласовании нет доступного варианта одобрения") : uiText('官方审批没有「继续规划」选项，请在对话中要求修改', "The official review has no “Keep planning” option. Request changes in the conversation.", "В стандартном согласовании нет варианта «Продолжить планирование». Запросите изменения в диалоге."))
     try {
       await live.pending.answer({ answers: [{ id: live.labels.questionId, selected: [label] }] })
       steeredReplies.delete(sessionId)
       return ok()
     } catch (error) {
-      return fail('提交审批失败：' + messageOf(error))
+      return fail(uiText('提交审批失败：', "Failed to submit review: ", "Ошибка отправки согласования: ") + messageOf(error))
     }
   }
   const review = readPendingReview(sessionId)
-  if (!review) return fail('没有待审批的计划（可能已在别处审批）')
+  if (!review) return fail(uiText('没有待审批的计划（可能已在别处审批）', "No plan awaiting approval (it may have been reviewed elsewhere)", "Нет плана на согласовании (возможно, он согласован в другом месте)"))
   const answer = reviewAnswerOf(review, approve)
-  if (!answer) return fail(approve ? '该审批没有可用的批准选项' : '官方审批没有「继续规划」选项，请在对话中要求修改')
+  if (!answer) return fail(approve ? uiText('该审批没有可用的批准选项', "No approval option is available for this review", "В этом согласовании нет доступного варианта одобрения") : uiText('官方审批没有「继续规划」选项，请在对话中要求修改', "The official review has no “Keep planning” option. Request changes in the conversation.", "В стандартном согласовании нет варианта «Продолжить планирование». Запросите изменения в диалоге."))
   const questions = serviceOf(host.ctx, 'remote.userQuestions') as { answer?: (id: string, callId: string, value: unknown) => Promise<unknown> } | undefined
   if (!questions || typeof questions.answer !== 'function') {
-    return fail('当前 DSH 不支持在插件内作答，请在对话审批卡片中操作')
+    return fail(uiText('当前 DSH 不支持在插件内作答，请在对话审批卡片中操作', "This DSH cannot answer within the plugin. Use the conversation approval card.", "Эта версия DSH не поддерживает ответ в плагине. Используйте карточку согласования в диалоге."))
   }
   try {
     const result = unwrap(await questions.answer(sessionId, review.callId, answer))
     if (result.ok) steeredReplies.delete(sessionId)
     return result
   } catch (error) {
-    return fail('提交审批失败：' + messageOf(error))
+    return fail(uiText('提交审批失败：', "Failed to submit review: ", "Ошибка отправки согласования: ") + messageOf(error))
   }
 }
 
@@ -366,16 +367,16 @@ export async function answerPlanReview(sessionId: string, approve: boolean): Pro
  * @returns 动作结果
  */
 export async function exitPlanMode(sessionId: string): Promise<PlanActionResult> {
-  if (!host) return fail('计划动作桥未就绪，请点 composer 计划徽标退出')
-  if (!sessionId) return fail('当前没有活动会话')
+  if (!host) return fail(uiText('计划动作桥未就绪，请点 composer 计划徽标退出', "Plan action bridge is not ready. Click the plan badge in the composer to exit.", "Мост действий плана не готов. Нажмите значок плана в поле диалога для выхода."))
+  if (!sessionId) return fail(uiText('当前没有活动会话', "No active session", "Нет активного сеанса"))
   const commands = serviceOf(host.ctx, 'remote.commands') as { execute?: (id: string, line: string, attachments: unknown[]) => Promise<unknown> } | undefined
   if (!commands || typeof commands.execute !== 'function') {
-    return fail('当前 DSH 不支持在插件内执行命令，请点 composer 计划徽标退出')
+    return fail(uiText('当前 DSH 不支持在插件内执行命令，请点 composer 计划徽标退出', "This DSH cannot execute commands within the plugin. Click the composer plan badge to exit.", "Эта версия DSH не выполняет команды из плагина. Нажмите значок плана в поле диалога для выхода."))
   }
   try {
     return unwrap(await commands.execute(sessionId, '/plan off', []))
   } catch (error) {
-    return fail('退出计划模式失败：' + messageOf(error))
+    return fail(uiText('退出计划模式失败：', "Failed to exit plan mode: ", "Ошибка выхода из режима планирования: ") + messageOf(error))
   }
 }
 
@@ -394,28 +395,28 @@ export async function exitPlanMode(sessionId: string): Promise<PlanActionResult>
  * @returns 动作结果（失败带原因，正文不丢）
  */
 export async function submitPlanResponse(sessionId: string, text: string, approve = true): Promise<PlanActionResult> {
-  if (!host) return fail('计划动作桥未就绪')
-  if (!sessionId) return fail('当前没有活动会话')
+  if (!host) return fail(uiText('计划动作桥未就绪', "Plan action bridge is not ready", "Мост действий плана не готов"))
+  if (!sessionId) return fail(uiText('当前没有活动会话', "No active session", "Нет активного сеанса"))
   const body = String(text ?? '').trim()
-  if (!body) return fail(approve ? '答复为空：先在页面里作答再点「回复」' : '指令为空')
+  if (!body) return fail(approve ? uiText('答复为空：先在页面里作答再点「回复」', "Response is empty. Answer on the page before clicking Reply.", "Ответ пуст. Сначала заполните ответ на странице, затем нажмите «Ответить».") : uiText('指令为空', "Instruction is empty", "Инструкция пуста"))
   const review = readPendingReview(sessionId)
   if (!review) {
     try {
       return await host.sendTask(sessionId, body)
     } catch (error) {
-      return fail('发送失败：' + messageOf(error))
+      return fail(uiText('发送失败：', "Send failed: ", "Ошибка отправки: ") + messageOf(error))
     }
   }
-  const bodyLabel = approve ? '答复' : '指令'
+  const bodyLabel = approve ? uiText('答复', "Response", "Ответ") : uiText('指令', "Instruction", "Инструкция")
   const steered = await steerIntoRun(sessionId, review.callId, body)
   if (!steered.ok) {
-    return fail(bodyLabel + '没送进当前回合，审批保持待处理：' + String(steered.error ?? '') + '。可点「填入对话输入框」手动发送')
+    return fail(bodyLabel + uiText('没送进当前回合，审批保持待处理：', " was not delivered to the current turn; review remains pending: ", " не доставлен в текущий ход; согласование ожидает: ") + String(steered.error ?? '') + uiText('。可点「填入对话输入框」手动发送', ". Use “Fill conversation input” to send manually.", ". Используйте «Заполнить поле диалога» для ручной отправки."))
   }
   const settled = await answerPlanReview(sessionId, approve)
   if (!settled.ok) {
-    const settleLabel = approve ? '批准' : '「继续规划」'
-    return fail(bodyLabel + '已送进当前回合，但' + settleLabel + '失败：' + String(settled.error ?? '')
-      + '。点页签的「' + (approve ? '同意执行' : '继续规划') + '」重试即可，' + bodyLabel + '不会重复发送')
+    const settleLabel = approve ? uiText('批准', "approval", "одобрение") : uiText('「继续规划」', "“Keep planning”", "«Продолжить планирование»")
+    return fail(bodyLabel + uiText('已送进当前回合，但', " was delivered to the current turn, but ", " доставлен в текущий ход, но ") + settleLabel + uiText('失败：', " failed: ", " — ошибка: ") + String(settled.error ?? '')
+      + uiText('。点页签的「', ". Click the tab's “", ". Нажмите на вкладке «") + (approve ? uiText('同意执行', "Approve execution", "Одобрить выполнение") : uiText('继续规划', "Keep planning", "Продолжить планирование")) + uiText('」重试即可，', "” to retry; ", "» для повтора; ") + bodyLabel + uiText('不会重复发送', " will not be sent again", " повторно не отправляется"))
   }
   return ok()
 }
@@ -431,14 +432,14 @@ export async function submitPlanResponse(sessionId: string, text: string, approv
  * @returns 动作结果
  */
 export async function sendPlanMessage(sessionId: string, text: string): Promise<PlanActionResult> {
-  if (!host) return fail('计划动作桥未就绪')
-  if (!sessionId) return fail('当前没有活动会话')
+  if (!host) return fail(uiText('计划动作桥未就绪', "Plan action bridge is not ready", "Мост действий плана не готов"))
+  if (!sessionId) return fail(uiText('当前没有活动会话', "No active session", "Нет активного сеанса"))
   const body = String(text ?? '').trim()
-  if (!body) return fail('指令为空')
+  if (!body) return fail(uiText('指令为空', "Instruction is empty", "Инструкция пуста"))
   try {
     return await host.sendTask(sessionId, body)
   } catch (error) {
-    return fail('发送失败：' + messageOf(error))
+    return fail(uiText('发送失败：', "Send failed: ", "Ошибка отправки: ") + messageOf(error))
   }
 }
 
@@ -469,13 +470,13 @@ export function revealPlanReview(sessionId: string): boolean {
  * @returns 动作结果
  */
 export async function fillComposer(sessionId: string, text: string): Promise<PlanActionResult> {
-  if (!host) return fail('计划动作桥未就绪')
-  if (!sessionId) return fail('当前没有活动会话')
-  if (!String(text ?? '').trim()) return fail('没有可填入的答复：先在页面里点 Copy response')
+  if (!host) return fail(uiText('计划动作桥未就绪', "Plan action bridge is not ready", "Мост действий плана не готов"))
+  if (!sessionId) return fail(uiText('当前没有活动会话', "No active session", "Нет активного сеанса"))
+  if (!String(text ?? '').trim()) return fail(uiText('没有可填入的答复：先在页面里点 Copy response', "No response to fill. Click Copy response on the page first.", "Нет ответа для вставки. Сначала нажмите Copy response на странице."))
   try {
     const outcome = await host.appendText(sessionId, String(text))
-    return outcome === 'ok' || outcome === 'busy' ? ok() : fail('写入输入框失败（' + outcome + '）')
+    return outcome === 'ok' || outcome === 'busy' ? ok() : fail(uiText('写入输入框失败（', "Failed to fill input (", "Ошибка заполнения поля (") + outcome + uiText('）', ")", ")"))
   } catch (error) {
-    return fail('写入输入框失败：' + messageOf(error))
+    return fail(uiText('写入输入框失败：', "Failed to fill input: ", "Ошибка заполнения поля: ") + messageOf(error))
   }
 }

@@ -9,6 +9,7 @@
  * 反馈统一走 ctx.notify（由 EditorView 提供，落到编辑区路径栏状态）。
  * 作者 ddj 2026-08-27 / 2026-09-03 / 2026-09-16 / 2026年09月22号
  */
+import { uiText } from '../uiLocale.js'
 import { isSvnDiffable } from '../../shared/svn.js'
 import { canImportOffice } from '../../shared/univer.js'
 import { univerCapability } from '../univer/store.js'
@@ -166,10 +167,10 @@ function confirmed(ctx: SidebarCtx, message: string): boolean {
 async function createEntry(target: TreeMenuTarget, ctx: SidebarCtx, kind: 'file' | 'directory'): Promise<void> {
   const ask = ctx.prompt
   if (!ask) {
-    ctx.notify?.('名称输入不可用')
+    ctx.notify?.(uiText('名称输入不可用', "Name input unavailable", "Ввод имени недоступен"))
     return
   }
-  const name = await ask(kind === 'file' ? '新建文件' : '新建文件夹', '')
+  const name = await ask(kind === 'file' ? uiText('新建文件', "New file", "Новый файл") : uiText('新建文件夹', "New folder", "Новая папка"), '')
   if (name === null) return
   const bad = checkNewName(name)
   if (bad) {
@@ -179,11 +180,11 @@ async function createEntry(target: TreeMenuTarget, ctx: SidebarCtx, kind: 'file'
   const path = joinRelPath(target.path, name)
   const res = await fsCall(kind === 'file' ? 'edrv.fsCreateFile' : 'edrv.fsCreateDir', { sessionId: ctx.sessionId, path })
   if (!res.ok) {
-    ctx.notify?.((kind === 'file' ? '新建文件失败：' : '新建文件夹失败：') + res.error)
+    ctx.notify?.((kind === 'file' ? uiText('新建文件失败：', "Failed to create file: ", "Ошибка создания файла: ") : uiText('新建文件夹失败：', "Failed to create folder: ", "Ошибка создания папки: ")) + res.error)
     return
   }
   if (kind === 'file') ctx.openFile(path)
-  fsDone(ctx, (kind === 'file' ? '已新建文件 ' : '已新建文件夹 ') + path, [path])
+  fsDone(ctx, (kind === 'file' ? uiText('已新建文件 ', "Created file ", "Создан файл ") : uiText('已新建文件夹 ', "Created folder ", "Создана папка ")) + path, [path])
 }
 
 /**
@@ -195,11 +196,11 @@ async function createEntry(target: TreeMenuTarget, ctx: SidebarCtx, kind: 'file'
 async function renameEntry(target: TreeMenuTarget, ctx: SidebarCtx): Promise<void> {
   const ask = ctx.prompt
   if (!ask) {
-    ctx.notify?.('名称输入不可用')
+    ctx.notify?.(uiText('名称输入不可用', "Name input unavailable", "Ввод имени недоступен"))
     return
   }
   const from = target.path
-  const name = await ask('重命名', baseNameOf(from))
+  const name = await ask(uiText('重命名', "Rename", "Переименовать"), baseNameOf(from))
   if (name === null || name === baseNameOf(from)) return
   const bad = checkRenameName(name)
   if (bad) {
@@ -208,11 +209,11 @@ async function renameEntry(target: TreeMenuTarget, ctx: SidebarCtx): Promise<voi
   }
   const res = await fsCall('edrv.fsRename', { sessionId: ctx.sessionId, path: from, newName: name })
   if (!res.ok) {
-    ctx.notify?.('重命名失败：' + res.error)
+    ctx.notify?.(uiText('重命名失败：', "Rename failed: ", "Ошибка переименования: ") + res.error)
     return
   }
   if (res.to !== res.from) emit('edrv:path-renamed', { from: res.from, to: res.to })
-  fsDone(ctx, '已重命名', [res.from, res.to])
+  fsDone(ctx, uiText('已重命名', "Renamed", "Переименовано"), [res.from, res.to])
 }
 
 /**
@@ -225,16 +226,16 @@ async function deleteEntry(target: TreeMenuTarget, ctx: SidebarCtx): Promise<voi
   const dirTarget = isDirTarget(target)
   const name = baseNameOf(target.path)
   const message = dirTarget
-    ? '永久删除文件夹「' + name + '」及其全部内容？该操作不可恢复。'
-    : '删除文件「' + name + '」？该操作不可恢复。'
+    ? uiText('永久删除文件夹「', "Permanently delete folder “", "Навсегда удалить папку «") + name + uiText('」及其全部内容？该操作不可恢复。', "” and all its contents? This cannot be undone.", "» и всё её содержимое? Действие необратимо.")
+    : uiText('删除文件「', "Delete file “", "Удалить файл «") + name + uiText('」？该操作不可恢复。', "”? This cannot be undone.", "»? Действие необратимо.")
   if (!confirmed(ctx, message)) return
   const res = await fsCall('edrv.fsDelete', { sessionId: ctx.sessionId, path: target.path })
   if (!res.ok) {
-    ctx.notify?.('删除失败：' + res.error)
+    ctx.notify?.(uiText('删除失败：', "Delete failed: ", "Ошибка удаления: ") + res.error)
     return
   }
   emit('edrv:path-deleted', { path: target.path })
-  fsDone(ctx, (dirTarget ? '已永久删除「' : '已删除「') + name + '」', [target.path])
+  fsDone(ctx, (dirTarget ? uiText('已永久删除「', "Permanently deleted “", "Навсегда удалено «") : uiText('已删除「', "Deleted “", "Удалено «")) + name + uiText('」', "”", "»"), [target.path])
 }
 
 /**
@@ -246,20 +247,20 @@ async function deleteEntry(target: TreeMenuTarget, ctx: SidebarCtx): Promise<voi
 async function pasteInto(target: TreeMenuTarget, ctx: SidebarCtx): Promise<void> {
   const clip = fileClipOf()
   if (!clip) {
-    ctx.notify?.('剪贴板为空')
+    ctx.notify?.(uiText('剪贴板为空', "Clipboard is empty", "Буфер обмена пуст"))
     return
   }
   const cut = clip.mode === 'cut'
   const res = await fsCall(cut ? 'edrv.fsMove' : 'edrv.fsCopy', { sessionId: ctx.sessionId, from: clip.path, toDir: target.path })
   if (!res.ok) {
-    ctx.notify?.('粘贴失败：' + res.error)
+    ctx.notify?.(uiText('粘贴失败：', "Paste failed: ", "Ошибка вставки: ") + res.error)
     return
   }
   if (cut) {
     clearFileClip()
     emit('edrv:path-renamed', { from: res.from, to: res.to })
   }
-  fsDone(ctx, (cut ? '已移动到 ' : '已复制到 ') + (target.path || '工作区根目录'), cut ? [res.from, res.to] : [res.to])
+  fsDone(ctx, (cut ? uiText('已移动到 ', "Moved to ", "Перемещено в ") : uiText('已复制到 ', "Copied to ", "Скопировано в ")) + (target.path || uiText('工作区根目录', "Workspace root", "Корень рабочего пространства")), cut ? [res.from, res.to] : [res.to])
 }
 
 // --endregion
@@ -275,7 +276,7 @@ function openGroupItems(): TreeMenuItem[] {
   return [
     {
       id: 'univer-import',
-      label: '使用 Univer 编辑副本',
+      label: uiText('使用 Univer 编辑副本', "Edit a copy with Univer", "Редактировать копию в Univer"),
       order: ORDER_OPEN - 1,
       group: GROUP_OPEN,
       visible: (target, ctx) => isFileTarget(target) && canImportOffice(target.path) && univerCapability(ctx.sessionId ?? '')?.available === true,
@@ -283,7 +284,7 @@ function openGroupItems(): TreeMenuItem[] {
     },
     {
       id: 'open-with',
-      label: '打开方式…',
+      label: uiText('打开方式…', "Open with…", "Открыть с помощью…"),
       order: ORDER_OPEN,
       group: GROUP_OPEN,
       visible: (target, ctx) => isFileTarget(target) && hasPath(target) && typeof ctx.openWith === 'function',
@@ -291,7 +292,7 @@ function openGroupItems(): TreeMenuItem[] {
     },
     {
       id: 'new-file',
-      label: '新建文件…',
+      label: uiText('新建文件…', "New file…", "Новый файл…"),
       order: ORDER_NEW_FILE,
       group: GROUP_OPEN,
       visible: (target) => isDirTarget(target),
@@ -299,7 +300,7 @@ function openGroupItems(): TreeMenuItem[] {
     },
     {
       id: 'new-folder',
-      label: '新建文件夹',
+      label: uiText('新建文件夹', "New folder", "Новая папка"),
       order: ORDER_NEW_FOLDER,
       group: GROUP_OPEN,
       visible: (target) => isDirTarget(target),
@@ -317,12 +318,12 @@ function revealGroupItems(): TreeMenuItem[] {
   return [
     {
       id: 'reveal-in-explorer',
-      label: '在文件资源管理器中显示',
+      label: uiText('在文件资源管理器中显示', "Reveal in file manager", "Показать в файловом менеджере"),
       order: ORDER_REVEAL,
       group: GROUP_REVEAL,
       run: (target, ctx) => {
         void revealInExplorer(ctx.sessionId, target.path).then((outcome) => {
-          ctx.notify?.(outcome.ok ? '已在文件浏览器中打开' : '打开失败：' + (outcome.error ?? '未知错误'))
+          ctx.notify?.(outcome.ok ? uiText('已在文件浏览器中打开', "Opened in file manager", "Открыто в файловом менеджере") : uiText('打开失败：', "Open failed: ", "Ошибка открытия: ") + (outcome.error ?? uiText('未知错误', "Unknown error", "Неизвестная ошибка")))
         })
       },
     },
@@ -338,7 +339,7 @@ function refGroupItems(): TreeMenuItem[] {
   return [
     {
       id: 'add-to-conversation',
-      label: '添加引用到对话',
+      label: uiText('添加引用到对话', "Add reference to conversation", "Добавить ссылку в диалог"),
       order: ORDER_ADD_REF,
       group: GROUP_REF,
       // 排除根目录空白区（path==='' 无意义）、无会话、动作集缺失时隐藏
@@ -347,10 +348,10 @@ function refGroupItems(): TreeMenuItem[] {
         const isDir = target.type === 'directory'
         const add = ctx.addToConversation
         if (!add) {
-          ctx.notify?.('添加到对话不可用')
+          ctx.notify?.(uiText('添加到对话不可用', "Adding to conversation is unavailable", "Добавление в диалог недоступно"))
           return
         }
-        const okText = isDir ? '已添加文件夹引用' : '已添加文件引用'
+        const okText = isDir ? uiText('已添加文件夹引用', "Folder reference added", "Ссылка на папку добавлена") : uiText('已添加文件引用', "File reference added", "Ссылка на файл добавлена")
         void add.appendReference(ctx.sessionId, target.path, undefined, isDir ? 'folder' : 'file').then((outcome) => {
           ctx.notify?.(statusOfAdd(outcome, okText))
         })
@@ -358,7 +359,7 @@ function refGroupItems(): TreeMenuItem[] {
     },
     {
       id: 'find-in-folder',
-      label: '在文件夹中查找…',
+      label: uiText('在文件夹中查找…', "Find in folder…", "Найти в папке…"),
       order: ORDER_FIND,
       group: GROUP_REF,
       visible: (target, ctx) => isDirTarget(target) && typeof ctx.searchInFolder === 'function',
@@ -376,29 +377,29 @@ function clipGroupItems(): TreeMenuItem[] {
   return [
     {
       id: 'cut',
-      label: '剪切',
+      label: uiText('剪切', "Cut", "Вырезать"),
       order: ORDER_CUT,
       group: GROUP_CLIP,
       visible: hasPath,
       run: (target, ctx) => {
         setFileClip('cut', target.path)
-        ctx.notify?.('已剪切「' + baseNameOf(target.path) + '」')
+        ctx.notify?.(uiText('已剪切「', "Cut “", "Вырезано «") + baseNameOf(target.path) + uiText('」', "”", "»"))
       },
     },
     {
       id: 'copy',
-      label: '复制',
+      label: uiText('复制', "Copy", "Копировать"),
       order: ORDER_COPY,
       group: GROUP_CLIP,
       visible: hasPath,
       run: (target, ctx) => {
         setFileClip('copy', target.path)
-        ctx.notify?.('已复制「' + baseNameOf(target.path) + '」')
+        ctx.notify?.(uiText('已复制「', "Copied “", "Скопировано «") + baseNameOf(target.path) + uiText('」', "”", "»"))
       },
     },
     {
       id: 'paste',
-      label: '粘贴',
+      label: uiText('粘贴', "Paste", "Вставить"),
       order: ORDER_PASTE,
       group: GROUP_CLIP,
       visible: isDirTarget,
@@ -417,22 +418,22 @@ function copyPathItems(): TreeMenuItem[] {
   return [
     {
       id: 'copy-path',
-      label: '复制路径',
+      label: uiText('复制路径', "Copy path", "Копировать путь"),
       order: ORDER_COPY_PATH,
       group: GROUP_COPY_PATH,
       visible: hasPath,
       run: (target, ctx) => {
-        void copyText(absoluteOf(target.path, ctx.cwd), '已复制路径', (message) => ctx.notify?.(message))
+        void copyText(absoluteOf(target.path, ctx.cwd), uiText('已复制路径', "Path copied", "Путь скопирован"), (message) => ctx.notify?.(message))
       },
     },
     {
       id: 'copy-relative-path',
-      label: '复制相对路径',
+      label: uiText('复制相对路径', "Copy relative path", "Копировать относительный путь"),
       order: ORDER_COPY_REL,
       group: GROUP_COPY_PATH,
       visible: (target, ctx) => hasPath(target) && hasCwd(ctx),
       run: (target, ctx) => {
-        void copyText(relativeOf(target.path, ctx.cwd), '已复制相对路径', (message) => ctx.notify?.(message))
+        void copyText(relativeOf(target.path, ctx.cwd), uiText('已复制相对路径', "Relative path copied", "Относительный путь скопирован"), (message) => ctx.notify?.(message))
       },
     },
   ]
@@ -447,7 +448,7 @@ function editGroupItems(): TreeMenuItem[] {
   return [
     {
       id: 'rename',
-      label: '重命名…',
+      label: uiText('重命名…', "Rename…", "Переименовать…"),
       order: ORDER_RENAME,
       group: GROUP_EDIT,
       visible: hasPath,
@@ -456,7 +457,7 @@ function editGroupItems(): TreeMenuItem[] {
     {
       id: 'delete',
       // 文案对齐参考图：文件 = 「删除」，文件夹 = 「永久删除」（行为均为确认后的磁盘删除）
-      label: (target) => (isDirTarget(target) ? '永久删除' : '删除'),
+      label: (target) => (isDirTarget(target) ? uiText('永久删除', "Delete permanently", "Удалить навсегда") : uiText('删除', "Delete", "Удалить")),
       order: ORDER_DELETE,
       group: GROUP_EDIT,
       danger: true,
@@ -480,7 +481,7 @@ function editGroupItems(): TreeMenuItem[] {
 function downloadItems(): TreeMenuItem[] {
   return [{
     id: 'remote-download',
-    label: (target) => (target.type === 'file' ? '下载到本机' : '下载到本机…'),
+    label: (target) => (target.type === 'file' ? uiText('下载到本机', "Download to this device", "Скачать на это устройство") : uiText('下载到本机…', "Download to this device…", "Скачать на это устройство…")),
     order: ORDER_DOWNLOAD,
     group: GROUP_COPY_PATH,
     visible: () => isRemoteChannel(),
@@ -592,10 +593,10 @@ function svnMenuItems(): TreeMenuItem[] {
 export function createDefaultFileMenuItems(): TreeMenuItem[] {
   return [
     ...openGroupItems(),
-    { id: 'forge-open', label: '打开 Forge', order: 6, group: GROUP_OPEN,
+    { id: 'forge-open', label: uiText('打开 Forge', "Open Forge", "Открыть Forge"), order: 6, group: GROUP_OPEN,
       visible: (_target, ctx) => ctx.forge?.available() === true,
       run: (_target, ctx) => { if (ctx.sessionId) ctx.forge?.open(ctx.sessionId) } },
-    { id: 'forge-local', label: '查看本地变更（Forge）', order: 7, group: GROUP_OPEN,
+    { id: 'forge-local', label: uiText('查看本地变更（Forge）', "View local changes (Forge)", "Просмотреть локальные изменения (Forge)"), order: 7, group: GROUP_OPEN,
       visible: (_target, ctx) => ctx.forge?.available() === true,
       run: (_target, ctx) => { if (ctx.sessionId) ctx.forge?.open(ctx.sessionId, true) } },
     ...revealGroupItems(),

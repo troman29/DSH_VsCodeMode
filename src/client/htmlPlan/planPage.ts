@@ -7,6 +7,7 @@
  * @author ddj 2026年11月21号
  */
 
+import { uiText } from '../uiLocale.js'
 /** plan 投影的最小结构面。 */
 export interface PlanProjectionLike {
   active?: unknown
@@ -42,9 +43,23 @@ const PAGE_LINE = /^[ \t]*HTML[ \t]*计划页[ \t]*[:：][ \t]*(.+?)[ \t]*$/im
 const RUNTIME_REF = /<(?:link|script)\b[^>]*?\s(?:href|src)\s*=\s*["']([^"']*htmlplan\.(?:css|js))[^>]*>/gi
 
 /** 桥接脚本：拦截 iframe 内剪贴板写入并转发给父级；失败不影响页面。 */
-const BRIDGE_SCRIPT = [
+function bridgeScript(): string {
+  const text = {
+    reply: uiText('回复', 'Reply', 'Ответить'),
+    execute: uiText('回复并执行', 'Reply and execute', 'Ответить и выполнить'),
+    title: uiText('直接把这份答复发送给 DSH agent', 'Send this response directly to the DSH agent', 'Отправить этот ответ агенту DSH напрямую'),
+    sending: uiText('发送中…', 'Sending…', 'Отправка…'),
+    sent: uiText('已发送', 'Sent', 'Отправлено'),
+    failed: uiText('发送失败：', 'Send failed: ', 'Ошибка отправки: '),
+    unknown: uiText('未知原因', 'Unknown reason', 'Неизвестная причина'),
+    manual: uiText('。可复制后手动粘贴。', '. You can copy and paste manually.', '. Можно скопировать и вставить вручную.'),
+    pendingHint: uiText('点「回复并执行」= 把答复和批准一起交给 agent（同一步读到）；要改计划请先点页签「继续规划」。', 'Reply and execute delivers the response and approval together. To revise the plan, first click Keep planning on the tab.', 'Ответить и выполнить передаёт ответ и одобрение вместе. Для изменения плана сначала нажмите «Продолжить планирование» на вкладке.'),
+    replyHint: uiText('点「回复」直接发送给 agent；也可以复制后手动粘贴。', 'Click Reply to send directly to the agent, or copy and paste manually.', 'Нажмите «Ответить» для отправки агенту или скопируйте и вставьте вручную.'),
+  }
+  return [
   '<script ' + BRIDGE_MARK + '>',
   '(() => {',
+  '  const text = ' + JSON.stringify(text),
   '  try {',
   '    const send = (text) => {',
   '      try { parent.postMessage({ source: "edrv-htmlplan", type: "copy", text: String(text ?? "") }, "*") } catch (error) { /* 父级不可达 */ }',
@@ -83,19 +98,20 @@ const BRIDGE_SCRIPT = [
   '        sheet.dataset.edrvReply = "1"',
   '        const reply = document.createElement("button")',
   '        reply.type = "button"',
+  '        reply.dataset.edrvPlanReply = "1"',
   '        reply.className = "nw-btn primary"',
-  '        reply.textContent = reviewPending ? "回复并执行" : "回复"',
-  '        reply.title = "直接把这份答复发送给 DSH agent"',
+  '        reply.textContent = reviewPending ? text.execute : text.reply',
+  '        reply.title = text.title',
   '        reply.addEventListener("click", (event) => {',
   '          event.preventDefault()',
   '          reply.disabled = true',
-  '          reply.textContent = "发送中…"',
+  '          reply.textContent = text.sending',
   '          try { parent.postMessage({ source: "edrv-htmlplan", type: "respond", text: String(pre.textContent || "") }, "*") } catch (error) { /* 父级不可达 */ }',
   '        }, true)',
   '        const copy = Array.from(footer.querySelectorAll("button")).find((btn) => /copy response|复制答复/i.test(btn.textContent || ""))',
   '        footer.insertBefore(reply, copy || footer.firstChild)',
   '        const hint = sheet.querySelector("p.hint")',
-  '        if (hint) hint.textContent = reviewPending ? "点「回复并执行」= 把答复和批准一起交给 agent（同一步读到）；要改计划请先点页签「继续规划」。" : "点「回复」直接发送给 agent；也可以复制后手动粘贴。"',
+  '        if (hint) hint.textContent = reviewPending ? text.pendingHint : text.replyHint',
   '      }',
   '    }',
   '    try { new MutationObserver(() => { try { hookSheet() } catch (error) { /* 忽略 */ } }).observe(document.body || document.documentElement, { childList: true, subtree: true }) } catch (error) { /* 无 MutationObserver */ }',
@@ -106,25 +122,25 @@ const BRIDGE_SCRIPT = [
   '      if (data.type === "state") {',
   '        reviewPending = data.reviewPending === true',
   '        for (const sheet of document.querySelectorAll(".nw-sheet")) {',
-  '          const reply = Array.from(sheet.querySelectorAll("footer button")).find((btn) => /回复|发送中|已发送|发送失败/.test(btn.textContent || ""))',
-  '          if (reply && !reply.disabled) reply.textContent = reviewPending ? "回复并执行" : "回复"',
+  '          const reply = Array.from(sheet.querySelectorAll("footer button")).find((btn) => btn.dataset.edrvPlanReply === "1" || /回复|发送中|已发送|发送失败/.test(btn.textContent || ""))',
+  '          if (reply && !reply.disabled) reply.textContent = reviewPending ? text.execute : text.reply',
   '          const hint = sheet.querySelector("p.hint")',
-  '          if (hint && !/发送失败/.test(hint.textContent || "")) hint.textContent = reviewPending ? "点「回复并执行」= 把答复和批准一起交给 agent（同一步读到）；要改计划请先点页签「继续规划」。" : "点「回复」直接发送给 agent；也可以复制后手动粘贴。"',
+  '          if (hint && hint.dataset.edrvSendFailed !== "1" && !/发送失败/.test(hint.textContent || "")) hint.textContent = reviewPending ? text.pendingHint : text.replyHint',
   '        }',
   '        return',
   '      }',
   '      if (data.type !== "respond-result") return',
   '      for (const sheet of document.querySelectorAll(".nw-sheet")) {',
-  '        const reply = Array.from(sheet.querySelectorAll("footer button")).find((btn) => /回复|发送中|已发送|发送失败/.test(btn.textContent || ""))',
+  '        const reply = Array.from(sheet.querySelectorAll("footer button")).find((btn) => btn.dataset.edrvPlanReply === "1" || /回复|发送中|已发送|发送失败/.test(btn.textContent || ""))',
   '        if (!reply) continue',
   '        if (data.ok === true) {',
-  '          reply.textContent = "已发送"',
+  '          reply.textContent = text.sent',
   '          setTimeout(() => { try { sheet.querySelector("header button")?.click() } catch (error) { /* 忽略 */ } }, 500)',
   '        } else {',
   '          reply.disabled = false',
-  '          reply.textContent = "回复"',
+  '          reply.textContent = text.reply',
   '          const hint = sheet.querySelector("p.hint")',
-  '          if (hint) hint.textContent = "发送失败：" + String(data.message || "未知原因") + "。可复制后手动粘贴。"',
+  '          if (hint) { hint.dataset.edrvSendFailed = "1"; hint.textContent = text.failed + String(data.message || text.unknown) + text.manual }',
   '        }',
   '      }',
   '    })',
@@ -133,6 +149,7 @@ const BRIDGE_SCRIPT = [
   '})();',
   '</script>',
 ].join('\n')
+}
 
 /**
  * 从计划正文里取 HTML 计划页路径（去掉包裹的反引号/引号）。
@@ -191,8 +208,8 @@ export function buildPlanSrcDoc(html: unknown): string {
   const text = typeof html === 'string' ? html : ''
   if (!text.trim()) return ''
   if (text.includes(BRIDGE_MARK)) return text
-  if (/<\/body\s*>/i.test(text)) return text.replace(/<\/body\s*>/i, BRIDGE_SCRIPT + '\n</body>')
-  return text + '\n' + BRIDGE_SCRIPT
+  if (/<\/body\s*>/i.test(text)) return text.replace(/<\/body\s*>/i, bridgeScript() + '\n</body>')
+  return text + '\n' + bridgeScript()
 }
 
 /**
@@ -284,20 +301,20 @@ export function derivePlanUiState(
   acted?: 'approved' | 'revising' | 'exited' | null,
 ): PlanUiState {
   if (projection === null || typeof projection !== 'object') {
-    return { mode: 'unknown', label: '计划状态不可用', active: false, pending: false }
+    return { mode: 'unknown', label: uiText('计划状态不可用', "Plan status unavailable", "Состояние плана недоступно"), active: false, pending: false }
   }
   const row = projection as PlanProjectionLike
   const active = row.active === true
   const pending = row.pending === true
-  if (pending) return { mode: 'planning', label: '计划状态切换中', active, pending }
+  if (pending) return { mode: 'planning', label: uiText('计划状态切换中', "Plan state changing", "Переключение состояния плана"), active, pending }
   if (acted === 'approved') {
-    return { mode: 'approved', label: active ? '已批准 · 等待退出计划模式' : '已批准 · 已退出计划模式', active, pending }
+    return { mode: 'approved', label: active ? uiText('已批准 · 等待退出计划模式', "Approved · Waiting to exit plan mode", "Одобрено · Ожидание выхода из планирования") : uiText('已批准 · 已退出计划模式', "Approved · Exited plan mode", "Одобрено · Режим планирования завершён"), active, pending }
   }
-  if (acted === 'exited' && !active) return { mode: 'exited', label: '已退出计划模式', active, pending }
-  if (acted === 'revising' && active) return { mode: 'revising', label: '继续规划中', active, pending }
-  if (active && reviewPending) return { mode: 'reviewing', label: '待审批', active, pending }
-  if (active) return { mode: 'planning', label: '计划中', active, pending }
-  return { mode: 'off', label: '计划模式未开启', active, pending }
+  if (acted === 'exited' && !active) return { mode: 'exited', label: uiText('已退出计划模式', "Exited plan mode", "Режим планирования завершён"), active, pending }
+  if (acted === 'revising' && active) return { mode: 'revising', label: uiText('继续规划中', "Revising plan", "Продолжение планирования"), active, pending }
+  if (active && reviewPending) return { mode: 'reviewing', label: uiText('待审批', "Awaiting approval", "Ожидает согласования"), active, pending }
+  if (active) return { mode: 'planning', label: uiText('计划中', "Planning", "Планирование"), active, pending }
+  return { mode: 'off', label: uiText('计划模式未开启', "Plan mode is off", "Режим планирования выключен"), active, pending }
 }
 
 /** 选项标签归一：字符串或 { label } 数组。 */

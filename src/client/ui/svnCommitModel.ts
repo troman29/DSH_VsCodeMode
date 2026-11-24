@@ -5,6 +5,7 @@
  * 必须能单测，否则「默认不勾未版本化」这类保护很容易在改 UI 时被顺手改掉。
  * @author ddj 2026年11月15号
  */
+import { uiText } from '../uiLocale.js'
 import type { SvnAiPlanCommit, SvnChangeEntry, SvnCommitEntry, SvnCommitResult, SvnStatusTone } from '../../shared/svn.js'
 import { COMMIT_SUBJECT_MAX, SVN_STATUS_TONE, commitMsgErrorOf, isSvnChange, isSvnDiffable } from '../../shared/svn.js'
 
@@ -68,8 +69,8 @@ export function commitSectionsOf(entries: readonly SvnChangeEntry[], knownChange
       defaultChecked: name !== IGNORE_ON_COMMIT,
     })
   }
-  if (ungrouped.length) sections.push({ key: 'ungrouped', label: '（未分组）', entries: ungrouped, defaultChecked: true })
-  if (unversioned.length) sections.push({ key: 'unversioned', label: '（未版本控制）', entries: unversioned, defaultChecked: false })
+  if (ungrouped.length) sections.push({ key: 'ungrouped', get label() { return uiText('（未分组）', "(Ungrouped)", "(Без группы)") }, entries: ungrouped, defaultChecked: true })
+  if (unversioned.length) sections.push({ key: 'unversioned', get label() { return uiText('（未版本控制）', "(Unversioned)", "(Вне контроля версий)") }, entries: unversioned, defaultChecked: false })
   return sections
 }
 
@@ -148,7 +149,7 @@ export function groupTriStateOf(section: CommitSection, checked: ReadonlySet<str
  */
 export function commitMessageErrorOf(message: string): string | null {
   const text = String(message ?? '')
-  if (!text.trim()) return '请填写提交信息'
+  if (!text.trim()) return uiText('请填写提交信息', "Enter a commit message", "Введите сообщение коммита")
   const lines = text.replace(/\r\n/g, '\n').split('\n')
   const subject = (lines[0] ?? '').trim()
   const body = lines.slice(1).join('\n').trim()
@@ -164,8 +165,8 @@ export function commitMessageErrorOf(message: string): string | null {
 export function commitHintOf(message: string): string {
   const lines = String(message ?? '').replace(/\r\n/g, '\n').split('\n')
   const subject = (lines[0] ?? '').trim()
-  if (!subject) return '首行将作为提交标题'
-  return '首行 ' + subject.length + '/' + COMMIT_SUBJECT_MAX + ' 字符'
+  if (!subject) return uiText('首行将作为提交标题', "The first line is the commit title", "Первая строка станет заголовком коммита")
+  return uiText('首行 ', "First line: ", "Первая строка: ") + subject.length + '/' + COMMIT_SUBJECT_MAX + uiText(' 字符', " characters", " символов")
 }
 
 /**
@@ -177,10 +178,10 @@ export function commitHintOf(message: string): string {
 export function commitResultLinesOf(result: SvnCommitResult | null | undefined): string[] {
   if (!result) return []
   const lines: string[] = []
-  lines.push(result.revision !== undefined ? '提交成功：r' + result.revision : result.summary)
+  lines.push(result.revision !== undefined ? uiText('提交成功：r', "Committed: r", "Коммит выполнен: r") + result.revision : result.summary)
   for (const entry of result.entries ?? []) lines.push(entry.action + ' ' + entry.path)
-  for (const path of result.skipped ?? []) lines.push('跳过 ' + path + '（无待提交变更）')
-  for (const path of result.conflicts ?? []) lines.push('冲突 ' + path + '（请先更新并解决）')
+  for (const path of result.skipped ?? []) lines.push(uiText('跳过 ', "Skipped ", "Пропущено ") + path + uiText('（无待提交变更）', " (no pending changes)", " (нет изменений для коммита)"))
+  for (const path of result.conflicts ?? []) lines.push(uiText('冲突 ', "Conflict ", "Конфликт ") + path + uiText('（请先更新并解决）', " (update and resolve first)", " (сначала обновите и разрешите конфликт)"))
   return lines
 }
 

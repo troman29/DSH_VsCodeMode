@@ -22,6 +22,7 @@
  * 作者 ddj 2026年09月16号 / 2026年09月17号 / 2026年09月18号
  */
 import React from 'react'
+import { uiText } from '../uiLocale.js'
 import { SVN_LOG_ACTION_LABEL } from '../../shared/svn.js'
 import { orderLogEntries } from '../../svnLog.js'
 import { SVN_LOG_SHOW_ALL_LIMIT } from '../svnLog.js'
@@ -56,21 +57,21 @@ const HSPLIT_TOTAL_PX = 12
 const ACTION_TONE = { A: 'added', D: 'deleted', R: 'replaced', M: 'modified' }
 /** 排序键 → 列头名（P0-12；顺序 = 列头展示顺序）。 */
 const SORT_COLUMNS = [
-  { key: 'revision', label: '版本' },
-  { key: 'actions', label: '动作' },
-  { key: 'author', label: '作者' },
-  { key: 'date', label: '日期' },
-  { key: 'message', label: '信息' },
+  { key: 'revision', get label() { return uiText('版本', "Revision", "Ревизия") } },
+  { key: 'actions', get label() { return uiText('动作', "Action", "Действие") } },
+  { key: 'author', get label() { return uiText('作者', "Author", "Автор") } },
+  { key: 'date', get label() { return uiText('日期', "Date", "Дата") } },
+  { key: 'message', get label() { return uiText('信息', "Message", "Сообщение") } },
 ]
 /** 可排序键集合（actions 列仅展示徽标，不参与排序）。 */
 const SORT_KEYS = ['revision', 'author', 'date', 'message']
 /** 过滤字段下拉（官方 findtype 的本插件可达子集）。 */
 const FILTER_FIELDS = [
-  { key: 'all', label: '全部' },
-  { key: 'message', label: '信息' },
-  { key: 'paths', label: '路径' },
-  { key: 'author', label: '作者' },
-  { key: 'revision', label: '版本' },
+  { key: 'all', get label() { return uiText('全部', "All", "Все") } },
+  { key: 'message', get label() { return uiText('信息', "Message", "Сообщение") } },
+  { key: 'paths', get label() { return uiText('路径', "Path", "Путь") } },
+  { key: 'author', get label() { return uiText('作者', "Author", "Автор") } },
+  { key: 'revision', get label() { return uiText('版本', "Revision", "Ревизия") } },
 ]
 
 /**
@@ -81,7 +82,7 @@ const FILTER_FIELDS = [
  */
 function firstLineOf(message) {
   const text = String(message ?? '').trim()
-  if (!text) return '（无提交信息）'
+  if (!text) return uiText('（无提交信息）', "(No commit message)", "(Нет сообщения коммита)")
   return text.split(/\r?\n/)[0]
 }
 
@@ -342,12 +343,12 @@ export function parseLogFilter(query, field = 'all', useRegex = false) {
  */
 export function revisionClipboardText(entry) {
   const lines = [
-    'r' + entry.revision + ' ' + (entry.author || '（无作者）') + ' ' + dateTextOf(entry.date),
-    String(entry.message ?? '（无提交信息）'),
+    'r' + entry.revision + ' ' + (entry.author || uiText('（无作者）', "(No author)", "(Нет автора)")) + ' ' + dateTextOf(entry.date),
+    String(entry.message ?? uiText('（无提交信息）', "(No commit message)", "(Нет сообщения коммита)")),
   ]
   const paths = entry.paths || []
   if (paths.length) {
-    lines.push('变更文件（' + paths.length + '）：')
+    lines.push(uiText('变更文件（', "Changed files (", "Изменённые файлы (") + paths.length + '）：')
     for (const p of paths) lines.push('  ' + (p.action || 'M') + ' ' + String(p.relPath ?? p.path))
   }
   return lines.join('\n')
@@ -379,7 +380,7 @@ function SortCol(props) {
   const arrow = active ? (sortDir === 'asc' ? '↑' : '↓') : ''
   return React.createElement('span', {
     className: 'edrv-svnlog-col' + (sortable ? ' edrv-svnlog-col-sortable' : '') + (active ? ' edrv-svnlog-col-on' : ''),
-    title: sortable ? '按' + col.label + '排序；再点切换升/降序' : undefined,
+    title: sortable ? uiText('按', "Sort by ", "Сортировать по полю «") + col.label + uiText('排序；再点切换升/降序', "; click again to toggle ascending/descending", "»; повторное нажатие меняет порядок сортировки") : undefined,
     onClick: sortable ? () => onSort(col.key) : undefined,
   }, col.label + (arrow ? ' ' + arrow : ''))
 }
@@ -396,8 +397,8 @@ function LogCols(props) {
     SORT_COLUMNS.map((col) => React.createElement(SortCol, { key: col.key, col, sortKey, sortDir, onSort })),
     (sortKey
       ? React.createElement('button', {
-          className: 'edrv-svn-act edrv-svnlog-sort-reset', title: '恢复默认（版本号降序，最新在上）', onClick: onSortReset,
-        }, '默认')
+          className: 'edrv-svn-act edrv-svnlog-sort-reset', title: uiText('恢复默认（版本号降序，最新在上）', "Restore default (revision descending, newest first)", "Восстановить порядок по умолчанию (новые ревизии сверху)"), onClick: onSortReset,
+        }, uiText('默认', "Default", "По умолчанию"))
       : null))
 }
 
@@ -419,11 +420,11 @@ function LogItem(props) {
   const actions = actionsOf(item)
   const copied = (item.paths || []).some((p) => p?.copyFrom)
   const merged = level > 0
-  const title = (merged ? '合并进来的修订 · ' : '')
+  const title = (merged ? uiText('合并进来的修订 · ', "Merged revision · ", "Слитая ревизия · ") : '')
     + firstLineOf(item.message)
     + ' · r' + item.revision + ' · ' + dateTextOf(item.date)
-    + ' · ' + (item.paths?.length || 0) + ' 文件'
-    + (item.reverseMerge ? ' · 反向合并（reverse-merge）' : '')
+    + ' · ' + (item.paths?.length || 0) + uiText(' 文件', " files", " файлов")
+    + (item.reverseMerge ? uiText(' · 反向合并（reverse-merge）', " · Reverse merge", " · Обратное слияние") : '')
   return React.createElement('div', {
     className: 'edrv-svnlog-item'
       + (on ? ' edrv-svnlog-item-on' : '')
@@ -439,7 +440,7 @@ function LogItem(props) {
     React.createElement('span', { className: 'edrv-svnlog-cell edrv-svnlog-cell-rev edrv-svnlog-rev' }, 'r' + item.revision),
     React.createElement('span', { className: 'edrv-svnlog-cell edrv-svnlog-cell-act' },
       actions.map((a) => React.createElement('span', { key: a, className: 'edrv-svnlog-badge ' + actionLetterClass(a) }, a))),
-    React.createElement('span', { className: 'edrv-svnlog-cell edrv-svnlog-cell-author' }, item.author || '（无作者）'),
+    React.createElement('span', { className: 'edrv-svnlog-cell edrv-svnlog-cell-author' }, item.author || uiText('（无作者）', "(No author)", "(Нет автора)")),
     React.createElement('span', { className: 'edrv-svnlog-cell edrv-svnlog-cell-date', title: dateTextOf(item.date) }, dateShortOf(item.date)),
     React.createElement('span', { className: 'edrv-svnlog-cell edrv-svnlog-cell-msg' }, firstLineOf(item.message)))
 }
@@ -457,7 +458,7 @@ function Splitter(props) {
   const { vertical, title, onDragStart, onReset } = props
   return React.createElement('div', {
     className: vertical ? 'edrv-svnlog-vsplit' : 'edrv-svnlog-hsplit',
-    title: title + '（双击复位）',
+    title: title + uiText('（双击复位）', " (double-click to reset)", " (двойное нажатие для сброса)"),
     onPointerDown: onDragStart,
     onDoubleClick: (event) => { event.stopPropagation(); onReset() },
   })
@@ -484,7 +485,7 @@ function swallowNextClick() {
 }
 
 /** 八向手柄 → 提示文案（title 供无障碍与实机寻址；13-log-ui-polish 增量3）。 */
-const GRIP_LABEL = { n: '上缘', s: '下缘', w: '左缘', e: '右缘', nw: '左上角', ne: '右上角', sw: '左下角', se: '右下角' }
+const GRIP_LABEL = { get n() { return uiText('上缘', "Top edge", "Верхний край") }, get s() { return uiText('下缘', "Bottom edge", "Нижний край") }, get w() { return uiText('左缘', "Left edge", "Левый край") }, get e() { return uiText('右缘', "Right edge", "Правый край") }, get nw() { return uiText('左上角', "Top-left corner", "Верхний левый угол") }, get ne() { return uiText('右上角', "Top-right corner", "Верхний правый угол") }, get sw() { return uiText('左下角', "Bottom-left corner", "Нижний левый угол") }, get se() { return uiText('右下角', "Bottom-right corner", "Нижний правый угол") } }
 
 /**
  * 外框尺寸手柄（13-log-ui-polish 增量3 八向）：mode ∈ n/s/w/e/nw/ne/sw/se（四边+四角）；双击复位。
@@ -499,7 +500,7 @@ function Grip(props) {
   const { mode, onDragStart, onReset } = props
   return React.createElement('div', {
     className: 'edrv-svnlog-grip edrv-svnlog-grip-' + mode,
-    title: '调整弹窗尺寸（' + (GRIP_LABEL[mode] ?? mode) + '）· 双击复位',
+    title: uiText('调整弹窗尺寸（', "Resize dialog (", "Изменить размер окна (") + (GRIP_LABEL[mode] ?? mode) + uiText('）· 双击复位', ") · Double-click to reset", ") · Двойное нажатие для сброса"),
     onPointerDown: (event) => onDragStart(event, mode),
     onDoubleClick: (event) => { event.stopPropagation(); onReset() },
   })
@@ -538,25 +539,25 @@ function PathRow(props) {
   const actionable = !outside && !isRoot
   const open = () => { if (actionable) onOpenFile?.(item.relPath) }
   const diff = () => { if (actionable && item.kind !== 'dir') onOpenDiff?.(item.relPath, revision) }
-  const relText = outside ? item.path + '（仓库外）' : (isRoot ? '（工作副本根）' : item.relPath)
+  const relText = outside ? item.path + uiText('（仓库外）', " (outside repository)", " (вне репозитория)") : (isRoot ? uiText('（工作副本根）', "(Working copy root)", "(Корень рабочей копии)") : item.relPath)
   const segs = pathSegsOf(relText)
   const buttons = actionable ? React.createElement('span', { className: 'edrv-svnlog-acts' },
     React.createElement('button', {
-      className: 'edrv-svn-act', title: '在工作区打开该文件',
+      className: 'edrv-svn-act', title: uiText('在工作区打开该文件', "Open this file in the workspace", "Открыть файл в рабочей области"),
       onClick: (event) => { event.stopPropagation(); open() },
-    }, '打开'),
+    }, uiText('打开', "Open", "Открыть")),
     (item.kind === 'dir'
       ? null
       : React.createElement('button', {
-          className: 'edrv-svn-act', title: '查看该版本与上一版的差异',
+          className: 'edrv-svn-act', title: uiText('查看该版本与上一版的差异', "Compare this revision with the previous one", "Сравнить эту ревизию с предыдущей"),
           onClick: (event) => { event.stopPropagation(); diff() },
-        }, '差异')))
+        }, uiText('差异', "Diff", "Различия"))))
     : null
   return React.createElement('div', {
     className: 'edrv-svnlog-path' + (dim ? ' edrv-svnlog-path-dim' : ''),
-    title: item.path + (item.copyFrom ? '（复制自 ' + item.copyFrom + '@' + (item.copyFromRev ?? '?') + '）' : '')
-      + (outside ? '（仓库外路径）' : (isRoot ? '（工作副本根自身变更，常见于合并属性）' : ''))
-      + (item.kind === 'dir' ? '' : '（双击查看该版本差异）'),
+    title: item.path + (item.copyFrom ? uiText('（复制自 ', " (copied from ", " (скопировано из ") + item.copyFrom + '@' + (item.copyFromRev ?? '?') + '）' : '')
+      + (outside ? uiText('（仓库外路径）', " (path outside repository)", " (путь вне репозитория)") : (isRoot ? uiText('（工作副本根自身变更，常见于合并属性）', " (working copy root change, often merge properties)", " (изменение корня рабочей копии, обычно свойства слияния)") : ''))
+      + (item.kind === 'dir' ? '' : uiText('（双击查看该版本差异）', " (double-click to view revision diff)", " (двойное нажатие для просмотра различий ревизии)")),
     onDoubleClick: () => { if (item.kind === 'dir') open(); else diff() },
     onContextMenu: (event) => onMenu?.(event, item, revision),
   },
@@ -564,8 +565,8 @@ function PathRow(props) {
     React.createElement('span', { className: 'edrv-svnlog-pathtext' },
       segs.dir ? React.createElement('span', { className: 'edrv-svnlog-pdir' }, segs.dir) : null,
       React.createElement('span', { className: 'edrv-svnlog-pbase' }, segs.base)),
-    (item.kind === 'dir' ? React.createElement('span', { className: 'edrv-svnlog-kind' }, '目录') : null),
-    (item.copyFrom ? React.createElement('span', { className: 'edrv-svnlog-kind' }, '复制') : null),
+    (item.kind === 'dir' ? React.createElement('span', { className: 'edrv-svnlog-kind' }, uiText('目录', "Directory", "Папка")) : null),
+    (item.copyFrom ? React.createElement('span', { className: 'edrv-svnlog-kind' }, uiText('复制', "Copy", "Копировать")) : null),
     React.createElement('span', { className: 'edrv-svnlog-copyfrom', title: item.copyFrom ? item.copyFrom + '@' + (item.copyFromRev ?? '?') : '' },
       item.copyFrom ? item.copyFrom + '@' + (item.copyFromRev ?? '?') : ''),
     buttons)
@@ -622,9 +623,9 @@ function LogList(props) {
   const { list, selectedRevs, keyword, busy, truncated, sortKey, sortDir, onSort, onSortReset, onPick, onLoadMore, onItemMenu, height, wcRev } = props
   let inner
   if (list === null) {
-    inner = React.createElement('div', { className: 'edrv-tree-loading' }, busy ? '读取日志中…' : '尚未加载')
+    inner = React.createElement('div', { className: 'edrv-tree-loading' }, busy ? uiText('读取日志中…', "Reading log…", "Чтение журнала…") : uiText('尚未加载', "Not loaded yet", "Ещё не загружено"))
   } else if (!list.length) {
-    inner = React.createElement('div', { className: 'edrv-tree-loading' }, keyword ? '无匹配条目' : '无提交历史')
+    inner = React.createElement('div', { className: 'edrv-tree-loading' }, keyword ? uiText('无匹配条目', "No matching entries", "Нет подходящих записей") : uiText('无提交历史', "No commit history", "Нет истории коммитов"))
   } else {
     inner = React.createElement(LogRows, { list, selectedRevs, wcRev, onPick, onMenu: onItemMenu })
   }
@@ -632,7 +633,7 @@ function LogList(props) {
     ? React.createElement('div', { className: 'edrv-svnlog-more' },
         React.createElement('button', {
           className: 'edrv-svn-act', disabled: busy, onClick: onLoadMore,
-        }, busy ? '加载中…' : '加载更多（+100）'))
+        }, busy ? uiText('加载中…', "Loading…", "Загрузка…") : uiText('加载更多（+100）', "Load more (+100)", "Загрузить ещё (+100)")))
     : null
   return React.createElement('div', { className: 'edrv-svnlog-list', style: height ? { height } : undefined },
     React.createElement(LogCols, { sortKey, sortDir, onSort, onSortReset }),
@@ -650,23 +651,23 @@ function LogList(props) {
 function LogMsgInner(props) {
   const { selected } = props
   if (!selected || !selected.length) {
-    return React.createElement('div', { className: 'edrv-svndiff-empty' }, '选择修订查看提交信息')
+    return React.createElement('div', { className: 'edrv-svndiff-empty' }, uiText('选择修订查看提交信息', "Select a revision to view its commit message", "Выберите ревизию для просмотра сообщения коммита"))
   }
   if (selected.length === 1) {
     const one = selected[0]
     return React.createElement(React.Fragment, null,
       React.createElement('div', { className: 'edrv-svnlog-meta' },
         React.createElement('span', { className: 'edrv-svnlog-rev' }, 'r' + one.revision),
-        React.createElement('span', null, one.author || '（无作者）'),
+        React.createElement('span', null, one.author || uiText('（无作者）', "(No author)", "(Нет автора)")),
         React.createElement('span', { className: 'edrv-svnlog-date' }, dateTextOf(one.date))),
-      React.createElement('pre', { className: 'edrv-svnlog-body' }, one.message || '（无提交信息）'))
+      React.createElement('pre', { className: 'edrv-svnlog-body' }, one.message || uiText('（无提交信息）', "(No commit message)", "(Нет сообщения коммита)")))
   }
   const head = React.createElement('div', { className: 'edrv-svnlog-meta' },
     React.createElement('span', { className: 'edrv-svnlog-rev' }, 'r' + selected[0].revision + ' ~ r' + selected[selected.length - 1].revision),
-    React.createElement('span', null, '已选 ' + selected.length + ' 条修订'),
-    React.createElement('span', { className: 'edrv-svnlog-date' }, '信息合并显示'))
-  const text = selected.map((entry) => 'r' + entry.revision + ' · ' + (entry.author || '（无作者）') + ' · ' + dateTextOf(entry.date)
-    + '\n' + String(entry.message || '（无提交信息）')).join('\n----------------\n')
+    React.createElement('span', null, uiText('已选 ', "Selected ", "Выбрано ") + selected.length + uiText(' 条修订', " revisions", " ревизий")),
+    React.createElement('span', { className: 'edrv-svnlog-date' }, uiText('信息合并显示', "Messages shown together", "Сообщения показаны вместе")))
+  const text = selected.map((entry) => 'r' + entry.revision + ' · ' + (entry.author || uiText('（无作者）', "(No author)", "(Нет автора)")) + ' · ' + dateTextOf(entry.date)
+    + '\n' + String(entry.message || uiText('（无提交信息）', "(No commit message)", "(Нет сообщения коммита)"))).join('\n----------------\n')
   return React.createElement(React.Fragment, null, head,
     React.createElement('pre', { className: 'edrv-svnlog-body' }, text))
 }
@@ -702,14 +703,14 @@ function mergedPathsOf(selected) {
 function LogPathsInner(props) {
   const { selected, target, onlyAffected, onOpenFile, onOpenDiff, onPathMenu } = props
   if (!selected || !selected.length) {
-    return React.createElement('div', { className: 'edrv-svndiff-empty' }, '选择修订查看变更文件')
+    return React.createElement('div', { className: 'edrv-svndiff-empty' }, uiText('选择修订查看变更文件', "Select a revision to view changed files", "Выберите ревизию для просмотра изменённых файлов"))
   }
   const allPaths = mergedPathsOf(selected)
   const shownPaths = onlyAffected ? allPaths.filter((p) => isAffectedPath(p, target)) : allPaths
   const head = React.createElement('div', { className: 'edrv-svnlog-paths-head' },
-    '变更文件（' + shownPaths.length + (onlyAffected && shownPaths.length !== allPaths.length ? '/' + allPaths.length : '') + '）',
+    uiText('变更文件（', "Changed files (", "Изменённые файлы (") + shownPaths.length + (onlyAffected && shownPaths.length !== allPaths.length ? '/' + allPaths.length : '') + '）',
     React.createElement('span', { style: { flex: 1 } }),
-    React.createElement('span', { className: 'edrv-svnlog-hint' }, '双击行查看所属修订差异；灰显 = 目标路径之外'))
+    React.createElement('span', { className: 'edrv-svnlog-hint' }, uiText('双击行查看所属修订差异；灰显 = 目标路径之外', "Double-click a row to view its revision diff; dimmed = outside target path", "Двойное нажатие показывает различия ревизии; серый цвет — вне целевого пути")))
   const rows = shownPaths.length
     ? shownPaths.map((item, idx) => React.createElement(PathRow, {
         key: String(item.path) + ':' + idx,
@@ -721,7 +722,7 @@ function LogPathsInner(props) {
         onMenu: onPathMenu,
       }))
     : React.createElement('div', { className: 'edrv-tree-loading' },
-        onlyAffected && allPaths.length ? '所选修订在目标路径下无变更（其余 ' + allPaths.length + ' 项已隐藏）' : '所选修订无变更路径（仅属性改动或未取 -v）')
+        onlyAffected && allPaths.length ? uiText('所选修订在目标路径下无变更（其余 ', "No changes under the target path in selected revisions (", "В выбранных ревизиях нет изменений по целевому пути (остальные ") + allPaths.length + uiText(' 项已隐藏）', " other items hidden)", " записей скрыты)") : uiText('所选修订无变更路径（仅属性改动或未取 -v）', "No changed paths in selected revisions (property-only changes or -v not requested)", "Нет изменённых путей в выбранных ревизиях (только свойства или не запрошен -v)"))
   return React.createElement(React.Fragment, null, head, React.createElement('div', { className: 'edrv-svnlog-paths' }, rows))
 }
 
@@ -735,10 +736,10 @@ function LogPathsInner(props) {
 function LogHead(props) {
   const { target, onClose } = props
   return React.createElement('div', { className: 'edrv-svnlog-head' },
-    React.createElement('h3', { className: 'edrv-svnlog-title' }, 'SVN 日志'),
-    React.createElement('span', { className: 'edrv-svnlog-target', title: target || '（工作区根）' }, target || '（工作区根）'),
+    React.createElement('h3', { className: 'edrv-svnlog-title' }, uiText('SVN 日志', "SVN log", "Журнал SVN")),
+    React.createElement('span', { className: 'edrv-svnlog-target', title: target || uiText('（工作区根）', "(Workspace root)", "(Корень рабочей области)") }, target || uiText('（工作区根）', "(Workspace root)", "(Корень рабочей области)")),
     React.createElement('span', { style: { flex: 1 } }),
-    React.createElement('button', { className: 'edrv-svn-act', title: '关闭', onClick: onClose }, '✕'))
+    React.createElement('button', { className: 'edrv-svn-act', title: uiText('关闭', "Close", "Закрыть"), onClick: onClose }, '✕'))
 }
 
 /**
@@ -751,22 +752,22 @@ function LogFilterBar(props) {
   const { field, regexOn, query, from, to, onField, onRegex, onQuery, onFrom, onTo } = props
   return React.createElement('div', { className: 'edrv-svnlog-filter' },
     React.createElement('select', {
-      className: 'edrv-svnlog-field', value: field, title: '搜索字段',
+      className: 'edrv-svnlog-field', value: field, title: uiText('搜索字段', "Search field", "Поле поиска"),
       onChange: (event) => onField(event.target.value),
     }, FILTER_FIELDS.map((f) => React.createElement('option', { key: f.key, value: f.key }, f.label))),
     React.createElement('input', {
-      className: 'edrv-svnlog-search', placeholder: '过滤：空格=AND，-排除，+纳入，!取反，"短语"',
+      className: 'edrv-svnlog-search', placeholder: uiText('过滤：空格=AND，-排除，+纳入，!取反，"短语"', "Filter: space=AND, -exclude, +include, !negate, \"phrase\"", "Фильтр: пробел=И, -исключить, +включить, !отрицание, \"фраза\""),
       value: query, onChange: (event) => onQuery(event.target.value),
     }),
-    React.createElement('label', { className: 'edrv-svnlog-check', title: '把每个词元当正则表达式（语法错误回落子串匹配）' },
+    React.createElement('label', { className: 'edrv-svnlog-check', title: uiText('把每个词元当正则表达式（语法错误回落子串匹配）', "Treat each token as a regular expression (invalid syntax falls back to substring matching)", "Считать каждый элемент регулярным выражением (при ошибке искать подстроку)") },
       React.createElement('input', { type: 'checkbox', checked: regexOn, onChange: (event) => onRegex(event.target.checked) }),
-      '正则'),
+      uiText('正则', "Regex", "Регулярное выражение")),
     React.createElement('span', { className: 'edrv-svnlog-dates' },
       React.createElement('label', { className: 'edrv-svnlog-check' },
-        '从',
+        uiText('从', "From", "С"),
         React.createElement('input', { type: 'date', className: 'edrv-svnlog-date', value: from, onChange: (event) => onFrom(event.target.value) })),
       React.createElement('label', { className: 'edrv-svnlog-check' },
-        '到',
+        uiText('到', "To", "По"),
         React.createElement('input', { type: 'date', className: 'edrv-svnlog-date', value: to, onChange: (event) => onTo(event.target.value) }))))
 }
 
@@ -777,17 +778,17 @@ function LogFilterBar(props) {
  * @returns 状态文本
  */
 function statusLineOf(list, filtered, shownCount, keyword, truncated, current, selectedCount) {
-  if (!list) return '未加载'
+  if (!list) return uiText('未加载', "Not loaded", "Не загружено")
   const maxRev = list.length ? 'r' + list[0].revision : '—'
   const minRev = list.length ? 'r' + list[list.length - 1].revision : '—'
   const changedPaths = current ? (current.paths || []).length : 0
   // P1-5：merged 的条数按顶层列表统计（-g 时总条数可超过 -l，如实标出以免误判条数）
   const mergedCount = mergedCountOf(list)
-  return '显示 ' + filtered.length + ' 条修订（' + minRev + ' ~ ' + maxRev + '）'
-    + (mergedCount ? ' + 合并 ' + mergedCount + ' 条' : '')
-    + ' · 选中 ' + (selectedCount || 1) + ' 条 · ' + changedPaths + ' 个变更路径'
-    + (keyword ? '（过滤后 ' + shownCount + ' 条）' : '')
-    + (truncated ? ' · 可能还有更多' : ' · 已全部加载')
+  return uiText('显示 ', "Showing ", "Показано ") + filtered.length + uiText(' 条修订（', " revisions (", " ревизий (") + minRev + ' ~ ' + maxRev + '）'
+    + (mergedCount ? uiText(' + 合并 ', " + merged ", " + слитых ") + mergedCount + uiText(' 条', " entries", " записей") : '')
+    + uiText(' · 选中 ', " · Selected ", " · Выбрано ") + (selectedCount || 1) + uiText(' 条 · ', " entries · ", " записей · ") + changedPaths + uiText(' 个变更路径', " changed paths", " изменённых путей")
+    + (keyword ? uiText('（过滤后 ', " (filtered: ", " (после фильтра: ") + shownCount + uiText(' 条）', " entries)", " записей)") : '')
+    + (truncated ? uiText(' · 可能还有更多', " · More may be available", " · Возможно, есть ещё") : uiText(' · 已全部加载', " · All loaded", " · Загружено всё"))
 }
 
 /**
@@ -817,57 +818,57 @@ function LogFoot(props) {
   const status = statusLineOf(list, filtered, shownCount, keyword, truncated, current, selectedCount)
   return React.createElement('div', { className: 'edrv-svnlog-footwrap' },
     React.createElement('div', { className: 'edrv-svnlog-foot' },
-      React.createElement('label', { className: 'edrv-svnlog-check', title: '隐藏不落在目标路径下的变更项（未勾时灰显）' },
+      React.createElement('label', { className: 'edrv-svnlog-check', title: uiText('隐藏不落在目标路径下的变更项（未勾时灰显）', "Hide changes outside the target path (dimmed when unchecked)", "Скрыть изменения вне целевого пути (иначе показаны серым)") },
         React.createElement('input', { type: 'checkbox', checked: onlyAffected, onChange: (event) => onOnlyAffected(event.target.checked) }),
-        '仅显示受影响路径'),
-      React.createElement('label', { className: 'edrv-svnlog-check', title: '官方 Stop on copy/rename：遇到从别处复制/重命名而来的路径即停止回溯（默认不勾）' },
+        uiText('仅显示受影响路径', "Show affected paths only", "Только затронутые пути")),
+      React.createElement('label', { className: 'edrv-svnlog-check', title: uiText('官方 Stop on copy/rename：遇到从别处复制/重命名而来的路径即停止回溯（默认不勾）', "Stop on copy/rename: stop tracing history when a path was copied or renamed from elsewhere (off by default)", "Остановить историю на копировании/переименовании из другого места (по умолчанию выключено)") },
         React.createElement('input', { type: 'checkbox', checked: stopOnCopy === true, onChange: (event) => onStopCopy?.(event.target.checked) }),
-        'Stop on copy'),
-      React.createElement('label', { className: 'edrv-svnlog-check', title: '官方 Include merged revisions（svn -g）：把合并进本路径的修订交错插入，灰字缩进显示（默认不勾；输出量更大）' },
+        uiText('Stop on copy', "Stop on copy", "Остановить на копировании")),
+      React.createElement('label', { className: 'edrv-svnlog-check', title: uiText('官方 Include merged revisions（svn -g）：把合并进本路径的修订交错插入，灰字缩进显示（默认不勾；输出量更大）', "Include merged revisions (svn -g): insert merged revisions as dimmed, indented rows (off by default; more output)", "Включать слитые ревизии (svn -g): серые строки с отступом (выключено по умолчанию; больше вывода)") },
         React.createElement('input', { type: 'checkbox', checked: includeMerged === true, onChange: (event) => onIncludeMerged?.(event.target.checked) }),
-        'Include merged revs'),
-      (rangeActive ? React.createElement('span', { className: 'edrv-svnlog-check', title: '区间模式：仅显示指定版本区间（svn -r START:END）' }, '区间模式') : null),
+        uiText('Include merged revs', "Include merged revisions", "Включать слитые ревизии")),
+      (rangeActive ? React.createElement('span', { className: 'edrv-svnlog-check', title: uiText('区间模式：仅显示指定版本区间（svn -r START:END）', "Range mode: show only the specified revisions (svn -r START:END)", "Режим диапазона: только указанные ревизии (svn -r START:END)") }, uiText('区间模式', "Range mode", "Режим диапазона")) : null),
       React.createElement('span', { style: { flex: 1 } }),
       status),
     React.createElement('div', { className: 'edrv-svnlog-btns' },
       React.createElement('span', { className: 'edrv-svnlog-btngroup' },
         React.createElement('button', {
           className: 'edrv-svn-act', disabled: busy || !truncated || rangeActive,
-          title: rangeActive ? '区间模式下不可加载更多（回到最新后可用）' : (truncated ? '再取 100 条' : '已到最早提交：该目标的全部历史已显示（svn 日志只含该路径发生过变更的版本）'),
+          title: rangeActive ? uiText('区间模式下不可加载更多（回到最新后可用）', "Cannot load more in range mode (return to latest first)", "Нельзя загрузить ещё в режиме диапазона (сначала вернитесь к последним)") : (truncated ? uiText('再取 100 条', "Load another 100 entries", "Загрузить ещё 100 записей") : uiText('已到最早提交：该目标的全部历史已显示（svn 日志只含该路径发生过变更的版本）', "Earliest commit reached: all history for this target is shown (SVN log includes only revisions that changed this path)", "Достигнут первый коммит: вся история цели показана (журнал SVN содержит только ревизии, изменявшие этот путь)")),
           onClick: onLoadMore,
-        }, 'Next 100'),
+        }, uiText('Next 100', "Next 100", "Следующие 100")),
         React.createElement('button', {
           className: 'edrv-svn-act', disabled: busy || rangeActive,
           title: rangeActive
-            ? '区间模式下不可用（回到最新后可用）'
-            : '取到本插件上限 ' + SVN_LOG_SHOW_ALL_LIMIT + ' 条（超大仓库可能较慢；再往前的历史可用 Show Range… 指定区间）',
+            ? uiText('区间模式下不可用（回到最新后可用）', "Unavailable in range mode (return to latest first)", "Недоступно в режиме диапазона (сначала вернитесь к последним)")
+            : uiText('取到本插件上限 ', "Load up to the plugin limit of ", "Загрузить до предела плагина: ") + SVN_LOG_SHOW_ALL_LIMIT + uiText(' 条（超大仓库可能较慢；再往前的历史可用 Show Range… 指定区间）', " entries (large repositories may be slow; use Show Range for older history)", " записей (большие репозитории могут загружаться медленно; для старой истории используйте диапазон)"),
           onClick: onShowAll,
-        }, 'Show All'),
+        }, uiText('Show All', "Show all", "Показать все")),
         React.createElement('button', {
-          className: 'edrv-svn-act', disabled: busy, title: '按版本区间拉取（P1-6；起始=较早、结束=较晚）',
+          className: 'edrv-svn-act', disabled: busy, title: uiText('按版本区间拉取（P1-6；起始=较早、结束=较晚）', "Load a revision range (start=older, end=newer)", "Загрузить диапазон ревизий (начало — старые, конец — новые)"),
           onClick: onOpenRange,
-        }, 'Show Range…'),
+        }, uiText('Show Range…', "Show range…", "Показать диапазон…")),
         (rangeActive
-          ? React.createElement('button', { className: 'edrv-svn-act', disabled: busy, title: '清除区间，回到默认 HEAD 往前的窗口', onClick: onRangeReset }, '回到最新')
+          ? React.createElement('button', { className: 'edrv-svn-act', disabled: busy, title: uiText('清除区间，回到默认 HEAD 往前的窗口', "Clear range and return to the default history window ending at HEAD", "Сбросить диапазон и вернуться к истории от HEAD"), onClick: onRangeReset }, uiText('回到最新', "Back to latest", "К последним"))
           : null)),
       React.createElement('span', { className: 'edrv-svnlog-btngroup' },
         React.createElement('button', {
           className: 'edrv-svn-act', disabled: busy || !filtered || !filtered.length,
-          title: '导出当前过滤后的修订列表为 CSV（带 BOM，Excel 直开；修订/作者/日期/信息/路径）',
+          title: uiText('导出当前过滤后的修订列表为 CSV（带 BOM，Excel 直开；修订/作者/日期/信息/路径）', "Export filtered revisions to CSV (BOM for Excel; revision/author/date/message/path)", "Экспортировать отфильтрованные ревизии в CSV (BOM для Excel; ревизия/автор/дата/сообщение/путь)"),
           onClick: onExportCsv,
-        }, '导出CSV'),
+        }, uiText('导出CSV', "Export CSV", "Экспорт CSV")),
         React.createElement('button', {
           className: 'edrv-svn-act', disabled: busy || !filtered || !filtered.length,
-          title: '导出当前过滤后的修订列表为 HTML 报表（仅本地查看，不外发）',
+          title: uiText('导出当前过滤后的修订列表为 HTML 报表（仅本地查看，不外发）', "Export filtered revisions as an HTML report (local viewing only; not sent externally)", "Экспортировать отфильтрованные ревизии в HTML-отчёт (локальный просмотр, без отправки)"),
           onClick: onExportHtml,
-        }, '导出HTML')),
+        }, uiText('导出HTML', "Export HTML", "Экспорт HTML"))),
       React.createElement('span', { style: { flex: 1 } }),
       React.createElement('span', { className: 'edrv-svnlog-btngroup' },
-        React.createElement('button', { className: 'edrv-svn-act', disabled: busy, title: '重新读取日志（F5）', onClick: onRefresh }, 'Refresh'),
+        React.createElement('button', { className: 'edrv-svn-act', disabled: busy, title: uiText('重新读取日志（F5）', "Reload log (F5)", "Перечитать журнал (F5)"), onClick: onRefresh }, uiText('Refresh', "Refresh", "Обновить")),
         React.createElement('button', {
           className: 'edrv-svn-act', disabled: !list || !list.length,
-          title: '统计当前显示的修订（期间 / 按作者 / 按日期，P1-10）', onClick: onStats,
-        }, 'Statistics'))))
+          title: uiText('统计当前显示的修订（期间 / 按作者 / 按日期，P1-10）', "Statistics for displayed revisions (period / author / date)", "Статистика показанных ревизий (период / автор / дата)"), onClick: onStats,
+        }, uiText('Statistics', "Statistics", "Статистика")))))
 }
 
 /**
@@ -970,10 +971,10 @@ export function SvnLogDialog(props) {
    */
   const onExport = (kind) => {
     if (!sorted || !sorted.length) return
-    const headers = ['修订', '作者', '日期', '信息', '路径']
+    const headers = [uiText('修订', "Revision", "Ревизия"), uiText('作者', "Author", "Автор"), uiText('日期', "Date", "Дата"), uiText('信息', "Message", "Сообщение"), uiText('路径', "Path", "Путь")]
     const rows = logExportRows(sorted)
     const stamp = new Date().toISOString().slice(0, 10)
-    if (kind === 'html') downloadText('svn-log-' + stamp + '.html', htmlTableOf(headers, rows, 'SVN 日志 ' + stamp), 'text/html')
+    if (kind === 'html') downloadText('svn-log-' + stamp + '.html', htmlTableOf(headers, rows, uiText('SVN 日志 ', "SVN log ", "Журнал SVN ") + stamp), 'text/html')
     else downloadText('svn-log-' + stamp + '.csv', csvOf([headers, ...rows]), 'text/csv')
   }
 
@@ -1146,17 +1147,17 @@ export function SvnLogDialog(props) {
       x: event.clientX, y: event.clientY,
       entries: [
         (pair && onComparePair
-          ? { id: 'cmp-pair', label: '比较两个修订（r' + pair[0].revision + ' ↔ r' + pair[1].revision + '）', disabled: !target, hint: target ? undefined : '仅文件目标', onClick: () => onComparePair(pair[0].revision, pair[1].revision) }
+          ? { id: 'cmp-pair', label: uiText('比较两个修订（r', "Compare revisions (r", "Сравнить ревизии (r") + pair[0].revision + ' ↔ r' + pair[1].revision + '）', disabled: !target, hint: target ? undefined : uiText('仅文件目标', "Files only", "Только для файлов"), onClick: () => onComparePair(pair[0].revision, pair[1].revision) }
           : null),
-        { id: 'cmp-prev', label: '与上一版本比较', disabled: !target, hint: target ? undefined : '仅文件目标', onClick: () => onOpenDiff?.(target, entry.revision) },
+        { id: 'cmp-prev', label: uiText('与上一版本比较', "Compare with previous revision", "Сравнить с предыдущей ревизией"), disabled: !target, hint: target ? undefined : uiText('仅文件目标', "Files only", "Только для файлов"), onClick: () => onOpenDiff?.(target, entry.revision) },
         {
           id: 'cmp-work',
-          label: '与工作副本比较',
+          label: uiText('与工作副本比较', "Compare with working copy", "Сравнить с рабочей копией"),
           disabled: !target || mergedRow,
-          hint: !target ? '仅文件目标' : (mergedRow ? '合并进来的修订属源分支，工作副本无对应文件' : undefined),
+          hint: !target ? uiText('仅文件目标', "Files only", "Только для файлов") : (mergedRow ? uiText('合并进来的修订属源分支，工作副本无对应文件', "Merged revisions belong to the source branch; the working copy has no matching file", "Слитые ревизии принадлежат исходной ветке; в рабочей копии нет соответствующего файла") : undefined),
           onClick: () => onCompareWorking?.(entry.revision),
         },
-        { id: 'copy-rev', label: '复制修订信息', onClick: () => copyRevision(entry) },
+        { id: 'copy-rev', label: uiText('复制修订信息', "Copy revision details", "Копировать сведения о ревизии"), onClick: () => copyRevision(entry) },
       ].filter(Boolean),
     })
   }
@@ -1179,9 +1180,9 @@ export function SvnLogDialog(props) {
     setMenu({
       x: event.clientX, y: event.clientY,
       entries: [
-        { id: 'show-changes', label: '查看该版改动', disabled: outside || isDir, hint: isDir ? '目录无文本差异' : undefined, onClick: () => onOpenDiff?.(item.relPath, revision) },
-        { id: 'open-local', label: '打开工作区文件', disabled: outside, onClick: () => onOpenFile?.(item.relPath) },
-        { id: 'copy-path', label: '复制路径', onClick: () => copyTextOf(String(item.relPath ?? item.path)) },
+        { id: 'show-changes', label: uiText('查看该版改动', "View revision changes", "Показать изменения ревизии"), disabled: outside || isDir, hint: isDir ? uiText('目录无文本差异', "Directories have no text diff", "У папок нет текстовых различий") : undefined, onClick: () => onOpenDiff?.(item.relPath, revision) },
+        { id: 'open-local', label: uiText('打开工作区文件', "Open workspace file", "Открыть файл рабочей области"), disabled: outside, onClick: () => onOpenFile?.(item.relPath) },
+        { id: 'copy-path', label: uiText('复制路径', "Copy path", "Копировать путь"), onClick: () => copyTextOf(String(item.relPath ?? item.path)) },
       ],
     })
   }
@@ -1198,18 +1199,18 @@ export function SvnLogDialog(props) {
       height: listH, wcRev,
     }),
     React.createElement(Splitter, {
-      title: '调整修订列表高度', onDragStart: onListHDrag, onReset: () => fitHeights(LIST_H_DEFAULT, msgH),
+      title: uiText('调整修订列表高度', "Resize revision list height", "Изменить высоту списка ревизий"), onDragStart: onListHDrag, onReset: () => fitHeights(LIST_H_DEFAULT, msgH),
     }),
     React.createElement('div', { className: 'edrv-svnlog-pane edrv-svnlog-msgpane', style: { height: msgH } },
       React.createElement(LogMsgInner, { selected: visibleSelected })),
     React.createElement(Splitter, {
-      title: '调整提交信息区高度', onDragStart: onMsgHDrag, onReset: () => fitHeights(listH, MSG_H_DEFAULT),
+      title: uiText('调整提交信息区高度', "Resize commit message area", "Изменить высоту области сообщения коммита"), onDragStart: onMsgHDrag, onReset: () => fitHeights(listH, MSG_H_DEFAULT),
     }),
     React.createElement('div', { className: 'edrv-svnlog-pane edrv-svnlog-pathspane', ref: paneRef },
       React.createElement(LogPathsInner, { selected: visibleSelected, target, onlyAffected, onOpenFile, onOpenDiff, onPathMenu })))
 
   return React.createElement(FloatingWindow, {
-    title: 'SVN 日志', dialogClass: 'edrv-svnlog-dialog',
+    title: uiText('SVN 日志', "SVN log", "Журнал SVN"), dialogClass: 'edrv-svnlog-dialog',
     width: DIALOG_W_DEFAULT, height: DIALOG_H_DEFAULT,
     onKeyDown: onLogKey, onClose,
   },
@@ -1237,28 +1238,28 @@ export function SvnLogDialog(props) {
       onClose: () => setRangeOpen(false),
     },
       React.createElement('div', { className: 'edrv-svnlog-range-body' },
-        React.createElement('h3', { className: 'edrv-svnlog-title' }, '显示区间（Show Range）'),
+        React.createElement('h3', { className: 'edrv-svnlog-title' }, uiText('显示区间（Show Range）', "Show range", "Показать диапазон")),
         React.createElement('div', { className: 'edrv-svnlog-range-row' },
           React.createElement('label', { className: 'edrv-svnlog-check' },
-            '起始修订（较早）',
+            uiText('起始修订（较早）', "Start revision (older)", "Начальная ревизия (старая)"),
             React.createElement('input', {
               className: 'edrv-svnlog-range-input', type: 'number', min: 1, value: rangeFrom,
               onChange: (event) => setRangeFrom(event.target.value),
             })),
           React.createElement('label', { className: 'edrv-svnlog-check' },
-            '结束修订（较晚）',
+            uiText('结束修订（较晚）', "End revision (newer)", "Конечная ревизия (новая)"),
             React.createElement('input', {
               className: 'edrv-svnlog-range-input', type: 'number', min: 1, value: rangeTo,
               onChange: (event) => setRangeTo(event.target.value),
             }))),
-        React.createElement('div', { className: 'edrv-svnlog-hint' }, 'svn 语义 -r 起始:结束；列表仍按版本号倒序显示，统计与状态行覆盖区间内条目'),
+        React.createElement('div', { className: 'edrv-svnlog-hint' }, uiText('svn 语义 -r 起始:结束；列表仍按版本号倒序显示，统计与状态行覆盖区间内条目', "SVN uses -r START:END; the list remains in descending revision order, and statistics cover the range", "SVN использует -r START:END; список идёт от новых ревизий к старым, статистика охватывает диапазон")),
         React.createElement('div', { className: 'edrv-svnlog-range-btns' },
-          React.createElement('button', { className: 'edrv-svn-act', onClick: () => setRangeOpen(false) }, '取消'),
+          React.createElement('button', { className: 'edrv-svn-act', onClick: () => setRangeOpen(false) }, uiText('取消', "Cancel", "Отмена")),
           React.createElement('button', {
             className: 'edrv-svn-act',
             disabled: !(Number(rangeFrom) >= 1 && Number(rangeTo) >= 1),
             onClick: submitRange,
-          }, '确定'))))
+          }, uiText('确定', "OK", "ОК")))))
     : null))
 }
 

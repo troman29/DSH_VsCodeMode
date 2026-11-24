@@ -4,6 +4,7 @@
  * 迁移自原 src/client/index.ts 的 DiffLauncher，语义不改。
  * 作者 ddj 2026-08-20
  */
+import { uiText } from '../uiLocale.js'
 import React from 'react'
 import { rpc } from '../rpc.js'
 import { MONO, btn } from './shared.js'
@@ -69,7 +70,7 @@ export function DiffLauncher(props) {
 
   /** @author ddj 2026年09月30号 @description 仅加载一个归档摘要页并丢弃失效响应。 */
   const loadArchives = (cursor = null) => {
-    if (!sessionId) { setArchiveErr('会话不存在'); return }
+    if (!sessionId) { setArchiveErr(uiText('会话不存在', "Session does not exist", "Сеанс отсутствует")); return }
     if (cursor && moreRef.current) return
     if (cursor) { moreRef.current = true; setMoreBusy(true); setArchiveErr(null) }
     else { requestRef.current++; setArchives(null); setNextCursor(null); setArchiveErr(null) }
@@ -80,8 +81,8 @@ export function DiffLauncher(props) {
         setArchives((current) => cursor ? mergeArchives(current, res.entries) : res.entries)
         setNextCursor(res.nextCursor ?? null)
         setArchiveErr(null)
-      } else setArchiveErr(res?.error ? String(res.error) : '归档分页读取失败')
-    }).catch((e) => { if (generation === requestRef.current) setArchiveErr('归档异常:' + String(e)) })
+      } else setArchiveErr(res?.error ? String(res.error) : uiText('归档分页读取失败', "Failed to load archive page", "Ошибка загрузки страницы архива"))
+    }).catch((e) => { if (generation === requestRef.current) setArchiveErr(uiText('归档异常:', "Archive error: ", "Ошибка архива: ") + String(e)) })
       .finally(() => { if (generation === requestRef.current) { moreRef.current = false; setMoreBusy(false) } })
   }
   /** @author ddj 2026年09月30号 @description 仅加载目标文件和批次详情。 */
@@ -92,8 +93,8 @@ export function DiffLauncher(props) {
     rpc('edrv.archiveRead', { sessionId, path, batch }).then((res) => {
       if (generation !== detailRef.current) return
       if (res && res.ok && Array.isArray(res.batches)) setArchiveDetail(res.batches)
-      else setArchiveErr(res?.error ? String(res.error) : '归档详情读取失败')
-    }).catch((e) => { if (generation === detailRef.current) setArchiveErr('归档异常:' + String(e)) })
+      else setArchiveErr(res?.error ? String(res.error) : uiText('归档详情读取失败', "Failed to load archive details", "Ошибка загрузки подробностей архива"))
+    }).catch((e) => { if (generation === detailRef.current) setArchiveErr(uiText('归档异常:', "Archive error: ", "Ошибка архива: ") + String(e)) })
   }
   React.useEffect(() => {
     requestRef.current++
@@ -110,27 +111,27 @@ export function DiffLauncher(props) {
   const legacyFiles = sum.pendingFiles.filter((file) => file.sourceKind === 'legacy')
   if (source === 'official') {
     body = React.createElement(React.Fragment, null,
-      React.createElement('div', { className: 'edrv-search-empty' }, '官方轮次净差异 · 原始历史只读；编辑按钮打开当前文件，保存不代表已审。'),
+      React.createElement('div', { className: 'edrv-search-empty' }, uiText('官方轮次净差异 · 原始历史只读；编辑按钮打开当前文件，保存不代表已审。', "Official turn net changes · Original history is read-only. Edit opens the current file; saving does not mark it reviewed.", "Итоговые изменения хода DSH · Исходная история доступна только для чтения. Изменение открывает текущий файл; сохранение не означает проверку.")),
       review.error ? React.createElement('div', { role: 'alert' }, review.error) : null,
       React.createElement(ReviewLedger, { key: sessionId + ':' + tab, sessionId, first: review.page, history: tab === 'archive' }))
   } else if (tab === 'pending') {
     body = (legacyFiles.length === 0
-      ? React.createElement('div', { className: 'edrv-search-empty' }, '暂无待处理差异（已全部处理）')
-      : legacyFiles.map((f) => React.createElement('div', { key: f.path, className: 'edrv-launch-row', title: '打开并跳转到差异 ' + (f.label ?? f.path), onClick: () => onOpenFile(f.path) },
+      ? React.createElement('div', { className: 'edrv-search-empty' }, uiText('暂无待处理差异（已全部处理）', "No pending changes (all processed)", "Нет ожидающих изменений (всё обработано)"))
+      : legacyFiles.map((f) => React.createElement('div', { key: f.path, className: 'edrv-launch-row', title: uiText('打开并跳转到差异 ', "Open and go to changes in ", "Открыть и перейти к изменениям в ") + (f.label ?? f.path), onClick: () => onOpenFile(f.path) },
           React.createElement('span', { className: 'edrv-launch-path' }, f.label ?? f.path),
-          React.createElement('span', { className: 'edrv-launch-cnt' }, '待处理 ' + f.pending + ' 处'),
-          React.createElement('button', { className: 'edrv-btn-mini edrv-btn-keep', onClick: (e) => { e.stopPropagation(); onOpenFile(f.path) } }, '打开'))))
+          React.createElement('span', { className: 'edrv-launch-cnt' }, uiText('待处理 ', "Pending: ", "Ожидает: ") + f.pending + uiText(' 处', " changes", " изменений")),
+          React.createElement('button', { className: 'edrv-btn-mini edrv-btn-keep', onClick: (e) => { e.stopPropagation(); onOpenFile(f.path) } }, uiText('打开', "Open", "Открыть")))))
   } else {
-    if (archiveErr && archives === null) body = React.createElement('div', { className: 'edrv-search-empty', style: { color: 'var(--dsw-alias-state-error-primary,#d9534f)' } }, '错误：' + String(archiveErr), React.createElement('button', { onClick: () => loadArchives(), style: btn(false) }, '重试'))
-    else if (archives === null) body = React.createElement('div', { className: 'edrv-search-empty' }, '加载中…')
-    else if (archives.length === 0) body = React.createElement('div', { className: 'edrv-search-empty' }, '暂无归档记录')
+    if (archiveErr && archives === null) body = React.createElement('div', { className: 'edrv-search-empty', style: { color: 'var(--dsw-alias-state-error-primary,#d9534f)' } }, uiText('错误：', "Error: ", "Ошибка: ") + String(archiveErr), React.createElement('button', { onClick: () => loadArchives(), style: btn(false) }, uiText('重试', "Retry", "Повторить")))
+    else if (archives === null) body = React.createElement('div', { className: 'edrv-search-empty' }, uiText('加载中…', "Loading…", "Загрузка…"))
+    else if (archives.length === 0) body = React.createElement('div', { className: 'edrv-search-empty' }, uiText('暂无归档记录', "No archived records", "Нет архивных записей"))
     else {
       const inner = archives.map((e) => {
         const entryKey = archiveKey(e)
         const open = archivePath === entryKey
         let detailEl = null
         if (open) {
-          if (archiveDetail === null) detailEl = React.createElement('div', { style: { padding: 8, fontSize: 11, color: 'var(--dsw-alias-label-tertiary,#888)' } }, '加载中…')
+          if (archiveDetail === null) detailEl = React.createElement('div', { style: { padding: 8, fontSize: 11, color: 'var(--dsw-alias-label-tertiary,#888)' } }, uiText('加载中…', "Loading…", "Загрузка…"))
           else {
             const batches = archiveDetail.filter((b) => b.path === e.path && b.batch === e.batch)
             detailEl = batches.map((b) => (Array.isArray(b.records) ? b.records : []).map((rec) => {
@@ -147,11 +148,11 @@ export function DiffLauncher(props) {
               return React.createElement('div', { key: rec.callId, style: { padding: '5px 8px', borderTop: '1px solid var(--dsw-alias-border-l1,#333)' } },
                 React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', fontSize: 11, marginBottom: 2 } },
                   React.createElement('span', { style: { color: 'var(--dsw-alias-label-primary,#ddd)', fontWeight: 600 } },
-                    rec.toolName === 'remote_ssh_write' ? (rec.create ? '远端新建' : '远端写入')
-                      : rec.toolName === 'write' ? (rec.create ? '新建' : '写入') : '编辑'),
-                  React.createElement('span', { style: { color: 'var(--dsw-alias-state-success-primary,#2e9e44)' } }, '采纳 ' + sm.accepted),
-                  React.createElement('span', { style: { color: 'var(--dsw-alias-state-error-primary,#d9534f)' } }, '拒绝 ' + sm.rejected),
-                  (rec.superseded ? React.createElement('span', { style: { color: 'var(--dsw-alias-state-warn-primary,#b7791f)' } }, '被覆盖') : null),
+                    rec.toolName === 'remote_ssh_write' ? (rec.create ? uiText('远端新建', "Remote create", "Создание удалённо") : uiText('远端写入', "Remote write", "Запись удалённо"))
+                      : rec.toolName === 'write' ? (rec.create ? uiText('新建', "Create", "Создание") : uiText('写入', "Write", "Запись")) : uiText('编辑', "Edit", "Изменение")),
+                  React.createElement('span', { style: { color: 'var(--dsw-alias-state-success-primary,#2e9e44)' } }, uiText('采纳 ', "Accepted: ", "Принято: ") + sm.accepted),
+                  React.createElement('span', { style: { color: 'var(--dsw-alias-state-error-primary,#d9534f)' } }, uiText('拒绝 ', "Rejected: ", "Отклонено: ") + sm.rejected),
+                  (rec.superseded ? React.createElement('span', { style: { color: 'var(--dsw-alias-state-warn-primary,#b7791f)' } }, uiText('被覆盖', "Superseded", "Перекрыто")) : null),
                   React.createElement('span', { style: { color: 'var(--dsw-alias-label-tertiary,#888)' } }, new Date(rec.at).toLocaleTimeString())),
                 React.createElement('pre', { style: { margin: 0, whiteSpace: 'pre', fontFamily: MONO.fontFamily, fontSize: 11, lineHeight: 1.5, overflowX: 'auto' } }, lines.map((ln, i) => React.createElement('div', { key: i, style: { background: ln.k === 'old' ? 'rgba(239,68,68,.10)' : ln.k === 'new' ? 'rgba(34,197,94,.10)' : 'transparent', color: ln.k === 'old' ? 'var(--dsw-alias-state-error-primary,#d9534f)' : ln.k === 'new' ? 'var(--dsw-alias-state-success-primary,#2e9e44)' : 'var(--dsw-alias-label-tertiary,#888)' } }, (ln.k === 'old' ? '- ' : ln.k === 'new' ? '+ ' : '') + ln.t)))
               )
@@ -161,43 +162,43 @@ export function DiffLauncher(props) {
         return React.createElement('div', { key: entryKey, style: { border: '1px solid var(--dsw-alias-border-l1,#333)', borderRadius: 8, overflow: 'hidden' } },
           React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'center', padding: '6px 8px', background: 'var(--dsw-alias-bg-layer-1,transparent)', cursor: 'pointer', flexWrap: 'wrap' }, onClick: () => { if (open) { detailRef.current++; setArchivePath(null); setArchiveDetail(null) } else { setArchivePath(entryKey); loadArchiveDetail(e.path, e.batch) } } },
             React.createElement('span', { style: { flex: 1, fontSize: 12, color: 'var(--dsw-alias-label-primary,#ddd)', wordBreak: 'break-all' } }, e.displayPath ?? e.path),
-            (e.batch != null ? React.createElement('span', { style: { fontSize: 11, color: 'var(--dsw-alias-label-tertiary,#888)' } }, '批次 ' + e.batch) : null),
+            (e.batch != null ? React.createElement('span', { style: { fontSize: 11, color: 'var(--dsw-alias-label-tertiary,#888)' } }, uiText('批次 ', "Batch ", "Пакет ") + e.batch) : null),
             (e.reason ? React.createElement('span', { style: { fontSize: 11, color: 'var(--dsw-alias-state-warn-primary,#b7791f)' } }, e.reason) : null),
             React.createElement('span', { style: { fontSize: 11, color: 'var(--dsw-alias-label-tertiary,#888)' } }, new Date(e.at).toLocaleString()),
-            React.createElement('span', { style: { fontSize: 11, color: 'var(--dsw-alias-label-tertiary,#888)' } }, '采纳 ' + e.summary.accepted + ' · 拒绝 ' + e.summary.rejected + (e.summary.superseded ? ' · 覆盖 ' + e.summary.superseded : '')),
+            React.createElement('span', { style: { fontSize: 11, color: 'var(--dsw-alias-label-tertiary,#888)' } }, uiText('采纳 ', "Accepted: ", "Принято: ") + e.summary.accepted + uiText(' · 拒绝 ', " · Rejected: ", " · Отклонено: ") + e.summary.rejected + (e.summary.superseded ? uiText(' · 覆盖 ', " · Superseded: ", " · Перекрыто: ") + e.summary.superseded : '')),
             React.createElement('button', { onClick: (ev) => {
               ev.stopPropagation()
               if (e.batch == null) return
-              if (!window.confirm('将文件恢复到批次 ' + e.batch + ' 之前的状态？（当前活跃差异将一并归档）')) return
+              if (!window.confirm(uiText('将文件恢复到批次 ', "Restore file to its state before batch ", "Восстановить файл до состояния перед пакетом ") + e.batch + uiText(' 之前的状态？（当前活跃差异将一并归档）', "? Current active changes will also be archived.", "? Текущие активные изменения также будут архивированы."))) return
               rpc('edrv.rollback', { sessionId, path: e.path, batch: e.batch }).then((res) => {
                 if (res && res.ok) {
                   setError(null); window.dispatchEvent(new CustomEvent('edrv:refresh'))
                   setArchivePath(null); setArchiveDetail(null); loadArchives()
-                } else setError(res?.error ? String(res.error) : '回滚失败')
-              }).catch((err) => setError('回滚异常:' + String(err)))
-            }, style: btn(false) }, '回滚')),
+                } else setError(res?.error ? String(res.error) : uiText('回滚失败', "Rollback failed", "Ошибка отката"))
+              }).catch((err) => setError(uiText('回滚异常:', "Rollback error: ", "Ошибка отката: ") + String(err)))
+            }, style: btn(false) }, uiText('回滚', "Roll back", "Откатить"))),
           detailEl)
       })
       body = React.createElement('div', { className: 'edrv-launch-arch' }, inner,
-        archiveErr ? React.createElement('div', { style: { color: 'var(--dsw-alias-state-error-primary,#d9534f)' } }, '归档异常：' + archiveErr,
-          React.createElement('button', { onClick: () => { if (nextCursor) loadArchives(nextCursor); else loadArchives() }, style: btn(false) }, '重试')) : null,
+        archiveErr ? React.createElement('div', { style: { color: 'var(--dsw-alias-state-error-primary,#d9534f)' } }, uiText('归档异常：', "Archive error: ", "Ошибка архива: ") + archiveErr,
+          React.createElement('button', { onClick: () => { if (nextCursor) loadArchives(nextCursor); else loadArchives() }, style: btn(false) }, uiText('重试', "Retry", "Повторить"))) : null,
         nextCursor || moreBusy ? React.createElement('button', {
           className: 'edrv-btn-mini', disabled: moreBusy || !!archiveErr,
           onClick: () => { if (nextCursor) loadArchives(nextCursor) },
-        }, moreBusy ? '加载中…' : '加载更多') : null)
+        }, moreBusy ? uiText('加载中…', "Loading…", "Загрузка…") : uiText('加载更多', "Load more", "Загрузить ещё")) : null)
     }
   }
 
   return React.createElement('div', { className: 'edrv-launch', 'data-edrv-launch': '1' },
     React.createElement('div', { className: 'edrv-launch-head' },
-      React.createElement('span', { style: { fontSize: 12, fontWeight: 600, color: 'var(--dsw-alias-label-primary,#eee)', marginRight: 4 } }, '差异'),
-      React.createElement('button', { className: 'edrv-launch-tab' + (tab === 'pending' ? ' on' : ''), onClick: () => setTab('pending') }, '待处理' + (sum.totalFiles ? ' (' + sum.totalFiles + ')' : '')),
-      React.createElement('button', { className: 'edrv-launch-tab' + (tab === 'archive' ? ' on' : ''), onClick: () => setTab('archive') }, '归档'),
-      React.createElement('button', { className: 'edrv-launch-tab' + (source === 'official' ? ' on' : ''), onClick: () => setSource('official') }, '官方净差异'),
-      React.createElement('button', { className: 'edrv-launch-tab' + (source === 'legacy' ? ' on' : ''), onClick: () => setSource('legacy') }, '旧工具记录'),
+      React.createElement('span', { style: { fontSize: 12, fontWeight: 600, color: 'var(--dsw-alias-label-primary,#eee)', marginRight: 4 } }, uiText('差异', "Changes", "Изменения")),
+      React.createElement('button', { className: 'edrv-launch-tab' + (tab === 'pending' ? ' on' : ''), onClick: () => setTab('pending') }, uiText('待处理', "Pending", "Ожидают") + (sum.totalFiles ? ' (' + sum.totalFiles + ')' : '')),
+      React.createElement('button', { className: 'edrv-launch-tab' + (tab === 'archive' ? ' on' : ''), onClick: () => setTab('archive') }, uiText('归档', "Archive", "Архив")),
+      React.createElement('button', { className: 'edrv-launch-tab' + (source === 'official' ? ' on' : ''), onClick: () => setSource('official') }, uiText('官方净差异', "Official net changes", "Итоговые изменения DSH")),
+      React.createElement('button', { className: 'edrv-launch-tab' + (source === 'legacy' ? ' on' : ''), onClick: () => setSource('legacy') }, uiText('旧工具记录', "Legacy tool records", "Старые записи инструментов")),
       React.createElement('span', { style: { flex: 1 } }),
-      (error ? React.createElement('span', { style: { fontSize: 11, color: 'var(--dsw-alias-state-error-primary,#d9534f)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '40%' } }, '错误：' + String(error)) : null),
-      React.createElement('button', { onClick: onClose, style: btn(false) }, '✕ 关闭')),
+      (error ? React.createElement('span', { style: { fontSize: 11, color: 'var(--dsw-alias-state-error-primary,#d9534f)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '40%' } }, uiText('错误：', "Error: ", "Ошибка: ") + String(error)) : null),
+      React.createElement('button', { onClick: onClose, style: btn(false) }, uiText('✕ 关闭', "✕ Close", "✕ Закрыть"))),
     React.createElement('div', { className: 'edrv-launch-body' }, body,
       tab === 'pending' ? React.createElement(UniverReviews, { sessionId, onOpen: (path) => onOpenFile?.(path) }) : null))
 }

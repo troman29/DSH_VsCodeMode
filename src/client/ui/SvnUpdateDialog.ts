@@ -3,6 +3,7 @@
  * @author ddj 2026年09月24号
  */
 import React from 'react'
+import { uiText } from '../uiLocale.js'
 import type { SvnConflictState, SvnPathKind, SvnResolveAccept, SvnUpdateRow, SvnUpdateState } from '../../shared/svn.js'
 import { copyText } from '../copyText.js'
 import { rpc } from '../rpc.js'
@@ -38,10 +39,10 @@ interface UpdateProps {
 interface UpdateMenu { x: number; y: number; row: SvnUpdateRow; kind: string }
 type ConflictChoice = SvnResolveAccept | 'revert'
 const conflictWarnings: Record<ConflictChoice, string> = {
-  'theirs-full': '使用对方完整版本，丢弃该目标本地冲突修改？',
-  'mine-full': '使用更新前自身完整版本，丢弃对方修改以及更新后编辑？这不是当前 working 内容。',
-  working: '仅标记为已解决，保留当前内容。SVN 不会自动清除文件内冲突标记；树冲突必须先手动处理。确定？',
-  revert: '还原此目标到当前 BASE，丢弃本地修改和冲突状态？这不是回到更新前版本；目录不递归。',
+  get 'theirs-full'() { return uiText('使用对方完整版本，丢弃该目标本地冲突修改？', "Use the complete incoming version and discard local conflicting changes for this target?", "Использовать полную входящую версию и отбросить локальные конфликтующие изменения этой цели?") },
+  get 'mine-full'() { return uiText('使用更新前自身完整版本，丢弃对方修改以及更新后编辑？这不是当前 working 内容。', "Use your complete pre-update version and discard incoming changes and edits made after updating? This is not the current working content.", "Использовать вашу полную версию до обновления и отбросить входящие изменения и правки после обновления? Это не текущее содержимое working.") },
+  get working() { return uiText('仅标记为已解决，保留当前内容。SVN 不会自动清除文件内冲突标记；树冲突必须先手动处理。确定？', "Mark resolved only, keeping current contents. SVN will not remove conflict markers; resolve tree conflicts manually first. Continue?", "Только отметить разрешённым, сохранив содержимое. SVN не удалит маркеры конфликта; конфликты дерева сначала разрешите вручную. Продолжить?") },
+  get revert() { return uiText('还原此目标到当前 BASE，丢弃本地修改和冲突状态？这不是回到更新前版本；目录不递归。', "Revert this target to current BASE, discarding local changes and conflict state? This does not restore the pre-update version; directories are not recursive.", "Вернуть цель к текущей BASE, отбросив локальные изменения и состояние конфликта? Это не версия до обновления; папки не обрабатываются рекурсивно.") },
 }
 
 /** @private @author ddj 2026年10月14号 @param props Owner. @param paths Unique exact targets. @returns Evidence and bounded refresh action. */
@@ -86,14 +87,14 @@ function useConflictWrite(props: UpdateProps, ready: boolean, evidence: ReturnTy
     if (state.tree && (choice === 'mine-full' || choice === 'theirs-full')) return
     lock.current = true
     try {
-      if (!window.confirm(conflictWarnings[choice] + '\n\n仅处理：' + row.relPath)) { lock.current = false; return }
+      if (!window.confirm(conflictWarnings[choice] + uiText('\n\n仅处理：', "\n\nProcess only: ", "\n\nОбработать только: ") + row.relPath)) { lock.current = false; return }
       setBusy(true)
       evidence.setStates((previous) => { const next = new Map(previous); next.delete(row.relPath!); return next })
       const result = choice === 'revert'
         ? await rpc('svn.revert', { sessionId: props.sessionId, paths: [row.relPath], depth: 'empty' })
         : await rpc('svn.resolve', { sessionId: props.sessionId, path: row.relPath, accept: choice })
       props.onNote(result.ok ? result.summary : result.error)
-    } catch (cause) { props.onNote('冲突操作失败：' + String(cause)) }
+    } catch (cause) { props.onNote(uiText('冲突操作失败：', "Conflict operation failed: ", "Ошибка операции с конфликтом: ") + String(cause)) }
     finally { if (lock.current) { await evidence.refresh(); lock.current = false; setBusy(false) } }
   }
   return { busy, execute }
@@ -111,7 +112,7 @@ async function connectUpdate(props: UpdateProps): Promise<SvnUpdateState> {
     : await rpc('svn.updateStart', { sessionId: props.sessionId, path: props.path })
   if (!result.ok) throw new Error(result.error)
   const job = 'job' in result ? result.job : result
-  if (!job || (props.resumeJobId && job.jobId !== props.resumeJobId)) throw new Error('上次 SVN 更新结果已过期')
+  if (!job || (props.resumeJobId && job.jobId !== props.resumeJobId)) throw new Error(uiText('上次 SVN 更新结果已过期', "The previous SVN update result has expired", "Результат предыдущего обновления SVN устарел"))
   return job
 }
 
@@ -175,7 +176,7 @@ function useUpdateJob(props: UpdateProps) {
           onDoneRef.current(result)
         }
         if (backlog && result.rows.length) window.setTimeout(() => { void poll() }, 0)
-      } catch (cause) { if (alive) setError('连接更新任务失败：' + String(cause)) }
+      } catch (cause) { if (alive) setError(uiText('连接更新任务失败：', "Failed to connect to update task: ", "Не удалось подключиться к задаче обновления: ") + String(cause)) }
       finally { busy = false }
     }
     /**
@@ -190,7 +191,7 @@ function useUpdateJob(props: UpdateProps) {
         setState(job)
         setPendingRows(updateDone(job.phase))
         void poll()
-      } catch (cause) { if (alive) setError('连接更新任务失败：' + String(cause)) }
+      } catch (cause) { if (alive) setError(uiText('连接更新任务失败：', "Failed to connect to update task: ", "Не удалось подключиться к задаче обновления: ") + String(cause)) }
     }
     setRows([])
     setState(null)
@@ -213,10 +214,10 @@ function useUpdateJob(props: UpdateProps) {
  * @returns 可读的状态行
  */
 function countText(state: SvnUpdateState | null): string {
-  if (!state) return '等待 SVN 任务…'
+  if (!state) return uiText('等待 SVN 任务…', "Waiting for SVN task…", "Ожидание задачи SVN…")
   const c = state.counts
-  return '合并 ' + c.G + '  ·  新增 ' + c.A + '  ·  删除 ' + c.D
-    + '  ·  更新 ' + c.U + '  ·  冲突 ' + c.C + (c.R || c.E ? '  ·  其他 ' + (c.R + c.E) : '')
+  return uiText('合并 ', "Merged ", "Слито ") + c.G + uiText('  ·  新增 ', "  ·  Added ", "  ·  Добавлено ") + c.A + uiText('  ·  删除 ', "  ·  Deleted ", "  ·  Удалено ") + c.D
+    + uiText('  ·  更新 ', "  ·  Updated ", "  ·  Обновлено ") + c.U + uiText('  ·  冲突 ', "  ·  Conflicts ", "  ·  Конфликты ") + c.C + (c.R || c.E ? uiText('  ·  其他 ', "  ·  Other ", "  ·  Прочее ") + (c.R + c.E) : '')
 }
 
 /**
@@ -238,25 +239,25 @@ function menuEntries(props: UpdateProps, state: SvnUpdateState, menu: UpdateMenu
   const enabled = ready && !write.busy && !evidence.loading && Boolean(conflict && (conflict.text || conflict.props || conflict.tree))
   const full = enabled && !conflict?.tree
   const conflictEntries: ContextMenuEntry[] = row.action === 'C' ? [
-    { id: 'theirs-full', label: '使用对方完整版本解决', separator: true, disabled: !full, onClick: () => { void write.execute(row, 'theirs-full') } },
-    { id: 'mine-full', label: '使用自身完整版本解决', disabled: !full, onClick: () => { void write.execute(row, 'mine-full') } },
-    { id: 'working', label: '标记为已解决（保留当前内容）', disabled: !enabled, onClick: () => { void write.execute(row, 'working') } },
-    { id: 'revert', label: '还原此项…', disabled: !enabled, onClick: () => { void write.execute(row, 'revert') } },
-    ...(conflict?.tree ? [{ id: 'tree-hint', label: '树冲突：请先针对性处理，再标记解决', disabled: true, onClick: () => {} }] : []),
-    ...(!conflict && ready ? [{ id: 'unknown-hint', label: '状态未确认：请刷新冲突状态', disabled: true, onClick: () => {} }] : []),
+    { id: 'theirs-full', label: uiText('使用对方完整版本解决', "Resolve using complete incoming version", "Разрешить полной входящей версией"), separator: true, disabled: !full, onClick: () => { void write.execute(row, 'theirs-full') } },
+    { id: 'mine-full', label: uiText('使用自身完整版本解决', "Resolve using your complete version", "Разрешить вашей полной версией"), disabled: !full, onClick: () => { void write.execute(row, 'mine-full') } },
+    { id: 'working', label: uiText('标记为已解决（保留当前内容）', "Mark resolved (keep current contents)", "Отметить разрешённым (оставить содержимое)"), disabled: !enabled, onClick: () => { void write.execute(row, 'working') } },
+    { id: 'revert', label: uiText('还原此项…', "Revert this item…", "Восстановить этот элемент…"), disabled: !enabled, onClick: () => { void write.execute(row, 'revert') } },
+    ...(conflict?.tree ? [{ id: 'tree-hint', label: uiText('树冲突：请先针对性处理，再标记解决', "Tree conflict: resolve it manually before marking resolved", "Конфликт дерева: сначала разрешите вручную, затем отметьте разрешённым"), disabled: true, onClick: () => {} }] : []),
+    ...(!conflict && ready ? [{ id: 'unknown-hint', label: uiText('状态未确认：请刷新冲突状态', "Status unknown: refresh conflict status", "Состояние неизвестно: обновите состояние конфликтов"), disabled: true, onClick: () => {} }] : []),
   ] : []
   const picked = new Set(selected)
   const names = rows.filter((item) => picked.has(item.seq)).map((item) => item.relPath
     ? absoluteOf(item.relPath, props.cwd) : item.path)
   return [
-    { id: 'compare', label: '与工作副本比较', disabled: !actions.compare, onClick: () => props.onCompare(rel, state.revision!, state.jobId) },
-    { id: 'log', label: '查看日志', disabled: !actions.log, onClick: () => props.onShowLog(rel, state.jobId) },
-    { id: 'open', label: '打开', disabled: !actions.open, separator: true, onClick: () => props.onOpenFile(rel) },
-    { id: 'open-with', label: '打开方式…', disabled: !actions.openWith, onClick: () => props.onOpenWith(rel) },
-    { id: 'parent', label: '打开父目录', disabled: !actions.parent, onClick: () => props.onOpenParent(updateParent(rel)) },
+    { id: 'compare', label: uiText('与工作副本比较', "Compare with working copy", "Сравнить с рабочей копией"), disabled: !actions.compare, onClick: () => props.onCompare(rel, state.revision!, state.jobId) },
+    { id: 'log', label: uiText('查看日志', "Show log", "Показать журнал"), disabled: !actions.log, onClick: () => props.onShowLog(rel, state.jobId) },
+    { id: 'open', label: uiText('打开', "Open", "Открыть"), disabled: !actions.open, separator: true, onClick: () => props.onOpenFile(rel) },
+    { id: 'open-with', label: uiText('打开方式…', "Open with…", "Открыть с помощью…"), disabled: !actions.openWith, onClick: () => props.onOpenWith(rel) },
+    { id: 'parent', label: uiText('打开父目录', "Open parent directory", "Открыть родительскую папку"), disabled: !actions.parent, onClick: () => props.onOpenParent(updateParent(rel)) },
     ...conflictEntries,
-    { id: 'copy', label: selected.length > 1 ? '复制选中路径' : '复制路径', disabled: !actions.copy, separator: true,
-      onClick: () => { void copyText(names.join('\n'), '已复制路径', props.onNote) } },
+    { id: 'copy', label: selected.length > 1 ? uiText('复制选中路径', "Copy selected paths", "Копировать выбранные пути") : uiText('复制路径', "Copy path", "Копировать путь"), disabled: !actions.copy, separator: true,
+      onClick: () => { void copyText(names.join('\n'), uiText('已复制路径', "Paths copied", "Пути скопированы"), props.onNote) } },
   ]
 }
 
@@ -306,7 +307,7 @@ function rowElement(row: SvnUpdateRow, cwd: string | null | undefined, picked: b
     role: 'row', 'aria-selected': picked, className: 'edrv-update-row' + (picked ? ' is-selected' : ''),
     onClick: onPick, onContextMenu: onMenu, title: row.raw,
   },
-    React.createElement('span', { role: 'cell', className: 'edrv-update-action tone-' + tone }, resolved ? row.label + '（已解决）' : row.action ? row.label : '信息'),
+    React.createElement('span', { role: 'cell', className: 'edrv-update-action tone-' + tone }, resolved ? row.label + uiText('（已解决）', " (resolved)", " (разрешён)") : row.action ? row.label : uiText('信息', "Message", "Сообщение")),
     // 信息行（Updating '.' / At revision N 等）不是文件行，图标列留空。
     React.createElement('span', { role: 'cell', className: 'edrv-update-icon', 'aria-hidden': true },
       row.action ? entryIconEl(path, isDirOf(path, dirs, kinds)) : null),
@@ -430,12 +431,12 @@ function useUpdateMenu(props: UpdateProps, rows: SvnUpdateRow[], state: SvnUpdat
 function updateHead(props: UpdateProps, state: SvnUpdateState | null, phase: string, closable: boolean, dismiss: () => void): React.ReactElement {
   return React.createElement('header', { className: 'edrv-update-head' },
     React.createElement('div', { className: 'edrv-update-heading' },
-      React.createElement('h3', null, 'SVN 更新'),
-      React.createElement('span', { className: 'edrv-update-target', title: state?.target ?? props.path }, state?.target || '工作区根')),
+      React.createElement('h3', null, uiText('SVN 更新', "SVN update", "Обновление SVN")),
+      React.createElement('span', { className: 'edrv-update-target', title: state?.target ?? props.path }, state?.target || uiText('工作区根', "Workspace root", "Корень рабочей области"))),
     React.createElement('span', { className: 'edrv-update-phase', role: 'status' }, phase),
     React.createElement('button', {
       type: 'button', className: 'edrv-update-close', disabled: !closable,
-      title: closable ? '关闭更新窗口' : '更新运行中；请先取消', 'aria-label': '关闭更新窗口', onClick: dismiss,
+      title: closable ? uiText('关闭更新窗口', "Close update window", "Закрыть окно обновления") : uiText('更新运行中；请先取消', "Update is running; cancel it first", "Обновление выполняется; сначала отмените его"), 'aria-label': uiText('关闭更新窗口', "Close update window", "Закрыть окно обновления"), onClick: dismiss,
     }, '✕'))
 }
 
@@ -462,12 +463,12 @@ function updateTable(props: UpdateProps, rows: SvnUpdateRow[], view: ReturnType<
    */
   const sortHead = (column: UpdateColumn) => {
     const direction = sort?.column === column ? sort.direction : 0
-    const label = column === 'action' ? '操作' : column === 'path' ? '路径' : '类型（推断）'
+    const label = column === 'action' ? uiText('操作', "Action", "Действие") : column === 'path' ? uiText('路径', "Path", "Путь") : uiText('类型（推断）', "Type (inferred)", "Тип (определённый)")
     return React.createElement('span', { key: column, role: 'columnheader', 'aria-sort': direction === 1 ? 'ascending' : direction === -1 ? 'descending' : 'none' },
       React.createElement('button', { type: 'button', className: 'edrv-update-sort', onClick: () => onSort(column),
-        title: '点击切换升序、降序、原始顺序' + (column === 'type' ? '；仅推断类型，非 SVN 属性' : '') }, label + (direction === 1 ? ' ▲' : direction === -1 ? ' ▼' : ' ↕')))
+        title: uiText('点击切换升序、降序、原始顺序', "Click to cycle ascending, descending, original order", "Нажмите для смены порядка: по возрастанию, убыванию, исходный") + (column === 'type' ? uiText('；仅推断类型，非 SVN 属性', "; inferred type, not an SVN property", "; определённый тип, не свойство SVN") : '') }, label + (direction === 1 ? ' ▲' : direction === -1 ? ' ▼' : ' ↕')))
   }
-  return React.createElement('div', { className: 'edrv-update-table', role: 'table', 'aria-label': 'SVN 更新文件明细', 'aria-rowcount': rows.length },
+  return React.createElement('div', { className: 'edrv-update-table', role: 'table', 'aria-label': uiText('SVN 更新文件明细', "SVN update file details", "Сведения о файлах обновления SVN"), 'aria-rowcount': rows.length },
     React.createElement('div', { role: 'row', className: 'edrv-update-cols' },
       sortHead('action'),
       React.createElement('span', { key: 'icon', role: 'columnheader', className: 'edrv-update-icon', 'aria-hidden': true }),
@@ -483,7 +484,7 @@ function updateTable(props: UpdateProps, rows: SvnUpdateRow[], view: ReturnType<
           (event) => selection.pick(event, row), (event) => selection.openMenu(event, row),
           row.action === 'C' && !rowConflict(row, states), entryKind.dirs, entryKind.kinds)))),
       !rows.length ? React.createElement('div', { className: 'edrv-update-empty' },
-        finished ? '没有逐文件变更' : '等待 SVN 输出…') : null))
+        finished ? uiText('没有逐文件变更', "No per-file changes", "Нет изменений отдельных файлов") : uiText('等待 SVN 输出…', "Waiting for SVN output…", "Ожидание вывода SVN…")) : null))
 }
 
 /**
@@ -496,14 +497,14 @@ function updateTable(props: UpdateProps, rows: SvnUpdateRow[], view: ReturnType<
  * @returns 状态元素
  */
 function updateStatus(state: SvnUpdateState | null, error: string, cleaned: boolean): React.ReactElement {
-  const duration = state ? (state.elapsedMs / 1000).toFixed(1) + ' 秒' : ''
+  const duration = state ? (state.elapsedMs / 1000).toFixed(1) + uiText(' 秒', " seconds", " с") : ''
   const locked = updateLocked(state)
   return React.createElement('div', { className: 'edrv-update-telemetry', role: 'status' },
     error || state?.error ? React.createElement('span', { className: 'edrv-update-error' }, error || state?.error) : null,
     locked ? React.createElement('span', { className: 'edrv-update-locked' },
-      cleaned ? '已执行清理，可重新点击「SVN 更新」' : '工作副本被上次中断的操作锁定：请先执行清理再重试') : null,
-    React.createElement('span', null, (state?.revision ? 'r' + state.revision + '  ·  ' : '') + '已耗时 ' + duration),
-    state?.truncated ? React.createElement('span', { className: 'edrv-update-warning' }, '输出已截断，列表与计数可能不完整') : null)
+      cleaned ? uiText('已执行清理，可重新点击「SVN 更新」', "Cleanup completed; you can run SVN Update again", "Очистка выполнена; можно повторить обновление SVN") : uiText('工作副本被上次中断的操作锁定：请先执行清理再重试', "The working copy is locked by an interrupted operation. Run cleanup before retrying.", "Рабочая копия заблокирована прерванной операцией. Выполните очистку перед повтором.")) : null,
+    React.createElement('span', null, (state?.revision ? 'r' + state.revision + '  ·  ' : '') + uiText('已耗时 ', "Elapsed ", "Прошло ") + duration),
+    state?.truncated ? React.createElement('span', { className: 'edrv-update-warning' }, uiText('输出已截断，列表与计数可能不完整', "Output truncated; list and counts may be incomplete", "Вывод обрезан; список и счётчики могут быть неполными")) : null)
 }
 
 /**
@@ -527,18 +528,18 @@ function updateFoot(props: UpdateProps, state: SvnUpdateState | null, closable: 
   const locked = updateLocked(state)
   return React.createElement('footer', { className: 'edrv-update-foot' },
     React.createElement('span', { className: 'edrv-update-counts' }, countText(state)),
-    remaining > 0 ? React.createElement('button', { type: 'button', className: 'edrv-svn-act edrv-update-jump', onClick: jump }, '跳转冲突（' + remaining + '）') : null,
-    state?.counts.C ? React.createElement('button', { type: 'button', className: 'edrv-svn-act', disabled: !finished, onClick: refresh }, '刷新冲突状态') : null,
+    remaining > 0 ? React.createElement('button', { type: 'button', className: 'edrv-svn-act edrv-update-jump', onClick: jump }, uiText('跳转冲突（', "Go to conflict (", "Перейти к конфликту (") + remaining + '）') : null,
+    state?.counts.C ? React.createElement('button', { type: 'button', className: 'edrv-svn-act', disabled: !finished, onClick: refresh }, uiText('刷新冲突状态', "Refresh conflict status", "Обновить состояние конфликтов")) : null,
     locked ? React.createElement('button', {
       type: 'button', className: 'edrv-svn-act edrv-update-cleanup', disabled: !finished || cleaned,
-      title: locked && !cleaned ? '执行 svn cleanup，清除中断残留的锁（不撤销已完成的更新）' : '已执行过清理',
+      title: locked && !cleaned ? uiText('执行 svn cleanup，清除中断残留的锁（不撤销已完成的更新）', "Run svn cleanup to remove interrupted-operation locks (completed updates are not reverted)", "Выполнить svn cleanup для удаления оставшихся блокировок (выполненные обновления не отменяются)") : uiText('已执行过清理', "Cleanup already performed", "Очистка уже выполнена"),
       onClick: cleanup,
-    }, cleaned ? '已清理' : '执行清理') : null,
+    }, cleaned ? uiText('已清理', "Cleaned up", "Очищено") : uiText('执行清理', "Run cleanup", "Выполнить очистку")) : null,
     React.createElement('button', { type: 'button', className: 'edrv-svn-act', disabled: !finished || !state,
-      onClick: () => state && props.onShowLog(state.target, state.jobId) }, '查看日志'),
-    React.createElement('button', { type: 'button', className: 'edrv-svn-act edrv-update-primary', disabled: !closable, onClick: dismiss }, confirmClose ? '暂时关闭' : '确定'),
+      onClick: () => state && props.onShowLog(state.target, state.jobId) }, uiText('查看日志', "Show log", "Показать журнал")),
+    React.createElement('button', { type: 'button', className: 'edrv-svn-act edrv-update-primary', disabled: !closable, onClick: dismiss }, confirmClose ? uiText('暂时关闭', "Close temporarily", "Временно закрыть") : uiText('确定', "OK", "ОК")),
     React.createElement('button', { type: 'button', className: 'edrv-svn-act',
-      disabled: !state || updateDone(state.phase) || state.phase === 'cancelling', onClick: cancel }, '取消更新'))
+      disabled: !state || updateDone(state.phase) || state.phase === 'cancelling', onClick: cancel }, uiText('取消更新', "Cancel update", "Отменить обновление")))
 }
 
 /**
@@ -580,11 +581,11 @@ export function SvnUpdateDialog(props: UpdateProps): React.ReactElement {
    */
   const cancel = () => {
     if (!state || processFinished || state.phase === 'cancelling') return
-    if (!window.confirm('停止 SVN 更新？已更新的文件不会回滚，工作副本可能仅完成一部分。')) return
+    if (!window.confirm(uiText('停止 SVN 更新？已更新的文件不会回滚，工作副本可能仅完成一部分。', "Stop SVN update? Updated files will not be reverted, and the working copy may be only partially updated.", "Остановить обновление SVN? Обновлённые файлы не будут восстановлены; рабочая копия может обновиться частично."))) return
     void rpc('svn.updateCancel', { sessionId: props.sessionId, jobId: state.jobId }).then((outcome) => {
       if (outcome.ok) setState(outcome)
       else props.onNote(outcome.error)
-    }).catch((cause) => props.onNote('取消更新失败：' + String(cause)))
+    }).catch((cause) => props.onNote(uiText('取消更新失败：', "Failed to cancel update: ", "Не удалось отменить обновление: ") + String(cause)))
   }
   /**
    * 清理只修复工作副本锁，绝不自动重跑更新；结果经提示条回报。
@@ -592,11 +593,11 @@ export function SvnUpdateDialog(props: UpdateProps): React.ReactElement {
    */
   const cleanup = () => {
     if (!updateLocked(state) || cleaned) return
-    if (!window.confirm('对工作副本执行 svn cleanup？这会清除上次中断残留的锁，不会撤销已完成的更新。')) return
+    if (!window.confirm(uiText('对工作副本执行 svn cleanup？这会清除上次中断残留的锁，不会撤销已完成的更新。', "Run svn cleanup on the working copy? This removes locks left by interrupted operations without reverting completed updates.", "Выполнить svn cleanup для рабочей копии? Это удалит блокировки прерванных операций, не отменяя завершённые обновления."))) return
     void rpc('svn.cleanup', { sessionId: props.sessionId }).then((outcome) => {
-      if (outcome.ok) { setCleaned(true); props.onNote('清理完成，可重新执行 SVN 更新') }
+      if (outcome.ok) { setCleaned(true); props.onNote(uiText('清理完成，可重新执行 SVN 更新', "Cleanup completed; SVN update can be run again", "Очистка завершена; можно повторить обновление SVN")) }
       else props.onNote(outcome.error)
-    }).catch((cause) => props.onNote('清理失败：' + String(cause)))
+    }).catch((cause) => props.onNote(uiText('清理失败：', "Cleanup failed: ", "Ошибка очистки: ") + String(cause)))
   }
   /**
    * 连接中断时只暂时关闭窗口；从不声称 SVN 更新已经停止。
@@ -604,25 +605,25 @@ export function SvnUpdateDialog(props: UpdateProps): React.ReactElement {
    */
   const dismiss = () => {
     if (!closable) return
-    if (closeMode.confirm && !window.confirm('更新任务连接中断。关闭窗口不会停止可能仍在运行的 SVN 更新，确定暂时关闭？')) return
+    if (closeMode.confirm && !window.confirm(uiText('更新任务连接中断。关闭窗口不会停止可能仍在运行的 SVN 更新，确定暂时关闭？', "Connection to update task lost. Closing the window will not stop an SVN update that may still be running. Close temporarily?", "Соединение с задачей обновления прервано. Закрытие окна не остановит возможно выполняющееся обновление SVN. Временно закрыть?"))) return
     props.onClose()
   }
-  const phase = pendingRows && processFinished ? '正在加载更新明细…'
-    : state?.phase === 'completed' ? '更新完成' : state?.phase === 'failed' ? '更新失败'
-    : state?.phase === 'cancelled' ? '更新已停止' : state?.phase === 'cancelling' ? '正在停止…' : '正在更新…'
+  const phase = pendingRows && processFinished ? uiText('正在加载更新明细…', "Loading update details…", "Загрузка сведений об обновлении…")
+    : state?.phase === 'completed' ? uiText('更新完成', "Update completed", "Обновление завершено") : state?.phase === 'failed' ? uiText('更新失败', "Update failed", "Ошибка обновления")
+    : state?.phase === 'cancelled' ? uiText('更新已停止', "Update stopped", "Обновление остановлено") : state?.phase === 'cancelling' ? uiText('正在停止…', "Stopping…", "Остановка…") : uiText('正在更新…', "Updating…", "Обновление…")
   return React.createElement(FloatingWindow, {
-    title: 'SVN 更新', dialogClass: 'edrv-update-dialog', width: 1320, height: 680,
+    title: uiText('SVN 更新', "SVN update", "Обновление SVN"), dialogClass: 'edrv-update-dialog', width: 1320, height: 680,
     closeOnEsc: closeMode.passive, onClose: dismiss,
   },
     updateHead(props, state, phase, closable, dismiss),
     updateTable(props, displayRows, view, selection, finished, sort, onSort, evidence.states, entryKind),
     updateStatus(state, error || evidence.error, cleaned),
-    outside ? React.createElement('div', { className: 'edrv-update-warning' }, '存在工作区外冲突；可定位但不能在此执行解决操作') : null,
-    write.busy ? React.createElement('div', { role: 'status' }, '正在处理冲突并核对 SVN 状态…') : null,
+    outside ? React.createElement('div', { className: 'edrv-update-warning' }, uiText('存在工作区外冲突；可定位但不能在此执行解决操作', "Conflicts exist outside the workspace; they can be located but not resolved here", "Есть конфликты вне рабочей области; их можно найти, но нельзя разрешить здесь")) : null,
+    write.busy ? React.createElement('div', { role: 'status' }, uiText('正在处理冲突并核对 SVN 状态…', "Resolving conflict and checking SVN status…", "Разрешение конфликта и проверка состояния SVN…")) : null,
     updateFoot(props, state, closable, finished && !write.busy, cancel, dismiss, closeMode.confirm, cleaned, cleanup, remaining, jump, refresh),
     state?.rawTail && (state.phase === 'failed' || state.truncated)
       ? React.createElement('details', { className: 'edrv-update-raw' },
-          React.createElement('summary', null, '查看原始输出'), React.createElement('pre', null, state.rawTail)) : null,
+          React.createElement('summary', null, uiText('查看原始输出', "View raw output", "Показать исходный вывод")), React.createElement('pre', null, state.rawTail)) : null,
     selection.menu && state ? React.createElement(ContextMenu, {
       x: selection.menu.x, y: selection.menu.y,
       entries: menuEntries(props, state, selection.menu, displayRows, selection.selected, finished, evidence, write), zIndex: 193,
