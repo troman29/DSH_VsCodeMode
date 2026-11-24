@@ -7,7 +7,7 @@
  * 技能与规则都走多选下拉（候选来自目录扫描，不再手输名字）；分段与开关统一由 QuickMenuPickers 提供。
  * 作者 ddj 2026年10月30号
  */
-import { sharedDisplay } from '../sharedDisplay.js'
+import { quickMenuValidationDisplay, sharedDisplay } from '../sharedDisplay.js'
 import React from 'react'
 import { uiText } from '../uiLocale.js'
 import { ModalShell } from './ModalShell.js'
@@ -103,7 +103,7 @@ function skillOption(name: string, ctx: ValidateContext, hint?: string): PickOpt
     label: name,
     ...(hint ? { hint } : {}),
     ...(status.state === 'ok' ? {} : { state: status.state === 'warn' ? 'warn' : undefined }),
-    ...(status.reason ? { reason: sharedDisplay(status.reason) } : {}),
+    ...(status.reason ? { reason: quickMenuValidationDisplay(status.reason) } : {}),
   }
 }
 
@@ -164,7 +164,7 @@ function ruleOption(choice: RuleChoice, ctx: ValidateContext): PickOption {
     label: choice.label,
     hint: choice.hint,
     ...(state ? { state } : {}),
-    ...(status.reason ? { reason: sharedDisplay(status.reason) } : {}),
+    ...(status.reason ? { reason: quickMenuValidationDisplay(status.reason) } : {}),
   }
 }
 
@@ -201,7 +201,7 @@ function ruleGroups(choices: RuleChoice[], selected: RuleBinding[], ctx: Validat
           label: binding.file,
           hint: binding.scope === 'user' ? uiText('用户规则', "User rules", "Правила пользователя") : uiText('项目规则', "Project rules", "Правила проекта"),
           state: status.state === 'warn' ? 'warn' : 'error',
-          reason: status.reason ? sharedDisplay(status.reason) : uiText('候选里没有该规则，可取消绑定', "Rule is absent from the choices; you can unbind it", "Правило отсутствует среди вариантов; привязку можно удалить"),
+          reason: status.reason ? quickMenuValidationDisplay(status.reason) : uiText('候选里没有该规则，可取消绑定', "Rule is absent from the choices; you can unbind it", "Правило отсутствует среди вариантов; привязку можно удалить"),
         }
       }),
     })
@@ -620,8 +620,8 @@ export function QuickItemDialog(props: QuickItemDialogProps) {
     type === 'button' ? React.createElement(Section, { title: uiText('绑定', "Bindings", "Привязки") }, skillField(), ruleField()) : null,
     type === 'button' ? React.createElement(Section, { title: uiText('行为', "Behavior", "Поведение") }, clickField()) : null,
     error !== '' ? React.createElement('div', { className: 'edrv-qm-error-list' }, error) : null,
-    status.errors.length > 0 ? React.createElement('ul', { className: 'edrv-qm-error-list' }, status.errors.map((text) => React.createElement('li', { key: text }, sharedDisplay(text)))) : null,
-    status.warnings.length > 0 ? React.createElement('ul', { className: 'edrv-qm-warn-list' }, status.warnings.map((text) => React.createElement('li', { key: text }, sharedDisplay(text)))) : null,
+    status.errors.length > 0 ? React.createElement('ul', { className: 'edrv-qm-error-list' }, status.errors.map((text) => React.createElement('li', { key: text }, quickMenuValidationDisplay(text)))) : null,
+    status.warnings.length > 0 ? React.createElement('ul', { className: 'edrv-qm-warn-list' }, status.warnings.map((text) => React.createElement('li', { key: text }, quickMenuValidationDisplay(text)))) : null,
   )
 
   const actions = React.createElement('div', { className: 'edrv-qm-actions' },
@@ -787,7 +787,7 @@ function collectBroken(doc: QuickMenuDoc, ctx: ValidateContext): Array<{ key: st
     if (item.type !== 'button') continue
     const status = itemStatus(item, ctx)
     status.errors.concat(status.warnings).forEach((reason, index) => {
-      out.push({ key: item.id + ':' + index, label: item.name + ' → ' + sharedDisplay(reason) })
+      out.push({ key: item.id + ':' + index, label: item.name + ' → ' + quickMenuValidationDisplay(reason) })
     })
   }
   return out

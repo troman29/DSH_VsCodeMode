@@ -1,6 +1,6 @@
 {
   "name": "dsh-vscode-mode",
-  "version": "0.37.0-troman29.1",
+  "version": "0.37.0-troman29.2",
   "description": "VSCode-style file editing in DSH with English and Russian UI: Monaco, Markdown preview, diff review, SVN, debugging and language services.",
   "icon": "assets/icon.svg",
   "keywords": [

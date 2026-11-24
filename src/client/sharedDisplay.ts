@@ -72,6 +72,37 @@ const DISPLAY_TEXT: Record<string, readonly [string, string]> = {
   '新名称不能包含路径分隔符': ['New name cannot contain path separators', 'Новое имя не может содержать разделители пути'],
 }
 
+type ValidationTemplate = readonly [pattern: RegExp, english: (detail: string) => string, russian: (detail: string) => string]
+
+const QUICK_MENU_VALIDATION: readonly ValidationTemplate[] = [
+  [/^工作区规则目录不存在：([\s\S]*)$/, (detail) => `Workspace rules directory does not exist: ${detail}`, (detail) => `Каталог правил пространства отсутствует: ${detail}`],
+  [/^规则文件不存在或已移除：([\s\S]*)$/, (detail) => `Rule file does not exist or was removed: ${detail}`, (detail) => `Файл правила отсутствует или удалён: ${detail}`],
+  [/^规则解析失败：([\s\S]*)$/, (detail) => `Rule parsing failed: ${detail}`, (detail) => `Ошибка разбора правила: ${detail}`],
+  [/^规则已停用，不会生效：([\s\S]*)$/, (detail) => `Rule is disabled and will not apply: ${detail}`, (detail) => `Правило отключено и не действует: ${detail}`],
+  [/^规则来自其他工作区，发送时会跳过：([\s\S]*)$/, (detail) => `Rule belongs to another workspace and will be skipped: ${detail}`, (detail) => `Правило другого пространства будет пропущено: ${detail}`],
+  [/^当前会话不可见（可能已移除或未被该会话加载）：([\s\S]*)$/, (detail) => `Not visible to this session (removed or not loaded): ${detail}`, (detail) => `Недоступно в этом сеансе (удалено или не загружено): ${detail}`],
+  [/^名称过长（上限 (\d+) 字）$/, (detail) => `Name is too long (limit: ${detail} characters)`, (detail) => `Название слишком длинное (лимит: ${detail} символов)`],
+  [/^优先级需在 0 到 (\d+) 之间$/, (detail) => `Priority must be between 0 and ${detail}`, (detail) => `Приоритет должен быть от 0 до ${detail}`],
+  [/^已达最大嵌套层数（上限 (\d+)）$/, (detail) => `Maximum nesting depth reached (limit: ${detail})`, (detail) => `Достигнута максимальная глубина вложенности (лимит: ${detail})`],
+  [/^提示词过长（上限 (\d+) 字符）$/, (detail) => `Prompt is too long (limit: ${detail} characters)`, (detail) => `Запрос слишком длинный (лимит: ${detail} символов)`],
+  [/^技能名不合法：([\s\S]*)$/, (detail) => `Invalid skill name: ${detail}`, (detail) => `Некорректное имя навыка: ${detail}`],
+  [/^项目规则缺少工作区：([\s\S]*)$/, (detail) => `Project rule has no workspace: ${detail}`, (detail) => `Для правила проекта не указано пространство: ${detail}`],
+  [/^技能不可用：([\s\S]*)$/, (detail) => `Skill unavailable: ${detail}`, (detail) => `Навык недоступен: ${detail}`],
+  [/^规则不可用：([\s\S]*)$/, (detail) => `Rule unavailable: ${detail}`, (detail) => `Правило недоступно: ${detail}`],
+  [/^未能读取规则正文，已跳过内联：([\s\S]*)$/, (detail) => `Rule content could not be read; inline injection skipped: ${detail}`, (detail) => `Текст правила не прочитан; встроенная вставка пропущена: ${detail}`],
+]
+
+/** Only for messages returned by the canonical quick-menu validators; captured details remain verbatim. */
+export function quickMenuValidationDisplay(text: string): string {
+  for (const [pattern, english, russian] of QUICK_MENU_VALIDATION) {
+    const match = pattern.exec(text)
+    if (match) {
+      return uiText(text, english(match[1]), russian(match[1]))
+    }
+  }
+  return sharedDisplay(text)
+}
+
 /** Translate canonical shared display metadata only; unknown text is preserved verbatim. */
 export function sharedDisplay(text: string): string {
   const translated = Object.hasOwn(DISPLAY_TEXT, text) ? DISPLAY_TEXT[text] : undefined
