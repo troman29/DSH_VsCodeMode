@@ -204,6 +204,7 @@ function clientConfig(panel?: PanelKey): UserConfig {
   /** Stylesheets collected for this artifact only; they ride in its registration meta. */
   const styles: Styles = new Map()
   const shared = new Map([
+    [resolvePath('src/client/uiLocale.ts'), ['uiText']],
     [resolvePath('src/client/rpc.ts'), ['rpc', 'dbg']],
     [resolvePath('src/client/dap/store.ts'), ['dapStore']],
     [resolvePath('src/client/dap/BpWidget.ts'), ['BP_MODE', 'MODES', 'fieldOfMode']],
@@ -230,7 +231,15 @@ function clientConfig(panel?: PanelKey): UserConfig {
       {
         name: 'excel-browser-entry',
         /** @private @author ddj 2026年10月28号 @param source Import id. @returns Browser-only ExcelJS bundle, excluding filesystem/streaming writer implementations. */
-        resolveId(source: string) { return source === 'exceljs' ? createRequire(import.meta.url).resolve('exceljs/dist/exceljs.min.js') : null },
+        resolveId(source: string) {
+          if (source === 'exceljs') {
+            return createRequire(import.meta.url).resolve('exceljs/dist/exceljs.min.js')
+          }
+          if (source === 'rxjs' || source.startsWith('rxjs/')) {
+            return createRequire(import.meta.url).resolve(source)
+          }
+          return null
+        },
         /** @private @author ddj 2026年10月28号 @param code Browser chunk. @returns No transform. @throws If a Node-only loader or worker entry leaks into the client artifact. */
         renderChunk(code: string) {
           if (/\brequire(?:\$\d+)?\(["'](?:node:)?(?:module|worker_threads)["']\)/.test(code)) throw new Error('Browser bundle contains a Node-only module/worker_threads import')

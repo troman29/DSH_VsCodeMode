@@ -11,15 +11,15 @@ const FALLBACK_BEGIN = '/*dsh-style-fallback*/'
 const FALLBACK_END = '/*dsh-style-fallback-end*/'
 /** Per-chunk contract: root shared keys it must consume, the exports it must publish, and the stylesheet it must declare. */
 const CHUNK_SPECS = [
-  { name: 'client.rules.js', shared: ['rpc'], exports: ['RulesPanel'] },
-  { name: 'client.debug.js', shared: ['dapStore', 'BP_MODE', 'MODES', 'fieldOfMode', 'ContextMenu', 'rpc'], exports: ['DebugPanel'] },
+  { name: 'client.rules.js', shared: ['rpc', 'uiText'], exports: ['RulesPanel'] },
+  { name: 'client.debug.js', shared: ['dapStore', 'BP_MODE', 'MODES', 'fieldOfMode', 'ContextMenu', 'rpc', 'uiText'], exports: ['DebugPanel'] },
   { name: 'client.excel.js', shared: ['editExcel', 'exportExcel', 'notifyExcel', 'openOriginal'], exports: ['excelPanel'], style: 'src/client/excel/panel.css' },
-  { name: 'client.excelcodec.js', shared: [], exports: ['decodeExcel', 'downloadExcel'] },
+  { name: 'client.excelcodec.js', shared: ['uiText'], exports: ['decodeExcel', 'downloadExcel'] },
 ]
 const CHUNKS = CHUNK_SPECS.map((spec) => spec.name)
 const SHARED = [...new Set([
   'rpc', 'dbg', 'dapStore', 'BP_MODE', 'MODES', 'fieldOfMode', 'ContextMenu',
-  'editExcel', 'exportExcel', 'notifyExcel', 'openOriginal',
+  'editExcel', 'exportExcel', 'notifyExcel', 'openOriginal', 'uiText',
 ])]
 const ROOT_BUDGET = 3 * 1024 * 1024
 const ENGINE_FLOOR = 3 * 1024 * 1024

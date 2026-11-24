@@ -26,13 +26,13 @@ describe('localeClient 词典', () => {
     }
   })
 
-  it('中文为缺省回退语言', () => {
-    expect(LOCALE_FALLBACK).toBe('zh')
-    expect(directTranslate()('slot.fileEditor')).toBe(LOCALE_DICTS.zh!['slot.fileEditor'])
+  it('英文为缺省回退语言', () => {
+    expect(LOCALE_FALLBACK).toBe('en')
+    expect(directTranslate()('slot.fileEditor')).toBe(LOCALE_DICTS.en!['slot.fileEditor'])
   })
 
-  it('未知语言回退中文，未知键回退键本身', () => {
-    expect(directTranslate('ja')('slot.diff')).toBe(LOCALE_DICTS.zh!['slot.diff'])
+  it('未知语言回退英文，未知键回退键本身', () => {
+    expect(directTranslate('ja')('slot.diff')).toBe(LOCALE_DICTS.en!['slot.diff'])
     expect(directTranslate('en')('no.such.key')).toBe('no.such.key')
   })
 })
@@ -58,9 +58,9 @@ describe('installLocale 服务探测', () => {
     expect(t('slot.diff')).toBe(`${LOCALE_NS}:slot.diff`)
   })
 
-  it('服务缺失时回落直读中文词典', () => {
+  it('服务缺失时回落直读英文词典', () => {
     const t = installLocale(makeCtx())
-    expect(t('slot.settings')).toBe(LOCALE_DICTS.zh!['slot.settings'])
+    expect(t('slot.settings')).toBe(LOCALE_DICTS.en!['slot.settings'])
   })
 
   it('register 抛错不影响 bind 生效', () => {
@@ -87,7 +87,7 @@ describe('installLocale 服务探测', () => {
     })
 
     expect(() => installLocale(ctx)).not.toThrow()
-    expect(installLocale(ctx)('slot.diff')).toBe(LOCALE_DICTS.zh!['slot.diff'])
+    expect(installLocale(ctx)('slot.diff')).toBe(LOCALE_DICTS.en!['slot.diff'])
   })
 
   it('ctx.get 本身抛错时也回落直读词典', () => {
@@ -96,7 +96,7 @@ describe('installLocale 服务探测', () => {
         throw new Error('service unavailable')
       },
     }
-    expect(installLocale(ctx)('guide.title')).toBe(LOCALE_DICTS.zh!['guide.title'])
+    expect(installLocale(ctx)('guide.title')).toBe(LOCALE_DICTS.en!['guide.title'])
   })
 
   it('返回的翻译函数每次都重新问 bind（支持语言热切换）', () => {

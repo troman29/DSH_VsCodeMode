@@ -1,16 +1,12 @@
-/**
- * dsh-vscode-mode client — UI 壳层文案的 locale 接入。
- * 此前 `locale` 写在 inject 里却零调用，界面文案全为硬编码中文；
- * 这里只覆盖壳层（slot label、编辑 Tab 标题、侧栏引导），编辑器内部大段文案不动。
- * 所有对外函数都对 locale 服务做可选探测：旧版 DSH 无该服务时回落中文词典。
- * 作者 ddj 2026年10月19号
- */
+import { bindUiLocale, type UiLocaleSource } from './uiLocale.js'
+
+/** Locale integration for editor navigation; English is the safe fallback. */
 
 /** locale 命名空间（与包名一致，避免与其他插件串词条）。 */
 export const LOCALE_NS = 'dsh-vscode-mode'
 
-/** 支持的语言；zh 为缺省回退语言。 */
-export const LOCALE_FALLBACK = 'zh'
+/** Missing translations fall back to English, never Chinese. */
+export const LOCALE_FALLBACK = 'en'
 
 /** 壳层文案词典（键名即 slot label / Tab 标题的稳定标识）。 */
 export const LOCALE_DICTS: Record<string, Record<string, string>> = {
@@ -26,6 +22,19 @@ export const LOCALE_DICTS: Record<string, Record<string, string>> = {
     'review.addPending': '插入对话草稿',
     'review.pendingBlock': '待审',
     'review.commentAction': '插入对话草稿',
+  },
+  ru: {
+    'slot.fileEditor': 'Редактор файлов',
+    'slot.diff': 'Изменения',
+    'slot.sessionSize': 'Размер сессии',
+    'slot.settings': 'VSCodeMode',
+    'guide.title': 'Редактор файлов',
+    'guide.description': 'Редактор Monaco рядом с чатом: изменения, навигация и структура файла',
+    'review.openEditor': 'Открыть в VSCodeMode',
+    'review.openFile': 'Открыть в редакторе',
+    'review.addPending': 'Вставить в черновик',
+    'review.pendingBlock': 'На проверке',
+    'review.commentAction': 'Вставить в черновик',
   },
   en: {
     'slot.fileEditor': 'File editor',
@@ -43,16 +52,16 @@ export const LOCALE_DICTS: Record<string, Record<string, string>> = {
 }
 
 /** locale 服务的最小结构面（结构性探测，不 import 官方类型）。 */
-export interface LocaleLike {
+export interface LocaleLike extends Partial<UiLocaleSource> {
   register?: (ns: string, dicts: Record<string, Record<string, string>>) => unknown
   bind?: (ns: string) => (key: string) => string
 }
 
-/** 翻译函数：键 → 当前语言文案（找不到时回落中文，再回落键本身）。 */
+/** 翻译函数：键 → 当前语言文案（找不到时回落英文，再回落键本身）。 */
 export type Translate = (key: string) => string
 
 /**
- * 取词条：先当前语言、再中文、最后键本身。
+ * 取词条：Active language, then English, then the key itself.
  * @author ddj 2026年10月19号
  * @param lang 语言 id
  * @param key 词条键
@@ -86,6 +95,8 @@ export function installLocale(ctx: { get: (name: string) => unknown }): Translat
   } catch {
     // 服务缺失或探测抛错：后续一律按未命中处理。
   }
+
+  bindUiLocale(typeof service?.getLocale === 'function' ? service as UiLocaleSource : undefined)
 
   // 注册失败（例如同名 ns 已被占）不应连带废掉 bind，故两段各自 try。
   try {

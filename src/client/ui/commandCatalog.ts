@@ -1,3 +1,4 @@
+import { uiText } from '../uiLocale.js'
 /**
  * dsh-vscode-mode client — 编辑器指令目录（纯元数据）。
  * 「一条命令 = 一条注册数据」：命令栏、快捷键设置页与 Monaco 右键菜单
@@ -64,7 +65,7 @@ function alwaysAvailable(): boolean {
  */
 function nextEditorRowDef(): CommandDef {
   return {
-    id: 'edrv.nextEditorRow', label: '下一编辑行（光标整行下移）', category: '导航', order: 50,
+    id: 'edrv.nextEditorRow', label: uiText("下一编辑行（光标整行下移）", "Move to next editor row", "Перейти на следующую строку"), category: uiText("导航", "Navigation", "Навигация"), order: 50,
     available: needsModel,
     run: () => emit('nextEditorRow'),
   }
@@ -77,7 +78,7 @@ function nextEditorRowDef(): CommandDef {
  */
 function prevEditorRowDef(): CommandDef {
   return {
-    id: 'edrv.prevEditorRow', label: '上一编辑行（光标整行上移）', category: '导航', order: 60,
+    id: 'edrv.prevEditorRow', label: uiText("上一编辑行（光标整行上移）", "Move to previous editor row", "Перейти на предыдущую строку"), category: uiText("导航", "Navigation", "Навигация"), order: 60,
     available: needsModel,
     run: () => emit('prevEditorRow'),
   }
@@ -90,7 +91,7 @@ function prevEditorRowDef(): CommandDef {
  */
 function gotoLineDef(): CommandDef {
   return {
-    id: 'edrv.goToLine', label: '转到行', category: '导航', order: 45,
+    id: 'edrv.goToLine', label: uiText("转到行", "Go to line", "Перейти к строке"), category: uiText("导航", "Navigation", "Навигация"), order: 45,
     available: needsModel,
     run: () => emit('goToLine'),
   }
@@ -104,7 +105,7 @@ function gotoLineDef(): CommandDef {
  */
 function addSelectionRefDef(): CommandDef {
   return {
-    id: 'edrv.addSelectionRef', label: '添加选中内容为引用', category: '编辑', order: 10,
+    id: 'edrv.addSelectionRef', label: uiText("添加选中内容为引用", "Add selection as reference", "Добавить выделение как ссылку"), category: uiText("编辑", "Edit", "Правка"), order: 10,
     available: needsModel,
     run: () => emit('addSelectionRef'),
   }
@@ -119,7 +120,7 @@ function addSelectionRefDef(): CommandDef {
  */
 function closeTabDef(): CommandDef {
   return {
-    id: 'edrv.closeTab', label: '关闭当前页签', category: '文件', order: 40,
+    id: 'edrv.closeTab', label: uiText("关闭当前页签", "Close current tab", "Закрыть текущую вкладку"), category: uiText("文件", "File", "Файл"), order: 40,
     available: hasOpenTabs,
     run: () => emit('closeTab'),
   }
@@ -199,42 +200,42 @@ function svnEventOf(action: SvnActionDef): string {
  */
 export const EDITOR_COMMANDS: readonly CommandDef[] = [
   {
-    id: 'edrv.toggleComment', label: '切换行注释', category: '编辑', order: 20,
+    id: 'edrv.toggleComment', label: uiText("切换行注释", "Toggle line comment", "Переключить комментарий строки"), category: uiText("编辑", "Edit", "Правка"), order: 20,
     available: needsModel,
     run: () => emit('toggleComment'),
   },
   {
-    id: 'edrv.duplicateLine', label: '向下复制行（Ctrl+D，编辑器本地，不使用剪贴板）', category: '编辑', order: 30,
+    id: 'edrv.duplicateLine', label: uiText("向下复制行（Ctrl+D，编辑器本地，不使用剪贴板）", "Duplicate line below (Ctrl+D, without clipboard)", "Дублировать строку ниже (Ctrl+D, без буфера обмена)"), category: uiText("编辑", "Edit", "Правка"), order: 30,
     available: needsModel,
     run: () => emit('duplicateLine'),
   },
   {
-    id: 'edrv.reloadWindow', label: '刷新当前界面（不重启 Host）', category: '视图', order: 40,
+    id: 'edrv.reloadWindow', label: uiText("刷新当前界面（不重启 Host）", "Reload interface without restarting host", "Обновить интерфейс без перезапуска хоста"), category: uiText("视图", "View", "Вид"), order: 40,
     available: pageKeysAllowed,
     run: () => emit('reloadWindow'),
   },
   {
-    id: 'edrv.save', label: '保存文件', category: '文件', order: 10,
+    id: 'edrv.save', label: uiText("保存文件", "Save file", "Сохранить файл"), category: uiText("文件", "File", "Файл"), order: 10,
     available: needsModel,
     run: () => emit('save'),
   },
   {
-    id: 'edrv.quickOpen', label: '快速打开文件', category: '文件', order: 20,
+    id: 'edrv.quickOpen', label: uiText("快速打开文件", "Quick open file", "Быстро открыть файл"), category: uiText("文件", "File", "Файл"), order: 20,
     available: () => panelAvailable('quickOpen'),
     run: () => { runPanelCommand('quickOpen') },
   },
   {
-    id: 'edrv.toggleSidebar', label: '切换侧边栏', category: '视图', order: 10,
+    id: 'edrv.toggleSidebar', label: uiText("切换侧边栏", "Toggle sidebar", "Показать или скрыть боковую панель"), category: uiText("视图", "View", "Вид"), order: 10,
     available: alwaysAvailable,
     run: () => emit('toggleSidebar'),
   },
   {
-    id: 'edrv.searchInFiles', label: '在工作区中搜索', category: '视图', order: 20,
+    id: 'edrv.searchInFiles', label: uiText("在工作区中搜索", "Search workspace", "Поиск в рабочем пространстве"), category: uiText("视图", "View", "Вид"), order: 20,
     available: () => panelAvailable('searchInFiles'),
     run: () => { runPanelCommand('searchInFiles') },
   },
   {
-    id: 'edrv.toggleMarkdownPreview', label: '切换 Markdown 预览', category: '视图', order: 25,
+    id: 'edrv.toggleMarkdownPreview', label: uiText("切换 Markdown 预览", "Toggle Markdown preview", "Переключить предпросмотр Markdown"), category: uiText("视图", "View", "Вид"), order: 25,
     // 仅活动文件是 .md 时可用（不可用时官方派发返回 pass 不吞键，保留浏览器「无格式粘贴」语义）
     available: () => {
       const path = activeEditorPath()
@@ -243,7 +244,7 @@ export const EDITOR_COMMANDS: readonly CommandDef[] = [
     run: () => emit('toggleMarkdownPreview'),
   },
   {
-    id: 'edrv.previewHtml', label: '预览网页（官方渲染器）', category: '视图', order: 26,
+    id: 'edrv.previewHtml', label: uiText("预览网页（官方渲染器）", "Preview HTML with native renderer", "Предпросмотр HTML штатным средством"), category: uiText("视图", "View", "Вид"), order: 26,
     // 仅活动文件是 .html/.htm 且官方 HTML 渲染器可用时出现；不可用时让官方派发放行。
     available: () => {
       const path = activeEditorPath()
@@ -252,57 +253,57 @@ export const EDITOR_COMMANDS: readonly CommandDef[] = [
     run: () => emit('previewHtml'),
   },
   {
-    id: 'edrv.showLogs', label: '查看诊断日志', category: '视图', order: 30,
+    id: 'edrv.showLogs', label: uiText("查看诊断日志", "Show diagnostic log", "Показать журнал диагностики"), category: uiText("视图", "View", "Вид"), order: 30,
     available: alwaysAvailable,
     run: () => emit('showLogs'),
   },
   {
-    id: 'edrv.navigateBack', label: '后退（导航历史）', category: '导航', order: 10,
+    id: 'edrv.navigateBack', label: uiText("后退（导航历史）", "Go back", "Назад"), category: uiText("导航", "Navigation", "Навигация"), order: 10,
     available: needsModel,
     run: () => emit('navigateBack'),
   },
   {
-    id: 'edrv.navigateForward', label: '前进（导航历史）', category: '导航', order: 20,
+    id: 'edrv.navigateForward', label: uiText("前进（导航历史）", "Go forward", "Вперёд"), category: uiText("导航", "Navigation", "Навигация"), order: 20,
     available: needsModel,
     run: () => emit('navigateForward'),
   },
   {
-    id: 'edrv.nextTab', label: '下一个页签', category: '导航', order: 30,
+    id: 'edrv.nextTab', label: uiText("下一个页签", "Next tab", "Следующая вкладка"), category: uiText("导航", "Navigation", "Навигация"), order: 30,
     available: needsModel,
     run: () => emit('nextTab'),
   },
   {
-    id: 'edrv.prevTab', label: '上一个页签', category: '导航', order: 40,
+    id: 'edrv.prevTab', label: uiText("上一个页签", "Previous tab", "Предыдущая вкладка"), category: uiText("导航", "Navigation", "Навигация"), order: 40,
     available: needsModel,
     run: () => emit('prevTab'),
   },
   {
-    id: 'edrv.goToDefinition', label: '转到定义', category: '语言智能', order: 10,
+    id: 'edrv.goToDefinition', label: uiText("转到定义", "Go to definition", "Перейти к определению"), category: uiText("语言智能", "Language tools", "Средства языка"), order: 10,
     available: needsModel,
     run: () => emit('goToDefinition'),
   },
   {
-    id: 'edrv.findReferences', label: '查找所有引用', category: '语言智能', order: 20,
+    id: 'edrv.findReferences', label: uiText("查找所有引用", "Find all references", "Найти все ссылки"), category: uiText("语言智能", "Language tools", "Средства языка"), order: 20,
     available: needsModel,
     run: () => emit('findReferences'),
   },
   {
-    id: 'edrv.triggerAi', label: '触发 AI 内联补全', category: '语言智能', order: 30,
+    id: 'edrv.triggerAi', label: uiText("触发 AI 内联补全", "Trigger AI inline completion", "Вызвать ИИ-дополнение"), category: uiText("语言智能", "Language tools", "Средства языка"), order: 30,
     available: needsModel,
     run: () => emit('triggerAi'),
   },
   {
-    id: 'edrv.openInExplorer', label: '在文件浏览器中打开', category: '文件', order: 30,
+    id: 'edrv.openInExplorer', label: uiText("在文件浏览器中打开", "Reveal in file explorer", "Показать в дереве файлов"), category: uiText("文件", "File", "Файл"), order: 30,
     available: needsModel,
     run: () => emit('openInExplorer'),
   },
   {
-    id: 'edrv.configureSnippets', label: '代码片段：配置代码片段', category: '代码片段', order: 10,
+    id: 'edrv.configureSnippets', label: uiText("代码片段：配置代码片段", "Configure snippets", "Настроить фрагменты кода"), category: uiText("代码片段", "Snippets", "Фрагменты кода"), order: 10,
     available: alwaysAvailable,
     run: () => emit('configureSnippets'),
   },
   {
-    id: 'edrv.insertSnippet', label: '插入代码片段', category: '代码片段', order: 20,
+    id: 'edrv.insertSnippet', label: uiText("插入代码片段", "Insert snippet", "Вставить фрагмент кода"), category: uiText("代码片段", "Snippets", "Фрагменты кода"), order: 20,
     available: needsModel,
     run: () => emit('insertSnippet'),
   },
@@ -323,32 +324,32 @@ function debugPaletteDefs(): CommandDef[] {
   const canStop = () => phase() !== 'idle' && phase() !== 'terminated'
   return [
     {
-      id: 'edrv.debugToggleBreakpoint', label: '调试：切换断点（光标行）', category: '调试', order: 10,
+      id: 'edrv.debugToggleBreakpoint', label: uiText("调试：切换断点（光标行）", "Debug: toggle breakpoint", "Отладка: переключить точку останова"), category: uiText("调试", "Debug", "Отладка"), order: 10,
       available: needsModel,
       run: () => emit('debugToggleBreakpoint'),
     },
     {
-      id: 'edrv.debugStartContinue', label: '调试：启动 / 继续', category: '调试', order: 20,
+      id: 'edrv.debugStartContinue', label: uiText("调试：启动 / 继续", "Debug: start or continue", "Отладка: начать или продолжить"), category: uiText("调试", "Debug", "Отладка"), order: 20,
       available: canStart,
       run: () => emit('debugStartContinue'),
     },
     {
-      id: 'edrv.debugStepOver', label: '调试：单步跳过', category: '调试', order: 30,
+      id: 'edrv.debugStepOver', label: uiText("调试：单步跳过", "Debug: step over", "Отладка: шаг с обходом"), category: uiText("调试", "Debug", "Отладка"), order: 30,
       available: paused,
       run: () => emit('debugStepOver'),
     },
     {
-      id: 'edrv.debugStepInto', label: '调试：单步步入', category: '调试', order: 40,
+      id: 'edrv.debugStepInto', label: uiText("调试：单步步入", "Debug: step into", "Отладка: шаг с заходом"), category: uiText("调试", "Debug", "Отладка"), order: 40,
       available: paused,
       run: () => emit('debugStepInto'),
     },
     {
-      id: 'edrv.debugStepOut', label: '调试：单步步出', category: '调试', order: 50,
+      id: 'edrv.debugStepOut', label: uiText("调试：单步步出", "Debug: step out", "Отладка: шаг с выходом"), category: uiText("调试", "Debug", "Отладка"), order: 50,
       available: paused,
       run: () => emit('debugStepOut'),
     },
     {
-      id: 'edrv.debugStop', label: '调试：停止', category: '调试', order: 60,
+      id: 'edrv.debugStop', label: uiText("调试：停止", "Debug: stop", "Отладка: остановить"), category: uiText("调试", "Debug", "Отладка"), order: 60,
       available: canStop,
       run: () => emit('debugStop'),
     },
@@ -377,7 +378,7 @@ export const BRIDGE_COMMANDS: readonly CommandDef[] = [
  */
 export function showCommandsDef(run: () => void): CommandDef {
   return {
-    id: 'edrv.showCommands', label: '显示所有命令', category: '视图', order: 1,
+    id: 'edrv.showCommands', label: uiText("显示所有命令", "Show all commands", "Показать все команды"), category: uiText("视图", "View", "Вид"), order: 1,
     available: alwaysAvailable, run,
   }
 }

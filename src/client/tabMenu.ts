@@ -1,3 +1,4 @@
+import { uiText } from './uiLocale.js'
 /**
  * dsh-vscode-mode client — 文件页签右键菜单模型（纯函数，可单测）。
  * 菜单是「数据」而非 JSX：条目顺序、分组分隔线、禁用规则与键位提示全部在此收敛，
@@ -120,33 +121,33 @@ export function buildTabMenu(state: TabMenuState): TabMenuEntry[] {
   return [
     {
       id: 'add-to-conversation',
-      label: '添加到对话',
+      label: uiText("添加到对话", "Add to chat", "Добавить в чат"),
       disabled: !(hasSession && canAddToConversation),
     },
     ...(state.forgeReady ? [
-      { id: 'forge-open', label: '打开 Forge' },
-      { id: 'forge-local', label: '查看本地变更（Forge）' },
+      { id: 'forge-open', label: uiText("打开 Forge", "Open Forge", "Открыть Forge") },
+      { id: 'forge-local', label: uiText("查看本地变更（Forge）", "Show local changes (Forge)", "Показать локальные изменения (Forge)") },
     ] : []),
-    { id: 'close', label: '关闭', separator: true, ...(closeChord ? { hint: closeChord } : {}) },
-    { id: 'close-others', label: '关闭其他', disabled: nothingToClose(closeOthers(tabs, path, active), tabs) },
-    { id: 'close-right', label: '关闭右侧标签页', disabled: nothingToClose(closeRight(tabs, path, active), tabs) },
-    { id: 'close-saved', label: '关闭已保存', disabled: nothingToClose(closeSaved(tabs, dirty, active), tabs) },
-    { id: 'close-all', label: '全部关闭', disabled: nothingToClose(closeAll(tabs, active), tabs) },
+    { id: 'close', label: uiText("关闭", "Close", "Закрыть"), separator: true, ...(closeChord ? { hint: closeChord } : {}) },
+    { id: 'close-others', label: uiText("关闭其他", "Close others", "Закрыть остальные"), disabled: nothingToClose(closeOthers(tabs, path, active), tabs) },
+    { id: 'close-right', label: uiText("关闭右侧标签页", "Close tabs to the right", "Закрыть вкладки справа"), disabled: nothingToClose(closeRight(tabs, path, active), tabs) },
+    { id: 'close-saved', label: uiText("关闭已保存", "Close saved tabs", "Закрыть сохранённые"), disabled: nothingToClose(closeSaved(tabs, dirty, active), tabs) },
+    { id: 'close-all', label: uiText("全部关闭", "Close all", "Закрыть все"), disabled: nothingToClose(closeAll(tabs, active), tabs) },
     ...(state.canSplit !== undefined ? [
-      { id: 'split-left', label: '向左分屏', separator: true, disabled: !state.canSplit },
-      { id: 'split-right', label: '向右分屏', disabled: !state.canSplit },
-      { id: 'split-top', label: '向上分屏', disabled: !state.canSplit },
-      { id: 'split-bottom', label: '向下分屏', disabled: !state.canSplit },
-      { id: 'move-new-window', label: '移到页面内浮窗', disabled: !state.canFloat },
-      { id: 'return-main', label: '移回主编辑区', disabled: !state.canReturn },
+      { id: 'split-left', label: uiText("向左分屏", "Split left", "Разделить слева"), separator: true, disabled: !state.canSplit },
+      { id: 'split-right', label: uiText("向右分屏", "Split right", "Разделить справа"), disabled: !state.canSplit },
+      { id: 'split-top', label: uiText("向上分屏", "Split above", "Разделить сверху"), disabled: !state.canSplit },
+      { id: 'split-bottom', label: uiText("向下分屏", "Split below", "Разделить снизу"), disabled: !state.canSplit },
+      { id: 'move-new-window', label: uiText("移到页面内浮窗", "Move to floating panel", "Переместить в плавающую панель"), disabled: !state.canFloat },
+      { id: 'return-main', label: uiText("移回主编辑区", "Return to main editor", "Вернуть в основной редактор"), disabled: !state.canReturn },
     ] : []),
-    { id: 'copy-path', label: '复制路径', separator: true },
-    { id: 'copy-relative-path', label: '复制相对路径', disabled: !hasCwd(cwd) },
-    { id: 'reveal-in-os', label: '在文件资源管理器中显示', separator: true, disabled: !hasSession },
-    { id: 'reveal-in-view', label: '在资源管理器视图中显示', disabled: !isTreeRevealable(path) },
+    { id: 'copy-path', label: uiText("复制路径", "Copy path", "Копировать путь"), separator: true },
+    { id: 'copy-relative-path', label: uiText("复制相对路径", "Copy relative path", "Копировать относительный путь"), disabled: !hasCwd(cwd) },
+    { id: 'reveal-in-os', label: uiText("在文件资源管理器中显示", "Reveal in system file manager", "Показать в файловом менеджере"), separator: true, disabled: !hasSession },
+    { id: 'reveal-in-view', label: uiText("在资源管理器视图中显示", "Reveal in file tree", "Показать в дереве файлов"), disabled: !isTreeRevealable(path) },
     {
       id: 'toggle-pinned',
-      label: pinned ? '取消固定' : '固定',
+      label: pinned ? uiText("取消固定", "Unpin", "Открепить") : uiText("固定", "Pin", "Закрепить"),
       separator: true,
     },
     ...svnEntriesOf(state),

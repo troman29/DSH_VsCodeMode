@@ -78,6 +78,7 @@ import { sidebarMinApply } from './sidebarMin.js'
 import { editorLimitApply } from './editorLimit.js'
 import { log } from './log.js'
 import { installLocale } from './localeClient.js'
+import { uiText } from './uiLocale.js'
 import { setupLsp, setSession, disposeLsp } from './monaco/lsp/index.js'
 import { disposeSnippets } from './snippets/provider.js'
 import { disposeLaunchJson } from './dap/launchSnippetProvider.js'
@@ -99,7 +100,7 @@ import { editExcel, exportExcel, notifyExcel } from './excel/controller.js'
 import { activateUniver, refreshUniver } from './univer/store.js'
 
 /** Root-owned live objects shared with independent panel chunks; no copied stores or transport state. */
-export const __lazyShared = { rpc, dbg, dapStore, BP_MODE, MODES, fieldOfMode, ContextMenu, editExcel, exportExcel, notifyExcel, openOriginal }
+export const __lazyShared = { rpc, dbg, dapStore, BP_MODE, MODES, fieldOfMode, ContextMenu, editExcel, exportExcel, notifyExcel, openOriginal, uiText }
 export { setPanelImport as __setPanelImport }
 
 // ⚠️ inject 只列必需服务：webUiSettings 是 @linxin666/dsh-client-ui-web-ui-settings 提供的
